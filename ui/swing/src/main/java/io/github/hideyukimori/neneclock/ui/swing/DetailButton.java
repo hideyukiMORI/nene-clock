@@ -6,7 +6,6 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Path2D;
@@ -78,8 +77,7 @@ public final class DetailButton {
 
     private void paintRow(Graphics graphics) {
         Graphics2D canvas = (Graphics2D) graphics.create();
-        canvas.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        canvas.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        TextRendering.smooth(canvas);
         int right = surface.getWidth();
         paintChevron(canvas, right - CHEVRON);
         right -= CHEVRON + GAP;

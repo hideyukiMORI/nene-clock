@@ -51,10 +51,10 @@ public final class ColourPickerPanel {
     private final ClockPreview preview;
     private final JPanel swatches = new JPanel(new GridLayout(0, SwatchPresets.PER_ROW, GAP, GAP));
     private final List<ColourSwatch> presets = new ArrayList<>();
-    private final JTextField hex = new JTextField(HEX_LENGTH);
-    private final JLabel hexPrefix = new JLabel("#");
-    private final JLabel freeform = new JLabel("自由指定");
-    private final JLabel contrast = new JLabel();
+    private final JTextField hex = TextRendering.field(HEX_LENGTH);
+    private final JLabel hexPrefix = TextRendering.label("#");
+    private final JLabel freeform = TextRendering.label("自由指定");
+    private final JLabel contrast = TextRendering.label("");
     private final MoodChip repair = new MoodChip("読める色にする");
 
     private Consumer<RgbColor> chosen = colour -> {};

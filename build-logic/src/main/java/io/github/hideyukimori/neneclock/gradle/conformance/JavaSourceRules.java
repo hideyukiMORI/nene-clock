@@ -49,6 +49,12 @@ public final class JavaSourceRules {
     /** 反映経路を 1 本に固定したい UI 呼び出し。 */
     private static final List<String> RENDER_ONLY_CALLS = List.of("setEnabled(", "setAlwaysOnTop(");
 
+    /** 直接組み立ててはいけないテキスト部品。作る場所を 1 つに固定する（CNF-012 / SWG-006）。 */
+    private static final List<String> TEXT_COMPONENTS = List.of("new JLabel(", "new JTextField(");
+
+    /** テキスト部品を組み立ててよい唯一のファイル。 */
+    private static final String TEXT_RENDERING_FILE = "TextRendering.java";
+
     private JavaSourceRules() {}
 
     public static Result check(SourceFile file) {
@@ -106,6 +112,7 @@ public final class JavaSourceRules {
 
             if (uiSource) {
                 checkRenderOnlyCall(file, violations, lineNumber, code, methods.peek());
+                checkTextComponent(file, violations, lineNumber, code);
             }
             // 🔴 直前「行」であってコード行ではない。waiver は `// Waiver: WVR-NNNN` という
             //    コメント行なので、コード行だけを覚えると永久に見つからない（Issue #26）。
@@ -184,6 +191,27 @@ public final class JavaSourceRules {
 
     /** 抑制 1 か所を見るために要る文脈。 */
     private record Suppression(int lineNumber, String code, String raw, String previousLine) {}
+
+    /**
+     * テキスト部品を直接組み立てていないか（CNF-012）。
+     *
+     * <p>Swing の文字描画ヒントは環境から渡されるもので、渡されない環境ではアンチエイリアスが
+     * 効かない。部品ごとにヒントを付けて回ると必ず付け忘れるので、作る場所を 1 つに固定する。
+     */
+    private static void checkTextComponent(SourceFile file, List<Violation> violations, int lineNumber, String code) {
+        if (file.fileName().equals(TEXT_RENDERING_FILE)) {
+            return;
+        }
+        for (String construction : TEXT_COMPONENTS) {
+            if (code.contains(construction)) {
+                violations.add(new Violation(
+                        "CNF-012",
+                        file.path(),
+                        lineNumber,
+                        construction + " を直接書かない。TextRendering を通す（SWG-006）"));
+            }
+        }
+    }
 
     private static void checkRenderOnlyCall(
             SourceFile file, List<Violation> violations, int lineNumber, String code, Method enclosing) {

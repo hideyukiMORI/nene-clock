@@ -43,8 +43,8 @@ public final class SettingsDialog {
     private final JPanel body = new JPanel(cards);
     private final JPanel header = new JPanel(new BorderLayout());
     private final JPanel footer = new JPanel(new BorderLayout());
-    private final JLabel title = new JLabel("設定");
-    private final JLabel status = new JLabel("変更はすぐに反映され、そのまま保存されます");
+    private final JLabel title = TextRendering.label("設定");
+    private final JLabel status = TextRendering.label("変更はすぐに反映され、そのまま保存されます");
     private final IconButton back = new IconButton(ChromeIcon.BACK);
     private final IconButton close = new IconButton(ChromeIcon.CLOSE);
 

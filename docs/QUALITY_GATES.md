@@ -172,6 +172,15 @@ waiver ファイルの命名・必須項目（Rule / Scope / Issue / Expires）�
 （Issue #26。経緯は [quality/gate-proofs.md](quality/gate-proofs.md) 第 3 節）。
 設定ファイルは、置いただけでは何も守らない。
 
+### CNF-012 — テキスト部品は 1 か所で作る
+
+`ui/` の中で `new JLabel(...)` / `new JTextField(...)` を直接書くことを拒否する。
+`TextRendering` を通して作れば、アンチエイリアスのヒントが必ず付く（SWG-006）。
+
+🔴 この規則も事故から生まれた。**画面の文字が 1 日ぶんずっとギザギザで描かれていた**
+（Issue #41。実測は [quality/gate-proofs.md](quality/gate-proofs.md) 第 12 節）。
+自前描画の部品だけヒントを立てていたので、**同じ画面の中で描き方が 2 通り**になっていた。
+
 ---
 
 ## 3. 強制マトリクス
@@ -212,6 +221,7 @@ waiver ファイルの命名・必須項目（Rule / Scope / Issue / Expires）�
 | SWG-003 | active | CNF-004 |
 | SWG-004 | planned | 検出規則は未実装 |
 | SWG-005 | active（一部） | ARC-007 の forbidden-apis。減算カウンタの検出は planned |
+| SWG-006 | active | CNF-012（テキスト部品の生成経路を 1 つに固定） |
 | CNF-001 | active | `JavaSourceRules` |
 | CNF-002 | active | `JavaSourceRules` |
 | CNF-003 | active | `JavaSourceRules` |
@@ -223,6 +233,7 @@ waiver ファイルの命名・必須項目（Rule / Scope / Issue / Expires）�
 | CNF-009 | active | `WaiverLedger` |
 | CNF-010 | active | `ModuleGraphRules` |
 | CNF-011 | active | `ConfigurationWiringRules` |
+| CNF-012 | active | `JavaSourceRules` |
 
 ---
 

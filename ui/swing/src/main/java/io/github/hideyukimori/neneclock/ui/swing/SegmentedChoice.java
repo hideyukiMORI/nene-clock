@@ -5,7 +5,6 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
@@ -84,8 +83,7 @@ public final class SegmentedChoice {
 
     private void paintSegments(Graphics graphics) {
         Graphics2D canvas = (Graphics2D) graphics.create();
-        canvas.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        canvas.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        TextRendering.smooth(canvas);
         canvas.setColor(palette.wash());
         canvas.fill(new RoundRectangle2D.Double(0, 0, surface.getWidth(), HEIGHT, OUTER_ARC, OUTER_ARC));
         Font label = surface.getFont().deriveFont(LABEL_POINTS);

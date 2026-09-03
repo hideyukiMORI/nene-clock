@@ -7,7 +7,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.RenderingHints;
 import java.awt.geom.RoundRectangle2D;
 import java.util.Objects;
 import javax.swing.JComponent;
@@ -30,8 +29,8 @@ public final class ClockPreview {
     private static final int GAP = 7;
 
     private final TypefaceFontLoader typefaces;
-    private final JLabel time = new JLabel("", SwingConstants.CENTER);
-    private final JLabel date = new JLabel("", SwingConstants.CENTER);
+    private final JLabel time = TextRendering.centredLabel("", SwingConstants.CENTER);
+    private final JLabel date = TextRendering.centredLabel("", SwingConstants.CENTER);
 
     private Color fill = Color.WHITE;
     private Color edge = Color.GRAY;
@@ -86,7 +85,7 @@ public final class ClockPreview {
 
     private void paintCard(Graphics graphics) {
         Graphics2D canvas = (Graphics2D) graphics.create();
-        canvas.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        TextRendering.smooth(canvas);
         canvas.setColor(fill);
         canvas.fill(new RoundRectangle2D.Double(0, 0, surface.getWidth(), surface.getHeight(), ARC, ARC));
         canvas.setColor(edge);

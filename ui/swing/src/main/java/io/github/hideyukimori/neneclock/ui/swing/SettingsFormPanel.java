@@ -46,11 +46,11 @@ public final class SettingsFormPanel {
     private final ToggleSwitch topmost = new ToggleSwitch();
     private final DetailButton typeface = new DetailButton();
     private final SizeSlider size = new SizeSlider();
-    private final JLabel sizeValue = new JLabel();
+    private final JLabel sizeValue = TextRendering.label("");
     private final DetailButton fontColour = new DetailButton();
     private final DetailButton background = new DetailButton();
-    private final JLabel displaySection = new JLabel("表示");
-    private final JLabel appearanceSection = new JLabel("見た目");
+    private final JLabel displaySection = TextRendering.label("表示");
+    private final JLabel appearanceSection = TextRendering.label("見た目");
     private final List<SettingsRow> rows;
     private final TypefaceFontLoader typefaces;
 

@@ -4,7 +4,6 @@ import io.github.hideyukimori.neneclock.domain.FontSize;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
@@ -86,7 +85,7 @@ public final class SizeSlider {
 
     private void paintTrack(Graphics graphics) {
         Graphics2D canvas = (Graphics2D) graphics.create();
-        canvas.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        TextRendering.smooth(canvas);
         double top = (HEIGHT - TRACK) / 2.0;
         double usable = Math.max(1, surface.getWidth() - KNOB);
         double filled = ratioOfCurrent() * usable;
