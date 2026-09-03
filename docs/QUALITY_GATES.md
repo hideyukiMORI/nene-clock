@@ -18,6 +18,7 @@
 CI のワークフローに品質判断のシェルロジックを書かない。第 2 の完了定義を文書化しない。
 
 - 機械強制: **active**（`.github/workflows/ci.yml` は `./gradlew check` を呼ぶだけ）
+- 機械強制: **active**（`config/` の設定が実際に読み込まれていることは CNF-011 が見る）
 - 機械強制: **planned**（CI がゲートを再構成していないことの機械検査）
 
 ### QLT-002 — 警告は失敗する
@@ -110,6 +111,8 @@ lock ファイルのドリフトはビルドを落とす。
 
 `validateConformance` が実行する自作検査。実体は `build-logic/src/main/java/.../conformance/`
 （依存ゼロの Java）で、各規則には正例・反例の単体テストがある（QLT-007）。
+そのテストはルートの `check` から依存させている。**included build のタスクは自動では
+呼ばれない**ため、結線しないと落ちたまま気づかれない（Issue #26 で実際に起きた）。
 
 ### CNF-001 — 禁止された総称名
 
@@ -159,6 +162,15 @@ waiver ファイルの命名・必須項目（Rule / Scope / Issue / Expires）�
 
 `config/architecture/module-graph.txt` に無いモジュール、許可されていない依存辺、
 モジュール間の循環を拒否する（ARC-002）。
+
+### CNF-011 — 宣言した検査設定が実際に読み込まれていること
+
+`config/` に置いた検査設定のうち、どのビルドスクリプトからも読み込まれていないものを拒否する。
+
+🔴 この規則は事故から生まれた。`config/forbiddenapis/determinism.txt` が
+**どのビルドにも読み込まれていない**まま「ARC-007 は active」と書かれていた時期がある
+（Issue #26。経緯は [quality/gate-proofs.md](quality/gate-proofs.md) 第 3 節）。
+設定ファイルは、置いただけでは何も守らない。
 
 ---
 
@@ -210,6 +222,7 @@ waiver ファイルの命名・必須項目（Rule / Scope / Issue / Expires）�
 | CNF-008 | active | `BaselineRules` |
 | CNF-009 | active | `WaiverLedger` |
 | CNF-010 | active | `ModuleGraphRules` |
+| CNF-011 | active | `ConfigurationWiringRules` |
 
 ---
 
@@ -223,7 +236,8 @@ waiver ファイルの命名・必須項目（Rule / Scope / Issue / Expires）�
 | API 禁止 | メソッド単位の禁止 | forbidden-apis（base / determinism / bundled 束） |
 | 静的解析 | 構造と複雑度 | Checkstyle |
 | アーキテクチャ | レイヤ・パッケージ境界 | ArchUnit（`:quality:architecture-tests`） |
-| 規約検査 | NeNe Clock 固有 | `validateConformance`（CNF-001..010） |
+| 規約検査 | NeNe Clock 固有 | `validateConformance`（CNF-001..011） |
+| 検査自身のテスト | 規約検査の正例・反例 | `:build-logic:test`（`check` から依存する） |
 | 単体テスト | 振る舞い | JUnit 5（headless） |
 | カバレッジ | 中核の検証密度 | JaCoCo（core 2 モジュールで分岐 90%） |
 | 依存 | 再現性 | Gradle dependency locking |

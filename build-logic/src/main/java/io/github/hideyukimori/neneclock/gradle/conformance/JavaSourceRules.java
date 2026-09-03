@@ -60,7 +60,7 @@ public final class JavaSourceRules {
         int depth = 0;
         int topLevelTypes = 0;
         String primaryType = null;
-        String previousCode = "";
+        String previousLine = "";
         Deque<Method> methods = new ArrayDeque<>();
 
         for (int index = 0; index < file.lines().size(); index++) {
@@ -72,7 +72,7 @@ public final class JavaSourceRules {
 
             checkPackage(file, violations, lineNumber, code);
             checkTaskMarker(file, violations, lineNumber, text.comment());
-            checkSuppression(file, violations, referencedWaivers, lineNumber, code, previousCode);
+            checkSuppression(file, violations, referencedWaivers, new Suppression(lineNumber, code, raw, previousLine));
 
             if (code.contains("default:") || code.contains("default ->")) {
                 violations.add(new Violation(
@@ -107,8 +107,10 @@ public final class JavaSourceRules {
             if (uiSource) {
                 checkRenderOnlyCall(file, violations, lineNumber, code, methods.peek());
             }
-            if (!code.isBlank()) {
-                previousCode = raw;
+            // 🔴 直前「行」であってコード行ではない。waiver は `// Waiver: WVR-NNNN` という
+            //    コメント行なので、コード行だけを覚えると永久に見つからない（Issue #26）。
+            if (!raw.isBlank()) {
+                previousLine = raw;
             }
         }
 
@@ -154,31 +156,34 @@ public final class JavaSourceRules {
     }
 
     private static void checkSuppression(
-            SourceFile file,
-            List<Violation> violations,
-            List<String> referencedWaivers,
-            int lineNumber,
-            String code,
-            String previousLine) {
-        if (!SUPPRESSION.matcher(code).find()) {
+            SourceFile file, List<Violation> violations, List<String> referencedWaivers, Suppression suppression) {
+        if (!SUPPRESSION.matcher(suppression.code()).find()) {
             return;
         }
-        if (code.contains("\"all\"")) {
+        // 🔴 抑制の中身は raw 行で見る。CodeText は文字列リテラルの中身を空白に潰すので、
+        //    code 側を見ると @SuppressWarnings("all") の "all" が消えて検出できない（Issue #26）。
+        if (suppression.raw().contains("\"all\"")) {
             violations.add(new Violation(
-                    "CNF-002", file.path(), lineNumber, "@SuppressWarnings(\"all\") は waiver でも許可されない"));
+                    "CNF-002",
+                    file.path(),
+                    suppression.lineNumber(),
+                    "@SuppressWarnings(\"all\") は waiver でも許可されない"));
             return;
         }
-        Matcher waiver = WAIVER_REFERENCE.matcher(previousLine);
+        Matcher waiver = WAIVER_REFERENCE.matcher(suppression.previousLine());
         if (!waiver.find()) {
             violations.add(new Violation(
                     "CNF-002",
                     file.path(),
-                    lineNumber,
+                    suppression.lineNumber(),
                     "@SuppressWarnings の直前行に // Waiver: WVR-NNNN が必要"));
             return;
         }
         referencedWaivers.add(waiver.group(1));
     }
+
+    /** 抑制 1 か所を見るために要る文脈。 */
+    private record Suppression(int lineNumber, String code, String raw, String previousLine) {}
 
     private static void checkRenderOnlyCall(
             SourceFile file, List<Violation> violations, int lineNumber, String code, Method enclosing) {

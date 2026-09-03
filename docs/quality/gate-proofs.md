@@ -14,9 +14,11 @@ CI: ubuntu-24.04 / Temurin 21 / 同梱 Wrapper
 
 ## 1. 実測結果
 
+最終実測 2026-09-03（Issue #26 の修正後に全件を取り直した）。
+
 | # | 規則 | 仕込んだ違反 | 実行したタスク | 結果 |
 | --- | --- | --- | --- | --- |
-| P1 | ARC-007 | `:core:application` で `LocalDateTime.now()` を呼ぶ | `:core:application:forbiddenApisMain` | **失敗** |
+| P1 | ARC-007 | `:core:application` で `System.nanoTime()` と `Instant.now()` を呼ぶ | `:core:application:forbiddenApisMain` | **失敗** |
 | P2 | ARC-003 | `:core:domain` から `javax.swing.JLabel` を参照する | `:quality:architecture-tests:test` | **失敗** |
 | P3 | CNF-003 | `switch` に `default ->` を書く | `validateConformance` | **失敗** |
 | P4 | CNF-010 | `:ui:swing` から `:adapters:preferences` へ依存を足す | `validateConformance` | **失敗** |
@@ -27,31 +29,41 @@ CI: ubuntu-24.04 / Temurin 21 / 同梱 Wrapper
 | P9 | CNF-001 | 入れ子クラスを `TimeHelper` と命名する | `validateConformance` | **失敗** |
 | P10 | CNF-004 | `render*` 以外のメソッドで `setEnabled(...)` を呼ぶ | `validateConformance` | **失敗** |
 | P11 | JAV-009 | 未使用の import を残す | `:core:domain:checkstyleMain` | **失敗** |
+| P12 | CNF-011 | どこからも読み込まれない設定ファイルを `config/` に置く | `validateConformance` | **失敗** |
 
-**復帰の確認**: 11 件すべてについて、仕込みを戻したあと `./gradlew check` が終了コード 0 で成功した。
+**復帰の確認**: 12 件すべてについて、仕込みを戻したあと `./gradlew check` が終了コード 0 で成功した。
+
+**除外側の確認（ARC-007）**: `:adapters:system-time` は `LocalDateTime.now(Clock)` /
+`Clock.system(ZoneId)` / `ZoneId.systemDefault()` を呼んでいる。いずれも `determinism.txt` に
+載っている署名だが、このモジュールだけ同ファイルを適用しないため `:adapters:system-time:check` は成功する。
+**禁止が効いていることと、唯一の窓口が通ることの両方を見ている。**
 
 ---
 
-## 2. 出力の抜粋
+## 2. 出力の抜粋（実行結果からの引用）
 
 ```text
-P1  Forbidden method invocation: java.time.LocalDateTime#now()
-      [現在時刻は WallClockPort / TickSource からのみ得る。ここで読むと決定性が壊れる（ARC-007）]
+P1  Forbidden method invocation: java.lang.System#nanoTime() [現在時刻は WallClockPort / TickSource からのみ得る。ここで読むと決定性が壊れる（ARC-007）]
+    Forbidden method invocation: java.time.Instant#now() [現在時刻は WallClockPort / TickSource からのみ得る。ここで読むと決定性が壊れる（ARC-007）]
+    Scanned 17 class file(s) for forbidden API invocations (in 0.02s), 2 error(s).
 
-P2  Architecture Violation — Rule 'no classes that reside in any package
-      ['...domain..', '...application..'] should depend on classes that reside in any package
-      ['javax.swing..', 'java.awt..'], because ARC-003: 中核は Swing を知らない'
+P2  java.lang.AssertionError: Architecture Violation [Priority: MEDIUM] - Rule 'no classes that
+    reside in any package ['io.github.hideyukimori.neneclock.domain..',
+    'io.github.hideyukimori.neneclock.application..'] should depend on classes that reside in any
+    package ['javax.swing..', 'java.awt..'], because ARC-003: 中核は Swing を知らない' was violated (1 times):
+    Method <io.github.hideyukimori.neneclock.domain.SettingsSchemaVersion.toolkit()> references
+    class object <javax.swing.JLabel> in (SettingsSchemaVersion.java:21)
 
-P3  CNF-003 core/application/.../ClockFaceQuery.java:43
+P3  CNF-003 core/application/src/main/java/io/github/hideyukimori/neneclock/application/ClockFaceQuery.java:43
       — switch に default を書かない。網羅性検査を無効化する
 
-P4  CNF-010 docs/PROJECT_LAYOUT.md
-      — 許可されていない依存: :ui:swing -> :adapters:preferences
+P4  CNF-010 docs/PROJECT_LAYOUT.md — 許可されていない依存: :ui:swing -> :adapters:preferences
 
-P5  SettingsSchemaVersion.java:20: warning: [rawtypes] found raw type: List
+P5  core/domain/src/main/java/io/github/hideyukimori/neneclock/domain/SettingsSchemaVersion.java:20:
+      warning: [rawtypes] found raw type: List
     error: warnings found and -Werror specified
 
-P6  CNF-002 core/domain/.../SettingsSchemaVersion.java:20
+P6  CNF-002 core/domain/src/main/java/io/github/hideyukimori/neneclock/domain/SettingsSchemaVersion.java:20
       — @SuppressWarnings の直前行に // Waiver: WVR-NNNN が必要
 
 P7  CNF-009 docs/waivers/WVR-0001-expired-proof.md:6
@@ -59,50 +71,76 @@ P7  CNF-009 docs/waivers/WVR-0001-expired-proof.md:6
 
 P8  The following files had format violations: ... Run './gradlew spotlessApply' to fix all violations.
 
-P9  CNF-001 core/domain/.../SettingsSchemaVersion.java:20
+P9  CNF-001 core/domain/src/main/java/io/github/hideyukimori/neneclock/domain/SettingsSchemaVersion.java:20
       — 禁止された総称型名: TimeHelper（役割を名前で語る）
 
-P10 CNF-004 ui/swing/.../MainFrame.java:34
+P10 CNF-004 ui/swing/src/main/java/io/github/hideyukimori/neneclock/ui/swing/MainFrame.java:34
       — setEnabled( を MainFrame で呼んでいる。UI 状態の反映は render* からのみ
 
-P11 [ERROR] core/domain/.../SettingsSchemaVersion.java:3:8:
+P11 [ant:checkstyle] [ERROR] core/domain/.../SettingsSchemaVersion.java:3:8:
       Unused import - java.util.List. [UnusedImports]
+
+P12 CNF-011 config/forbiddenapis/orphan.txt
+      — この設定ファイルを読み込むビルドスクリプトが無い。置いても効かない
 ```
 
 ---
 
 ## 3. 証明の途中で分かったこと
 
-🔑 **最初の P5 は「未使用 import を残す」で試したが、ビルドは通ってしまった。**
+### 3.1 QLT-002 の担当を取り違えていた
+
+最初の P5 は「未使用 import を残す」で試したが、ビルドは通ってしまった。
 `javac -Xlint:all` に未使用 import の検査は無い（`-Xlint` のカテゴリに存在しない）。
-つまり **QLT-002（警告は失敗する）は未使用 import を守っていない**。
 守っているのは Checkstyle の `UnusedImports` であり、それが P11 である。
 
-これは「ゲートがあると思っていた場所に無い」典型例であり、
-negative proof を取らなければ気づかないまま
-「コンパイラが見ている」と書き続けていた。**QLT-007 が要る理由そのものである。**
+### 3.2 🔴 ARC-007 のゲートは、実は半分しか繋がっていなかった（Issue #26）
 
----
+**最初にこの文書を書いた時点で、`config/forbiddenapis/determinism.txt` は
+どのビルドスクリプトからも読み込まれていなかった。** `neneclock.java-conventions` の
+`signaturesFiles` が `base.txt` だけを指していたためである。
 
-## 4. 規則単位のテスト（`validateConformance` の内部）
+それでも P1 が「落ちた」のは、bundled signature の `jdk-unsafe` が
+**既定タイムゾーンを使うメソッド**を禁じており、最初の証明に使った `LocalDateTime.now()` が
+たまたまそれに当たったからだった。実際には次が素通りしていた。
 
-上の end-to-end の証明とは別に、`build-logic` の単体テストが各 CNF 規則について
-正例（通る入力）と反例（落ちる入力）の両方を持つ。
-
-```bash
-./gradlew -p build-logic test
+```java
+long probe = System.nanoTime() + java.time.Instant.now().toEpochMilli();   // 修正前は通った
 ```
 
-| テストクラス | 対象 |
-| --- | --- |
-| `JavaSourceRulesTest` | CNF-001 / CNF-002 / CNF-003 / CNF-004 / CNF-006 / CNF-007 |
-| `DocumentationRulesTest` | CNF-005 |
-| `WaiverLedgerTest` | CNF-009 |
-| `BaselineRulesTest` | CNF-008 |
-| `ModuleGraphRulesTest` | CNF-010 |
+さらに `:adapters:system-time/build.gradle.kts` の「このモジュールだけ determinism.txt を外す」
+という上書きも、外す対象が最初から入っていないため **no-op** だった。
 
-`JavaSourceRulesTest` は「文字列リテラル中の `default ->` を誤検知しないこと」のような
-**偽陽性側**の反例も持つ。検査が正しく落ちることと、正しく落ちないことの両方を見る。
+🔴 **加えて、この文書の初版に載せた P1 の出力抜粋は、実際の出力ではなく期待した内容だった。**
+証明の記録として誤りであり、`docs/QUALITY_GATES.md` の ARC-007 の `active` も過大な主張だった。
+Issue #26 で署名を実際に読み込ませ、**全 11 件を実行結果からの引用で取り直した**のが第 2 節である。
+
+**教訓**: negative proof は「落ちること」だけでなく **「何によって落ちたか」**まで確かめないと、
+別の道具がたまたま拾っているだけの状態を「このゲートが効いている」と誤読する。
+出力は必ず実行結果から引用する。
+
+**再発防止**: CNF-011 を新設した。`config/` に置いた設定が、どのビルドスクリプトからも
+読み込まれていなければ `validateConformance` が落ちる。
+
+### 3.3 🔴 規約検査そのもののテストが、ゲートから呼ばれていなかった（Issue #26）
+
+`build-logic` は included build なので、**そのタスクはルートの `check` からは自動で呼ばれない**。
+「各 CNF 規則に正例・反例の単体テストがある」と書いていたが、`./gradlew check` も CI も
+そのテストを一度も実行していなかった。
+
+初めて `./gradlew -p build-logic test` を回したところ、**2 件が落ちた**。どちらも検査側の欠陥である。
+
+1. CNF-002 が waiver コメントを見つけられなかった。「直前行」を探すのに**コード行**だけを
+   覚えていたため、`// Waiver: WVR-NNNN` というコメント行は候補にならなかった。
+   つまり **waiver を正しく書いても通らない**状態だった
+2. `@SuppressWarnings("all")` を検出できていなかった。`CodeText` が文字列リテラルの中身を
+   空白へ潰すため、潰したあとの文字列から `"all"` を探していた
+
+🔑 1 の欠陥は、テストの側でも見えていなかった。waiver 付きの抑制が
+「waiver が無い」という**別の理由**で拒否されており、テストは規則 ID だけを見ていたので通っていた。
+**正しい理由で落ちているかまで見ないと、テストも証明にならない。**
+
+対策として `check` に `:build-logic:test` を依存させた。
 
 ---
 

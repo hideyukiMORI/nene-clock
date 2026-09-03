@@ -71,18 +71,27 @@ tasks.named<Checkstyle>("checkstyleTest") {
 }
 
 // 機械強制の分担: forbidden-apis は「メソッド単位」、ArchUnit は「パッケージ／レイヤ単位」。
+// 🔴 signaturesFiles をここで組み立てて main / test の両方へ渡す。片方だけに渡すと、
+//    署名ファイルが存在するのに誰も読まない状態が静かに成立する（実測あり・Issue #26）。
+val projectSignatures =
+    files(
+        rootProject.file("config/forbiddenapis/base.txt"),
+        rootProject.file("config/forbiddenapis/determinism.txt"),
+    )
+
 forbiddenApis {
     bundledSignatures =
         setOf("jdk-unsafe", "jdk-deprecated", "jdk-non-portable", "jdk-internal", "jdk-reflection", "jdk-system-out")
-    signaturesFiles = files(rootProject.file("config/forbiddenapis/base.txt"))
+    signaturesFiles = projectSignatures
     failOnUnsupportedJava = false
     ignoreSignaturesOfMissingClasses = true
 }
 
 tasks.named<de.thetaphi.forbiddenapis.gradle.CheckForbiddenApis>("forbiddenApisTest") {
-    // テストは固定時刻の生成に java.time を素で使う。決定性は「実時刻を読まないこと」で担保する。
+    // テストは固定時刻の生成に java.time を素で使ってよい（Clock.fixed / LocalDateTime.of）。
+    // ただし実時刻を読むことは禁じる。テストが実時刻を読むのも決定性の破壊である。
     bundledSignatures = setOf("jdk-deprecated", "jdk-non-portable", "jdk-internal", "jdk-reflection")
-    signaturesFiles = files(rootProject.file("config/forbiddenapis/base.txt"))
+    signaturesFiles = projectSignatures
 }
 
 tasks.withType<Test>().configureEach {
