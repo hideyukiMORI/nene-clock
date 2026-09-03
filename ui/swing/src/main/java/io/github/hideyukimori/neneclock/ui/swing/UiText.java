@@ -51,6 +51,8 @@ public enum UiText {
     LANGUAGE_ENGLISH("English", "English"),
     /** 書体ピッカーの絞り込み。 */
     ALL_MOODS("すべて", "All"),
+    /** 色ピッカーの透明度。 */
+    OPACITY("不透明度", "Opacity"),
     /** 色ピッカーの自由入力。 */
     CUSTOM_COLOUR("自由指定", "Custom"),
     /** 読めない配色を直す提案。 */

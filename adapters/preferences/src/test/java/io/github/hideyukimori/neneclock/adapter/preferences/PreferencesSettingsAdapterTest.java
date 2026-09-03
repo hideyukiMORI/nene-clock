@@ -10,8 +10,8 @@ import io.github.hideyukimori.neneclock.domain.DateVisibility;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.FontSizeOutcome;
 import io.github.hideyukimori.neneclock.domain.Language;
-import io.github.hideyukimori.neneclock.domain.RgbColor;
-import io.github.hideyukimori.neneclock.domain.RgbColorOutcome;
+import io.github.hideyukimori.neneclock.domain.RgbaColor;
+import io.github.hideyukimori.neneclock.domain.RgbaColorOutcome;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
 import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
@@ -113,8 +113,8 @@ class PreferencesSettingsAdapterTest {
                 WindowTopmost.ENABLED,
                 Typeface.DEFAULT,
                 size(96),
-                RgbColor.DEFAULT_FONT,
-                RgbColor.DEFAULT_BACKGROUND,
+                RgbaColor.DEFAULT_FONT,
+                RgbaColor.DEFAULT_BACKGROUND,
                 Language.DEFAULT);
     }
 
@@ -144,7 +144,7 @@ class PreferencesSettingsAdapterTest {
                         Typeface.DEFAULT,
                         size(96),
                         color(10, 20, 30),
-                        RgbColor.DEFAULT_BACKGROUND,
+                        RgbaColor.DEFAULT_BACKGROUND,
                         Language.DEFAULT)));
     }
 
@@ -173,7 +173,7 @@ class PreferencesSettingsAdapterTest {
                         Typeface.ORBITRON,
                         size(96),
                         color(10, 20, 30),
-                        RgbColor.DEFAULT_BACKGROUND,
+                        RgbaColor.DEFAULT_BACKGROUND,
                         Language.DEFAULT));
     }
 
@@ -194,6 +194,47 @@ class PreferencesSettingsAdapterTest {
     }
 
     @Test
+    void migratesVersionFiveByTreatingTheColoursAsOpaque() {
+        writeVersionThree();
+        node.putInt("schemaVersion", 5);
+        node.putInt("backgroundRed", 1);
+        node.putInt("backgroundGreen", 2);
+        node.putInt("backgroundBlue", 3);
+        node.put("language", Language.ENGLISH.name());
+
+        SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
+
+        UserSettings restored = ((SettingsLoadOutcome.Restored) outcome).settings();
+        assertThat(restored.fontColor().alpha()).isEqualTo(RgbaColor.OPAQUE);
+        assertThat(restored.backgroundColor().alpha()).isEqualTo(RgbaColor.OPAQUE);
+        assertThat(restored.language()).isEqualTo(Language.ENGLISH);
+    }
+
+    @Test
+    void roundTripsTheAlphaOfBothColours() {
+        PreferencesSettingsAdapter adapter = PreferencesSettingsAdapter.at(node);
+        UserSettings stored = UserSettings.defaults()
+                .withFontColor(RgbaColor.DEFAULT_FONT.withAlpha(200))
+                .withBackgroundColor(RgbaColor.DEFAULT_BACKGROUND.withAlpha(120));
+
+        adapter.save(stored);
+
+        UserSettings restored = ((SettingsLoadOutcome.Restored) adapter.load()).settings();
+        assertThat(restored.fontColor().alpha()).isEqualTo(200);
+        assertThat(restored.backgroundColor().alpha()).isEqualTo(120);
+    }
+
+    @Test
+    void refusesAnAlphaOutsideTheAllowedRange() {
+        PreferencesSettingsAdapter.at(node).save(UserSettings.defaults());
+        node.putInt("fontAlpha", RgbaColor.MAXIMUM_COMPONENT + 1);
+
+        SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
+
+        assertThat(outcome).isEqualTo(new SettingsLoadOutcome.Defaulted(SettingsLoadFailure.INVALID_VALUE));
+    }
+
+    @Test
     void refusesAnUnknownLanguage() {
         PreferencesSettingsAdapter.at(node).save(UserSettings.defaults());
         node.put("language", "KLINGON");
@@ -206,7 +247,7 @@ class PreferencesSettingsAdapterTest {
     @Test
     void refusesABackgroundComponentOutsideTheAllowedRange() {
         PreferencesSettingsAdapter.at(node).save(UserSettings.defaults());
-        node.putInt("backgroundBlue", RgbColor.MAXIMUM_COMPONENT + 1);
+        node.putInt("backgroundBlue", RgbaColor.MAXIMUM_COMPONENT + 1);
 
         SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
 
@@ -238,7 +279,7 @@ class PreferencesSettingsAdapterTest {
     @Test
     void refusesAColourComponentOutsideTheAllowedRange() {
         PreferencesSettingsAdapter.at(node).save(UserSettings.defaults());
-        node.putInt("fontGreen", RgbColor.MAXIMUM_COMPONENT + 1);
+        node.putInt("fontGreen", RgbaColor.MAXIMUM_COMPONENT + 1);
 
         SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
 
@@ -299,8 +340,8 @@ class PreferencesSettingsAdapterTest {
         node.putInt("fontBlue", 30);
     }
 
-    private static RgbColor color(int red, int green, int blue) {
-        return ((RgbColorOutcome.Accepted) RgbColor.of(red, green, blue)).value();
+    private static RgbaColor color(int red, int green, int blue) {
+        return ((RgbaColorOutcome.Accepted) RgbaColor.opaque(red, green, blue)).value();
     }
 
     private static FontSize size(int points) {

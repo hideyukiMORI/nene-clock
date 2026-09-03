@@ -1,8 +1,7 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
-import io.github.hideyukimori.neneclock.domain.RgbColor;
+import io.github.hideyukimori.neneclock.domain.RgbaColor;
 import java.awt.BasicStroke;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -21,10 +20,11 @@ public final class ColourSwatch {
     private static final int HEIGHT = 34;
     private static final int ARC = 7;
     private static final float RING = 2f;
+    private static final int CHECKER = 6;
     private static final double INSET = 2.0;
     private static final double DOUBLE_INSET = 4.0;
 
-    private final RgbColor value;
+    private final RgbaColor value;
 
     private final JPanel surface = new JPanel(null) {
         @Override
@@ -37,7 +37,7 @@ public final class ColourSwatch {
     private boolean selected;
 
     /** 1 色に対する見本を作る。 */
-    public ColourSwatch(RgbColor value) {
+    public ColourSwatch(RgbaColor value) {
         this.value = Objects.requireNonNull(value, "value");
         surface.setOpaque(false);
         surface.setPreferredSize(new Dimension(0, HEIGHT));
@@ -49,7 +49,7 @@ public final class ColourSwatch {
     }
 
     /** 選ばれたことの宛先を 1 度だけ結ぶ。 */
-    public void onChosen(Consumer<RgbColor> action) {
+    public void onChosen(Consumer<RgbaColor> action) {
         Objects.requireNonNull(action, "action");
         surface.addMouseListener(new MouseAdapter() {
             @Override
@@ -60,7 +60,7 @@ public final class ColourSwatch {
     }
 
     /** この見本がその色かどうか。 */
-    public boolean holds(RgbColor other) {
+    public boolean holds(RgbaColor other) {
         return value.equals(other);
     }
 
@@ -71,6 +71,23 @@ public final class ColourSwatch {
         surface.repaint();
     }
 
+    /** 透けている色の下に市松を敷く。敷かないと、薄い色と白い色の区別がつかない。 */
+    private static void paintChecker(Graphics2D canvas, RoundRectangle2D shape, Palette palette) {
+        Graphics2D checker = (Graphics2D) canvas.create();
+        checker.clip(shape);
+        checker.setColor(palette.surface());
+        checker.fill(shape);
+        checker.setColor(palette.wash());
+        for (int y = (int) shape.getY(); y < shape.getMaxY(); y += CHECKER) {
+            for (int x = (int) shape.getX(); x < shape.getMaxX(); x += CHECKER) {
+                if (((x / CHECKER) + (y / CHECKER)) % 2 == 0) {
+                    checker.fillRect(x, y, CHECKER, CHECKER);
+                }
+            }
+        }
+        checker.dispose();
+    }
+
     private void paintSwatch(Graphics graphics) {
         Palette palette = this.palette;
         if (palette == null) {
@@ -79,8 +96,11 @@ public final class ColourSwatch {
         Graphics2D canvas = (Graphics2D) graphics.create();
         TextRendering.smooth(canvas);
         int width = surface.getWidth();
-        canvas.setColor(new Color(value.red(), value.green(), value.blue()));
-        canvas.fill(new RoundRectangle2D.Double(INSET, INSET, width - DOUBLE_INSET, HEIGHT - DOUBLE_INSET, ARC, ARC));
+        RoundRectangle2D shape =
+                new RoundRectangle2D.Double(INSET, INSET, width - DOUBLE_INSET, HEIGHT - DOUBLE_INSET, ARC, ARC);
+        paintChecker(canvas, shape, palette);
+        canvas.setColor(AwtColour.of(value));
+        canvas.fill(shape);
         canvas.setStroke(new BasicStroke(RING));
         canvas.setColor(selected ? palette.accent() : palette.hairline());
         canvas.draw(new RoundRectangle2D.Double(INSET, INSET, width - DOUBLE_INSET, HEIGHT - DOUBLE_INSET, ARC, ARC));

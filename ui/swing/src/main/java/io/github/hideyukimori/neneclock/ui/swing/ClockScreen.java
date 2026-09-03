@@ -5,7 +5,7 @@ import io.github.hideyukimori.neneclock.application.DateLine;
 import io.github.hideyukimori.neneclock.application.SettingsIntentSink;
 import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
 import io.github.hideyukimori.neneclock.domain.Language;
-import io.github.hideyukimori.neneclock.domain.RgbColor;
+import io.github.hideyukimori.neneclock.domain.RgbaColor;
 import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import java.awt.Font;
@@ -147,7 +147,7 @@ public final class ClockScreen {
         sink.submit(shown.withTypeface(typeface));
     }
 
-    private void chooseColour(RgbColor colour) {
+    private void chooseColour(RgbaColor colour) {
         boolean background = dialog.showingNow() == SettingsDestination.BACKGROUND_COLOUR;
         sink.submit(background ? shown.withBackgroundColor(colour) : shown.withFontColor(colour));
     }
