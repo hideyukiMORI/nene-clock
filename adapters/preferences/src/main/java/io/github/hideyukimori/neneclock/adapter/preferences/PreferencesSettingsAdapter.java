@@ -7,6 +7,10 @@ import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
 import io.github.hideyukimori.neneclock.application.SettingsStorePort;
 import io.github.hideyukimori.neneclock.domain.ClockFormat;
 import io.github.hideyukimori.neneclock.domain.DateVisibility;
+import io.github.hideyukimori.neneclock.domain.FontColor;
+import io.github.hideyukimori.neneclock.domain.FontColorOutcome;
+import io.github.hideyukimori.neneclock.domain.FontFamily;
+import io.github.hideyukimori.neneclock.domain.FontFamilyOutcome;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.FontSizeOutcome;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
@@ -18,7 +22,12 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import org.jspecify.annotations.Nullable;
 
-/** {@link Preferences} に設定を保存する {@link SettingsStorePort} の実装。 */
+/**
+ * {@link Preferences} に設定を保存する {@link SettingsStorePort} の実装。
+ *
+ * <p>保存形式を知るのはこのクラスだけである。版の移行もここに閉じる（ADR 0003）。
+ * {@link #load()} は保存領域を書き換えない。v2 として書き戻されるのは次の保存のときである。
+ */
 public final class PreferencesSettingsAdapter implements SettingsStorePort {
 
     private static final String KEY_SCHEMA = "schemaVersion";
@@ -27,9 +36,13 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
     private static final String KEY_DATE = "dateVisibility";
     private static final String KEY_TOPMOST = "windowTopmost";
     private static final String KEY_FONT_POINTS = "fontPoints";
+    private static final String KEY_FONT_FAMILY = "fontFamily";
+    private static final String KEY_FONT_RED = "fontRed";
+    private static final String KEY_FONT_GREEN = "fontGreen";
+    private static final String KEY_FONT_BLUE = "fontBlue";
 
     private static final int SCHEMA_ABSENT = 0;
-    private static final int FONT_POINTS_ABSENT = -1;
+    private static final int INTEGER_ABSENT = -1;
 
     private final Preferences node;
 
@@ -53,10 +66,14 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         if (storedSchema == SCHEMA_ABSENT) {
             return new SettingsLoadOutcome.Defaulted(SettingsLoadFailure.ABSENT);
         }
-        if (storedSchema < 1 || !new SettingsSchemaVersion(storedSchema).isSupported()) {
+        if (storedSchema < SettingsSchemaVersion.EARLIEST_MIGRATABLE.value()) {
             return new SettingsLoadOutcome.Defaulted(SettingsLoadFailure.UNSUPPORTED_SCHEMA);
         }
-        return restore();
+        SettingsSchemaVersion stored = new SettingsSchemaVersion(storedSchema);
+        if (!stored.isMigratable()) {
+            return new SettingsLoadOutcome.Defaulted(SettingsLoadFailure.UNSUPPORTED_SCHEMA);
+        }
+        return restore(stored);
     }
 
     @Override
@@ -68,6 +85,10 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         node.put(KEY_DATE, settings.dateVisibility().name());
         node.put(KEY_TOPMOST, settings.windowTopmost().name());
         node.putInt(KEY_FONT_POINTS, settings.fontSize().points());
+        node.put(KEY_FONT_FAMILY, settings.fontFamily().name());
+        node.putInt(KEY_FONT_RED, settings.fontColor().red());
+        node.putInt(KEY_FONT_GREEN, settings.fontColor().green());
+        node.putInt(KEY_FONT_BLUE, settings.fontColor().blue());
         try {
             node.flush();
         } catch (BackingStoreException failure) {
@@ -76,28 +97,51 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         return new SettingsSaveOutcome.Saved();
     }
 
-    private SettingsLoadOutcome restore() {
+    /**
+     * 版に応じて読む。
+     *
+     * <p>v1 は書体と文字色を持たない。欠けている分は domain の既定値で埋める。推測はしない。
+     */
+    private SettingsLoadOutcome restore(SettingsSchemaVersion stored) {
+        UserSettings carried = readSettingsSharedByEveryVersion();
+        if (carried == null) {
+            return invalidValue();
+        }
+        if (!stored.isSupported()) {
+            return new SettingsLoadOutcome.Restored(carried);
+        }
+        FontFamily family = readFontFamily();
+        if (family == null) {
+            return invalidValue();
+        }
+        FontColor color = readFontColor();
+        if (color == null) {
+            return invalidValue();
+        }
+        return new SettingsLoadOutcome.Restored(new UserSettings(
+                carried.clockFormat(),
+                carried.secondsVisibility(),
+                carried.dateVisibility(),
+                carried.windowTopmost(),
+                family,
+                carried.fontSize(),
+                color));
+    }
+
+    /** v1 から変わっていない 5 項目。書体と文字色は既定値のまま返す。 */
+    private @Nullable UserSettings readSettingsSharedByEveryVersion() {
         ClockFormat clockFormat = lookup(ClockFormat.values(), node.get(KEY_CLOCK_FORMAT, null));
-        if (clockFormat == null) {
-            return invalidValue();
-        }
         SecondsVisibility seconds = lookup(SecondsVisibility.values(), node.get(KEY_SECONDS, null));
-        if (seconds == null) {
-            return invalidValue();
-        }
         DateVisibility date = lookup(DateVisibility.values(), node.get(KEY_DATE, null));
-        if (date == null) {
-            return invalidValue();
-        }
         WindowTopmost topmost = lookup(WindowTopmost.values(), node.get(KEY_TOPMOST, null));
-        if (topmost == null) {
-            return invalidValue();
-        }
         FontSize fontSize = readFontSize();
-        if (fontSize == null) {
-            return invalidValue();
+        if (clockFormat == null || seconds == null) {
+            return null;
         }
-        return new SettingsLoadOutcome.Restored(new UserSettings(clockFormat, seconds, date, topmost, fontSize));
+        if (date == null || topmost == null || fontSize == null) {
+            return null;
+        }
+        return new UserSettings(clockFormat, seconds, date, topmost, FontFamily.DEFAULT, fontSize, FontColor.DEFAULT);
     }
 
     private static SettingsLoadOutcome invalidValue() {
@@ -105,10 +149,30 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
     }
 
     private @Nullable FontSize readFontSize() {
-        int points = node.getInt(KEY_FONT_POINTS, FONT_POINTS_ABSENT);
-        return switch (FontSize.of(points)) {
+        return switch (FontSize.of(node.getInt(KEY_FONT_POINTS, INTEGER_ABSENT))) {
             case FontSizeOutcome.Accepted accepted -> accepted.value();
             case FontSizeOutcome.Rejected outOfRange -> null;
+        };
+    }
+
+    private @Nullable FontFamily readFontFamily() {
+        String stored = node.get(KEY_FONT_FAMILY, null);
+        if (stored == null) {
+            return null;
+        }
+        return switch (FontFamily.of(stored)) {
+            case FontFamilyOutcome.Accepted accepted -> accepted.value();
+            case FontFamilyOutcome.Rejected rejected -> null;
+        };
+    }
+
+    private @Nullable FontColor readFontColor() {
+        return switch (FontColor.of(
+                node.getInt(KEY_FONT_RED, INTEGER_ABSENT),
+                node.getInt(KEY_FONT_GREEN, INTEGER_ABSENT),
+                node.getInt(KEY_FONT_BLUE, INTEGER_ABSENT))) {
+            case FontColorOutcome.Accepted accepted -> accepted.value();
+            case FontColorOutcome.Rejected outOfRange -> null;
         };
     }
 

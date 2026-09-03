@@ -3,6 +3,7 @@ package io.github.hideyukimori.neneclock.ui.swing;
 import io.github.hideyukimori.neneclock.application.ClockFace;
 import io.github.hideyukimori.neneclock.application.DateLine;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -57,8 +58,15 @@ public final class ClockPanel {
     /** 設定を反映する。 */
     public void renderSettings(UserSettings settings) {
         Objects.requireNonNull(settings, "settings");
+        String family = settings.fontFamily().name();
         int points = settings.fontSize().points();
-        time.setFont(new Font(Font.MONOSPACED, Font.PLAIN, points));
-        date.setFont(new Font(Font.MONOSPACED, Font.PLAIN, Math.max(MINIMUM_DATE_POINTS, points / DATE_FONT_DIVISOR)));
+        Color foreground = new Color(
+                settings.fontColor().red(),
+                settings.fontColor().green(),
+                settings.fontColor().blue());
+        time.setFont(new Font(family, Font.PLAIN, points));
+        time.setForeground(foreground);
+        date.setFont(new Font(family, Font.PLAIN, Math.max(MINIMUM_DATE_POINTS, points / DATE_FONT_DIVISOR)));
+        date.setForeground(foreground);
     }
 }

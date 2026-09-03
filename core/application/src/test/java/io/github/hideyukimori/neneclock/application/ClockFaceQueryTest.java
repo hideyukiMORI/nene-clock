@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.hideyukimori.neneclock.domain.ClockFormat;
 import io.github.hideyukimori.neneclock.domain.DateVisibility;
+import io.github.hideyukimori.neneclock.domain.FontColor;
+import io.github.hideyukimori.neneclock.domain.FontFamily;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
@@ -70,6 +72,7 @@ class ClockFaceQueryTest {
     }
 
     private static UserSettings settings(ClockFormat format, SecondsVisibility seconds, DateVisibility date) {
-        return new UserSettings(format, seconds, date, WindowTopmost.DISABLED, FontSize.DEFAULT);
+        return new UserSettings(
+                format, seconds, date, WindowTopmost.DISABLED, FontFamily.DEFAULT, FontSize.DEFAULT, FontColor.DEFAULT);
     }
 }
