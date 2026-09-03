@@ -35,6 +35,25 @@ On Windows PowerShell:
 Under WSLg the Swing window appears on the Windows desktop with no manual `DISPLAY`
 configuration. Unit tests never need a display server — they run headless.
 
+## Install and launch without Gradle
+
+```bash
+sudo tools/install-desktop-entry.sh   # /opt/nene-clock + a .desktop entry
+tools/place-windows-shortcut.sh       # WSL only: copy the shortcut to the Windows desktop
+```
+
+`install-desktop-entry.sh` builds the distribution (`installDist`), copies it to
+`/opt/nene-clock`, writes the icon PNGs **from the running implementation** (`AppIcon`,
+via `./gradlew writeAppIcons` — no image files live in the repository), and installs
+`/usr/share/applications/nene-clock.desktop`.
+
+Under WSL that entry is enough: **WSLg turns it into a Windows Start Menu shortcut on
+its own**, which can be pinned to the taskbar. `place-windows-shortcut.sh` copies that
+shortcut to the Windows desktop and points it at an `.ico` built from the same icon —
+WSLg's own icon has a penguin badge stamped onto it.
+
+Both scripts are idempotent. `tools/uninstall-desktop-entry.sh` removes what they installed.
+
 ## Project layout
 
 ```text
