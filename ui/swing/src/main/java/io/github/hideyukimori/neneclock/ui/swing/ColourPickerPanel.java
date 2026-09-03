@@ -6,7 +6,6 @@ import io.github.hideyukimori.neneclock.domain.UserSettings;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,12 +52,11 @@ public final class ColourPickerPanel {
     private final List<ColourSwatch> presets = new ArrayList<>();
     private final JTextField hex = TextRendering.field(HEX_LENGTH);
     private final JLabel hexPrefix = TextRendering.label("#");
-    private final JLabel freeform = TextRendering.label("自由指定");
+    private final JLabel freeform = TextRendering.label("");
     private final JLabel contrast = TextRendering.label("");
-    private final MoodChip repair = new MoodChip("読める色にする");
+    private final MoodChip repair = new MoodChip();
 
     private Consumer<RgbColor> chosen = colour -> {};
-    private Palette palette = Palette.from(RgbColor.DEFAULT_BACKGROUND);
     private ColourEditing editing = new ColourEditing(UserSettings.defaults(), SettingsDestination.FONT_COLOUR);
 
     /** 部品を組み立てる。中身は {@code render*} が決める。 */
@@ -86,19 +84,19 @@ public final class ColourPickerPanel {
     }
 
     /** 編集中の色・見本・コントラストを反映する。 */
-    public void renderColour(ColourEditing shown, ClockPreviewText text) {
+    public void renderColour(ColourEditing shown, ClockPreviewText text, UiTheme shownTheme) {
         editing = Objects.requireNonNull(shown, "shown");
+        Objects.requireNonNull(shownTheme, "shownTheme");
         UserSettings settings = shown.settings();
-        palette = Palette.from(settings.backgroundColor());
         preview.renderSettings(settings, text.time(), text.date());
         if (!hex.isFocusOwner()) {
             hex.setText(SettingsFormPanel.hexOf(shown.editing()).substring(1));
         }
-        renderContrast(ContrastReading.between(settings.fontColor(), settings.backgroundColor()));
+        renderContrast(ContrastReading.between(settings.fontColor(), settings.backgroundColor()), shownTheme);
         for (ColourSwatch swatch : presets) {
-            swatch.renderSelection(swatch.holds(shown.editing()), palette);
+            swatch.renderSelection(swatch.holds(shown.editing()), shownTheme);
         }
-        renderChrome();
+        renderChrome(shownTheme);
     }
 
     /**
@@ -120,18 +118,25 @@ public final class ColourPickerPanel {
         };
     }
 
-    private void renderContrast(ContrastReading reading) {
-        contrast.setText(String.format(Locale.ROOT, "コントラスト比 %.1f : 1", reading.ratio()));
+    private void renderContrast(ContrastReading reading, UiTheme shownTheme) {
+        Palette palette = shownTheme.palette();
+        contrast.setText(String.format(Locale.ROOT, shownTheme.text(UiText.CONTRAST_RATIO), reading.ratio()));
+        contrast.setFont(shownTheme.font(SMALL_POINTS));
         contrast.setForeground(reading.isTooLow() ? palette.warning() : palette.textMuted());
         repair.component().setVisible(reading.isTooLow());
-        repair.renderSelection(false, palette);
+        repair.renderSelection(shownTheme.text(UiText.MAKE_READABLE), false, shownTheme);
     }
 
-    private void renderChrome() {
+    private void renderChrome(UiTheme shownTheme) {
+        Palette palette = shownTheme.palette();
         surface.setBackground(palette.surface());
         swatches.setBackground(palette.surface());
+        freeform.setText(shownTheme.text(UiText.CUSTOM_COLOUR));
+        freeform.setFont(shownTheme.font(SMALL_POINTS));
         freeform.setForeground(palette.textMuted());
+        hexPrefix.setFont(shownTheme.font(SMALL_POINTS));
         hexPrefix.setForeground(palette.textFaint());
+        hex.setFont(shownTheme.font(SMALL_POINTS));
         hex.setBackground(palette.surface());
         hex.setForeground(palette.text());
         hex.setCaretColor(palette.text());
@@ -174,8 +179,6 @@ public final class ColourPickerPanel {
         JPanel row = new JPanel();
         row.setOpaque(false);
         row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-        freeform.setFont(freeform.getFont().deriveFont(Font.PLAIN, SMALL_POINTS));
-        hexPrefix.setFont(hexPrefix.getFont().deriveFont(Font.PLAIN, SMALL_POINTS));
         hex.setMaximumSize(new Dimension(HEX_FIELD_WIDTH, HEX_FIELD_HEIGHT));
         row.add(freeform);
         row.add(Box.createHorizontalStrut(GAP + HEX_GAP / 2));
@@ -189,7 +192,6 @@ public final class ColourPickerPanel {
     private JComponent contrastRow() {
         JPanel row = new JPanel(new BorderLayout());
         row.setOpaque(false);
-        contrast.setFont(contrast.getFont().deriveFont(Font.PLAIN, SMALL_POINTS));
         row.add(contrast, BorderLayout.WEST);
         row.add(repair.component(), BorderLayout.EAST);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, CONTRAST_ROW_HEIGHT));

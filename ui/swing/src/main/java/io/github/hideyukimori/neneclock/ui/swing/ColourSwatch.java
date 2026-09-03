@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import org.jspecify.annotations.Nullable;
 
 /** 色見本 1 つ。選ばれているものだけが縁取りを持つ。 */
 public final class ColourSwatch {
@@ -32,7 +33,7 @@ public final class ColourSwatch {
         }
     };
 
-    private Palette palette = Palette.from(RgbColor.DEFAULT_BACKGROUND);
+    private @Nullable Palette palette;
     private boolean selected;
 
     /** 1 色に対する見本を作る。 */
@@ -64,13 +65,17 @@ public final class ColourSwatch {
     }
 
     /** 選択状態と配色を反映する。 */
-    public void renderSelection(boolean chosen, Palette colours) {
+    public void renderSelection(boolean chosen, UiTheme theme) {
         this.selected = chosen;
-        this.palette = Objects.requireNonNull(colours, "colours");
+        this.palette = Objects.requireNonNull(theme, "theme").palette();
         surface.repaint();
     }
 
     private void paintSwatch(Graphics graphics) {
+        Palette palette = this.palette;
+        if (palette == null) {
+            return;
+        }
         Graphics2D canvas = (Graphics2D) graphics.create();
         TextRendering.smooth(canvas);
         int width = surface.getWidth();

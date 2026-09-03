@@ -1,7 +1,7 @@
 package io.github.hideyukimori.neneclock.adapter.fontcatalog;
 
 import io.github.hideyukimori.neneclock.application.TypefaceBinaryPort;
-import io.github.hideyukimori.neneclock.domain.Typeface;
+import io.github.hideyukimori.neneclock.domain.BundledTypeface;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
@@ -28,7 +28,7 @@ public final class BundledTypefaceAdapter implements TypefaceBinaryPort {
     }
 
     @Override
-    public byte[] read(Typeface typeface) {
+    public byte[] read(BundledTypeface typeface) {
         Objects.requireNonNull(typeface, "typeface");
         return readResource(resourceNameOf(typeface));
     }
@@ -51,7 +51,7 @@ public final class BundledTypefaceAdapter implements TypefaceBinaryPort {
      * <p>対応表を人が書くと、表とファイルがずれても誰も気づかない。導出にしておくと
      * 「定数はあるがファイルが無い」形でしかずれられず、それは起動時に必ず落ちる。
      */
-    static String resourceNameOf(Typeface typeface) {
-        return DIRECTORY + typeface.name().toLowerCase(Locale.ROOT).replace('_', '-') + EXTENSION;
+    static String resourceNameOf(BundledTypeface typeface) {
+        return DIRECTORY + typeface.constantName().toLowerCase(Locale.ROOT).replace('_', '-') + EXTENSION;
     }
 }

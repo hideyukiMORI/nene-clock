@@ -4,9 +4,13 @@ import io.github.hideyukimori.neneclock.application.ClockFace;
 import io.github.hideyukimori.neneclock.application.DateLine;
 import io.github.hideyukimori.neneclock.application.SettingsIntentSink;
 import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
+import io.github.hideyukimori.neneclock.domain.Language;
 import io.github.hideyukimori.neneclock.domain.RgbColor;
 import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
+import java.awt.Font;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -17,6 +21,9 @@ import java.util.Objects;
  */
 public final class ClockScreen {
 
+    /** UI 書体を組み立てるときの大きさ。実際の大きさは {@link UiTheme#font(float)} が derive する。 */
+    private static final int INTERFACE_POINTS = 13;
+
     private final ClockPanel clockPanel;
     private final WindowChrome chrome;
     private final ClockWindow window;
@@ -24,6 +31,7 @@ public final class ClockScreen {
     private final TypefacePickerPanel typefacePicker;
     private final ColourPickerPanel colourPicker;
     private final SettingsDialog dialog;
+    private final Map<Language, Font> interfaceFonts = new EnumMap<>(Language.class);
 
     private SettingsIntentSink sink = requested -> {};
     private Runnable quit = () -> {};
@@ -32,6 +40,10 @@ public final class ClockScreen {
     /** 同梱書体の読み手だけを受け取り、画面を組み立てる。 */
     public ClockScreen(TypefaceFontLoader typefaces) {
         Objects.requireNonNull(typefaces, "typefaces");
+        // 🔑 UI 書体はここで 1 度だけ組み立てる。Font.createFont は重く、deriveFont は軽い。
+        for (Language language : Language.values()) {
+            interfaceFonts.put(language, typefaces.load(language.typeface(), INTERFACE_POINTS));
+        }
         this.clockPanel = new ClockPanel(typefaces);
         this.chrome = new WindowChrome();
         this.window = new ClockWindow(clockPanel, chrome);
@@ -55,15 +67,20 @@ public final class ClockScreen {
     /** 設定を画面全体へ反映する。反映経路はここ 1 本（CNF-004）。 */
     public void renderSettings(UserSettings settings, ClockFace face) {
         shown = Objects.requireNonNull(settings, "settings");
-        Palette palette = Palette.from(settings.backgroundColor());
+        UiTheme theme = themeOf(settings);
         ClockPreviewText text = textOf(face);
         // 🔴 先に文字を入れる。空のまま大きさを決めると、窓が最小の大きさで固まる（実機で踏んだ）。
         clockPanel.renderFace(face);
         window.renderSettings(settings);
+        dialog.renderTheme(theme);
+        form.renderTheme(theme);
         form.renderSettings(settings, text);
-        typefacePicker.renderSelection(settings.typeface(), palette);
-        colourPicker.renderColour(new ColourEditing(settings, colourRole()), text);
-        dialog.renderColours(settings);
+        typefacePicker.renderSelection(settings.typeface(), theme);
+        colourPicker.renderColour(new ColourEditing(settings, colourRole()), text, theme);
+    }
+
+    private UiTheme themeOf(UserSettings settings) {
+        return UiTheme.of(settings, Objects.requireNonNull(interfaceFonts.get(settings.language())));
     }
 
     /** 時刻の表示だけを更新する。1 秒ごとに呼ばれる経路（FR-002）。 */
@@ -72,7 +89,7 @@ public final class ClockScreen {
         ClockPreviewText text = textOf(face);
         if (dialog.isShowing()) {
             form.renderSettings(shown, text);
-            colourPicker.renderColour(new ColourEditing(shown, colourRole()), text);
+            colourPicker.renderColour(new ColourEditing(shown, colourRole()), text, themeOf(shown));
         }
     }
 
@@ -127,27 +144,11 @@ public final class ClockScreen {
     }
 
     private void chooseTypeface(Typeface typeface) {
-        sink.submit(new UserSettings(
-                shown.clockFormat(),
-                shown.secondsVisibility(),
-                shown.dateVisibility(),
-                shown.windowTopmost(),
-                typeface,
-                shown.fontSize(),
-                shown.fontColor(),
-                shown.backgroundColor()));
+        sink.submit(shown.withTypeface(typeface));
     }
 
     private void chooseColour(RgbColor colour) {
         boolean background = dialog.showingNow() == SettingsDestination.BACKGROUND_COLOUR;
-        sink.submit(new UserSettings(
-                shown.clockFormat(),
-                shown.secondsVisibility(),
-                shown.dateVisibility(),
-                shown.windowTopmost(),
-                shown.typeface(),
-                shown.fontSize(),
-                background ? shown.fontColor() : colour,
-                background ? colour : shown.backgroundColor()));
+        sink.submit(background ? shown.withBackgroundColor(colour) : shown.withFontColor(colour));
     }
 }

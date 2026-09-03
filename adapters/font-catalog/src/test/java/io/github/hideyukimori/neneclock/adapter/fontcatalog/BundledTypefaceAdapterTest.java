@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.hideyukimori.neneclock.application.TypefaceBinaryPort;
+import io.github.hideyukimori.neneclock.domain.InterfaceTypeface;
 import io.github.hideyukimori.neneclock.domain.Typeface;
 import java.awt.Font;
 import java.io.ByteArrayInputStream;
@@ -52,6 +53,41 @@ class BundledTypefaceAdapterTest {
         assertThat(WEIGHT_WORDS)
                 .describedAs("%s は %s として描かれる", typeface.name(), created.getFontName())
                 .noneMatch(name::contains);
+    }
+
+    @ParameterizedTest
+    @EnumSource(InterfaceTypeface.class)
+    void everyInterfaceTypefaceIsBundledAndRendersAtRegularWeight(InterfaceTypeface typeface) throws Exception {
+        Font created = Font.createFont(Font.TRUETYPE_FONT, new ByteArrayInputStream(typefaces.read(typeface)));
+        String name = created.getFontName().toLowerCase(Locale.ROOT).replace(" ", "");
+
+        assertThat(WEIGHT_WORDS)
+                .describedAs("%s は %s として描かれる", typeface.name(), created.getFontName())
+                .noneMatch(name::contains);
+    }
+
+    @Test
+    void theJapaneseInterfaceTypefaceCanDrawJapanese() {
+        // 🔴 「読み込める」だけでは足りない。日本語の字形を持たない書体を選んでも読み込めてしまう。
+        Font created = fontOf(InterfaceTypeface.ZEN_KAKU_GOTHIC_NEW);
+
+        assertThat(created.canDisplayUpTo("設定 書体 文字色 背景色 言語")).isEqualTo(-1);
+    }
+
+    @Test
+    void theLatinInterfaceTypefaceCoversTheEnglishWords() {
+        Font created = fontOf(InterfaceTypeface.ARIMO);
+
+        assertThat(created.canDisplayUpTo("Settings Typeface Background Language"))
+                .isEqualTo(-1);
+    }
+
+    private Font fontOf(InterfaceTypeface typeface) {
+        try {
+            return Font.createFont(Font.TRUETYPE_FONT, new ByteArrayInputStream(typefaces.read(typeface)));
+        } catch (java.awt.FontFormatException | java.io.IOException failure) {
+            throw new IllegalStateException("同梱書体を読めない: " + typeface.name(), failure);
+        }
     }
 
     @Test

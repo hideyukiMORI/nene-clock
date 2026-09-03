@@ -9,6 +9,7 @@ import io.github.hideyukimori.neneclock.domain.ClockFormat;
 import io.github.hideyukimori.neneclock.domain.DateVisibility;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.FontSizeOutcome;
+import io.github.hideyukimori.neneclock.domain.Language;
 import io.github.hideyukimori.neneclock.domain.RgbColor;
 import io.github.hideyukimori.neneclock.domain.RgbColorOutcome;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
@@ -57,7 +58,8 @@ class PreferencesSettingsAdapterTest {
                 Typeface.ORBITRON,
                 FontSize.DEFAULT,
                 color(10, 20, 30),
-                color(40, 50, 60));
+                color(40, 50, 60),
+                Language.DEFAULT);
 
         SettingsSaveOutcome saveOutcome = adapter.save(stored);
 
@@ -112,7 +114,8 @@ class PreferencesSettingsAdapterTest {
                 Typeface.DEFAULT,
                 size(96),
                 RgbColor.DEFAULT_FONT,
-                RgbColor.DEFAULT_BACKGROUND);
+                RgbColor.DEFAULT_BACKGROUND,
+                Language.DEFAULT);
     }
 
     @Test
@@ -141,7 +144,8 @@ class PreferencesSettingsAdapterTest {
                         Typeface.DEFAULT,
                         size(96),
                         color(10, 20, 30),
-                        RgbColor.DEFAULT_BACKGROUND)));
+                        RgbColor.DEFAULT_BACKGROUND,
+                        Language.DEFAULT)));
     }
 
     @Test
@@ -169,7 +173,34 @@ class PreferencesSettingsAdapterTest {
                         Typeface.ORBITRON,
                         size(96),
                         color(10, 20, 30),
-                        RgbColor.DEFAULT_BACKGROUND));
+                        RgbColor.DEFAULT_BACKGROUND,
+                        Language.DEFAULT));
+    }
+
+    @Test
+    void migratesVersionFourByFillingInTheLanguage() {
+        writeVersionThree();
+        node.putInt("schemaVersion", 4);
+        node.putInt("backgroundRed", 1);
+        node.putInt("backgroundGreen", 2);
+        node.putInt("backgroundBlue", 3);
+
+        SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
+
+        UserSettings restored = ((SettingsLoadOutcome.Restored) outcome).settings();
+        assertThat(restored.backgroundColor()).isEqualTo(color(1, 2, 3));
+        assertThat(restored.language()).isEqualTo(Language.DEFAULT);
+        assertThat(restored.typeface()).isEqualTo(Typeface.ORBITRON);
+    }
+
+    @Test
+    void refusesAnUnknownLanguage() {
+        PreferencesSettingsAdapter.at(node).save(UserSettings.defaults());
+        node.put("language", "KLINGON");
+
+        SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
+
+        assertThat(outcome).isEqualTo(new SettingsLoadOutcome.Defaulted(SettingsLoadFailure.INVALID_VALUE));
     }
 
     @Test
@@ -194,7 +225,8 @@ class PreferencesSettingsAdapterTest {
                 Typeface.DEFAULT,
                 FontSize.DEFAULT,
                 color(1, 2, 3),
-                color(250, 251, 252));
+                color(250, 251, 252),
+                Language.DEFAULT);
 
         adapter.save(stored);
         UserSettings restored = ((SettingsLoadOutcome.Restored) adapter.load()).settings();

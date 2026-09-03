@@ -10,6 +10,7 @@ import java.awt.geom.RoundRectangle2D;
 import java.util.Objects;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 入切のつまみ。既製の {@code JCheckBox} を使わないのは、Metal / Nimbus の見た目が出るためである。
@@ -31,7 +32,7 @@ public final class ToggleSwitch {
     };
 
     private Runnable toggled = () -> {};
-    private Palette palette = Palette.from(io.github.hideyukimori.neneclock.domain.RgbColor.DEFAULT_BACKGROUND);
+    private @Nullable Palette palette;
     private boolean on;
 
     /** 部品を組み立てる。 */
@@ -57,13 +58,17 @@ public final class ToggleSwitch {
     }
 
     /** 状態と配色を反映する。 */
-    public void renderState(boolean enabled, Palette colours) {
+    public void renderState(boolean enabled, UiTheme theme) {
         this.on = enabled;
-        this.palette = Objects.requireNonNull(colours, "colours");
+        this.palette = Objects.requireNonNull(theme, "theme").palette();
         surface.repaint();
     }
 
     private void paintSwitch(Graphics graphics) {
+        Palette palette = this.palette;
+        if (palette == null) {
+            return;
+        }
         Graphics2D canvas = (Graphics2D) graphics.create();
         TextRendering.smooth(canvas);
         canvas.setColor(on ? palette.accent() : palette.wash());

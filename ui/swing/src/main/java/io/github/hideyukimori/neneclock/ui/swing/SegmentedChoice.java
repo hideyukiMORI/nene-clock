@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.function.IntConsumer;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 2 つ以上の選択肢を横並びにした分節。選ばれているものが反転した面になる。
@@ -37,21 +38,22 @@ public final class SegmentedChoice {
         }
     };
 
-    private final List<String> labels;
+    private final int segments;
 
     private IntConsumer chosen = index -> {};
-    private Palette palette = Palette.from(io.github.hideyukimori.neneclock.domain.RgbColor.DEFAULT_BACKGROUND);
+    private List<String> labels = List.of();
+    private @Nullable UiTheme theme;
     private int selected;
 
-    /** 選択肢の並び順を決めて組み立てる。並びは変わらない。 */
-    public SegmentedChoice(List<String> segments) {
-        this.labels = List.copyOf(Objects.requireNonNull(segments, "segments"));
+    /** 分節の数を決めて組み立てる。文言は言語で変わるので {@code render*} が持ち込む。 */
+    public SegmentedChoice(int segments) {
+        this.segments = segments;
         surface.setOpaque(false);
         surface.setPreferredSize(new Dimension(widthOf(), HEIGHT));
         surface.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent event) {
-                chosen.accept(Math.min(labels.size() - 1, event.getX() / segmentWidth()));
+                chosen.accept(Math.min(segments - 1, event.getX() / segmentWidth()));
             }
         });
     }
@@ -66,27 +68,33 @@ public final class SegmentedChoice {
         this.chosen = Objects.requireNonNull(action, "action");
     }
 
-    /** 選択と配色を反映する。 */
-    public void renderSelection(int index, Palette colours) {
+    /** 選択・文言・配色を反映する。 */
+    public void renderSelection(int index, List<String> texts, UiTheme shown) {
         this.selected = index;
-        this.palette = Objects.requireNonNull(colours, "colours");
+        this.labels = List.copyOf(Objects.requireNonNull(texts, "texts"));
+        this.theme = Objects.requireNonNull(shown, "shown");
         surface.repaint();
     }
 
     private int segmentWidth() {
-        return Math.max(1, (widthOf() - PAD * 2) / labels.size());
+        return Math.max(1, (widthOf() - PAD * 2) / segments);
     }
 
     private int widthOf() {
-        return labels.size() * (SIDE_PAD * 2 + SEGMENT_TEXT_ROOM) + PAD * 2;
+        return segments * (SIDE_PAD * 2 + SEGMENT_TEXT_ROOM) + PAD * 2;
     }
 
     private void paintSegments(Graphics graphics) {
+        UiTheme theme = this.theme;
+        if (theme == null) {
+            return;
+        }
+        Palette palette = theme.palette();
         Graphics2D canvas = (Graphics2D) graphics.create();
         TextRendering.smooth(canvas);
         canvas.setColor(palette.wash());
         canvas.fill(new RoundRectangle2D.Double(0, 0, surface.getWidth(), HEIGHT, OUTER_ARC, OUTER_ARC));
-        Font label = surface.getFont().deriveFont(LABEL_POINTS);
+        Font label = theme.font(LABEL_POINTS);
         canvas.setFont(label);
         FontMetrics metrics = canvas.getFontMetrics(label);
         int width = segmentWidth();

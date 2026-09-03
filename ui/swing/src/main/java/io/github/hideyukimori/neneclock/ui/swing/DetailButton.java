@@ -39,7 +39,7 @@ public final class DetailButton {
     };
 
     private Runnable pressed = () -> {};
-    private Palette palette = Palette.from(io.github.hideyukimori.neneclock.domain.RgbColor.DEFAULT_BACKGROUND);
+    private @Nullable UiTheme theme;
     private String value = "";
     private @Nullable Color swatch;
     private @Nullable Font sample;
@@ -67,32 +67,37 @@ public final class DetailButton {
     }
 
     /** 値・色見本・見本書体・配色を反映する。色見本と見本書体は無くてよい。 */
-    public void renderValue(DetailValue shown, Palette colours) {
+    public void renderValue(DetailValue shown, UiTheme colours) {
         this.value = shown.text();
         this.swatch = shown.swatch();
         this.sample = shown.sample();
-        this.palette = Objects.requireNonNull(colours, "colours");
+        this.theme = Objects.requireNonNull(colours, "colours");
         surface.repaint();
     }
 
     private void paintRow(Graphics graphics) {
+        UiTheme theme = this.theme;
+        if (theme == null) {
+            return;
+        }
+        Palette palette = theme.palette();
         Graphics2D canvas = (Graphics2D) graphics.create();
         TextRendering.smooth(canvas);
         int right = surface.getWidth();
-        paintChevron(canvas, right - CHEVRON);
+        paintChevron(canvas, right - CHEVRON, palette);
         right -= CHEVRON + GAP;
-        canvas.setFont(surface.getFont().deriveFont(VALUE_POINTS));
+        canvas.setFont(theme.font(VALUE_POINTS));
         FontMetrics metrics = canvas.getFontMetrics();
         canvas.setColor(palette.textMuted());
         int baseline = (HEIGHT + metrics.getAscent() - metrics.getDescent()) / 2;
         canvas.drawString(value, right - metrics.stringWidth(value), baseline);
         right -= metrics.stringWidth(value) + GAP;
-        right = paintSwatch(canvas, right);
-        paintSample(canvas, right);
+        right = paintSwatch(canvas, right, palette);
+        paintSample(canvas, right, palette);
         canvas.dispose();
     }
 
-    private int paintSwatch(Graphics2D canvas, int right) {
+    private int paintSwatch(Graphics2D canvas, int right, Palette palette) {
         Color shown = swatch;
         if (shown == null) {
             return right;
@@ -106,7 +111,7 @@ public final class DetailButton {
         return right - SWATCH - GAP;
     }
 
-    private void paintSample(Graphics2D canvas, int right) {
+    private void paintSample(Graphics2D canvas, int right, Palette palette) {
         Font shown = sample;
         if (shown == null) {
             return;
@@ -120,7 +125,7 @@ public final class DetailButton {
                 (HEIGHT + metrics.getAscent() - metrics.getDescent()) / 2);
     }
 
-    private void paintChevron(Graphics2D canvas, int left) {
+    private void paintChevron(Graphics2D canvas, int left, Palette palette) {
         Path2D chevron = new Path2D.Double();
         double middle = HEIGHT / 2.0;
         chevron.moveTo(left, middle - CHEVRON / 2.0);

@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 書体ピッカーの札 1 枚。**その書体自身で** {@code 12:34} を描く。
@@ -39,7 +40,7 @@ public final class TypefaceCard {
         }
     };
 
-    private Palette palette = Palette.from(io.github.hideyukimori.neneclock.domain.RgbColor.DEFAULT_BACKGROUND);
+    private @Nullable UiTheme theme;
     private boolean selected;
 
     /** 1 つの書体に対する札を作る。 */
@@ -67,13 +68,18 @@ public final class TypefaceCard {
     }
 
     /** 選択状態と配色を反映する。 */
-    public void renderSelection(boolean chosen, Palette colours) {
+    public void renderSelection(boolean chosen, UiTheme colours) {
         this.selected = chosen;
-        this.palette = Objects.requireNonNull(colours, "colours");
+        this.theme = Objects.requireNonNull(colours, "colours");
         surface.repaint();
     }
 
     private void paintCard(Graphics graphics) {
+        UiTheme theme = this.theme;
+        if (theme == null) {
+            return;
+        }
+        Palette palette = theme.palette();
         Graphics2D canvas = (Graphics2D) graphics.create();
         TextRendering.smooth(canvas);
         int width = surface.getWidth();
@@ -84,7 +90,7 @@ public final class TypefaceCard {
         canvas.setColor(selected ? palette.onInverted() : palette.text());
         canvas.setFont(sample);
         canvas.drawString(SAMPLE, centred(canvas, sample, SAMPLE, width), SAMPLE_BASELINE);
-        Font name = surface.getFont().deriveFont(NAME_POINTS);
+        Font name = theme.font(NAME_POINTS);
         canvas.setFont(name);
         canvas.setColor(selected ? palette.onInverted() : palette.textMuted());
         canvas.drawString(typeface.displayName(), centred(canvas, name, typeface.displayName(), width), NAME_BASELINE);

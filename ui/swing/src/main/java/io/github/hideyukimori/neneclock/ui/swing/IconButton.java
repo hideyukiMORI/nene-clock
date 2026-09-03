@@ -10,6 +10,7 @@ import java.awt.geom.RoundRectangle2D;
 import java.util.Objects;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import org.jspecify.annotations.Nullable;
 
 /** アイコン 1 つの押しどころ。設定モーダルのヘッダで使う。 */
 public final class IconButton {
@@ -27,7 +28,7 @@ public final class IconButton {
         }
     };
 
-    private Palette palette = Palette.from(io.github.hideyukimori.neneclock.domain.RgbColor.DEFAULT_BACKGROUND);
+    private @Nullable Palette palette;
     private boolean hovered;
 
     /** 描くアイコンを決めて組み立てる。 */
@@ -68,12 +69,16 @@ public final class IconButton {
     }
 
     /** 配色を反映する。 */
-    public void renderColours(Palette colours) {
-        this.palette = Objects.requireNonNull(colours, "colours");
+    public void renderColours(UiTheme theme) {
+        this.palette = Objects.requireNonNull(theme, "theme").palette();
         surface.repaint();
     }
 
     private void paintButton(Graphics graphics) {
+        Palette palette = this.palette;
+        if (palette == null) {
+            return;
+        }
         Graphics2D canvas = (Graphics2D) graphics.create();
         TextRendering.smooth(canvas);
         if (hovered) {
