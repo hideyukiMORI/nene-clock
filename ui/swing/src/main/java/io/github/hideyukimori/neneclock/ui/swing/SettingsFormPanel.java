@@ -213,7 +213,7 @@ public final class SettingsFormPanel {
         }
     }
 
-    static String hexOf(io.github.hideyukimori.neneclock.domain.RgbaColor colour) {
+    static String hexOf(io.github.hideyukimori.neneclock.domain.RgbColor colour) {
         return String.format(Locale.ROOT, "#%02X%02X%02X", colour.red(), colour.green(), colour.blue());
     }
 }

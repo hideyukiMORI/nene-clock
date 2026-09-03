@@ -87,13 +87,10 @@ public final class ClockWindow {
                     case DISABLED -> false;
                 };
         frame.setAlwaysOnTop(topmost);
-        clockPanel.renderSettings(settings, translucent);
-        if (!translucent) {
-            frame.setBackground(AwtColour.opaque(settings.backgroundColor()));
-        }
+        clockPanel.renderSettings(settings);
         fitToClock();
         chrome.renderColours(
-                AwtColour.opaque(settings.fontColor()),
+                AwtColour.of(settings.fontColor()),
                 Palette.from(settings.backgroundColor()).warning());
     }
 

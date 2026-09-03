@@ -9,7 +9,7 @@ import java.util.Objects;
  * 成分が 9 つあるのは、それらが「表示設定」という 1 つの概念だからであり、
  * 名前付きの型にまとめたものが JAV-012 の言う「引数を減らす手段」そのものである。
  *
- * <p>🔑 文字色と背景色は同じ {@link RgbaColor} 型である。どちらであるかを語るのは成分名であり、
+ * <p>🔑 文字色と背景色は同じ {@link RgbColor} 型である。どちらであるかを語るのは成分名であり、
  * 型ではない（ADR 0007）。組み立てるときに 2 つを取り違えないことは、この型の利用者の責任になる。
  */
 public record UserSettings(
@@ -19,8 +19,8 @@ public record UserSettings(
         WindowTopmost windowTopmost,
         Typeface typeface,
         FontSize fontSize,
-        RgbaColor fontColor,
-        RgbaColor backgroundColor,
+        RgbColor fontColor,
+        RgbColor backgroundColor,
         Language language) {
 
     public UserSettings {
@@ -44,8 +44,8 @@ public record UserSettings(
                 WindowTopmost.DISABLED,
                 Typeface.DEFAULT,
                 FontSize.DEFAULT,
-                RgbaColor.DEFAULT_FONT,
-                RgbaColor.DEFAULT_BACKGROUND,
+                RgbColor.DEFAULT_FONT,
+                RgbColor.DEFAULT_BACKGROUND,
                 Language.DEFAULT);
     }
 
@@ -134,7 +134,7 @@ public record UserSettings(
     }
 
     /** 文字色だけを差し替える。 */
-    public UserSettings withFontColor(RgbaColor replacement) {
+    public UserSettings withFontColor(RgbColor replacement) {
         return new UserSettings(
                 clockFormat,
                 secondsVisibility,
@@ -148,7 +148,7 @@ public record UserSettings(
     }
 
     /** 背景色だけを差し替える。 */
-    public UserSettings withBackgroundColor(RgbaColor replacement) {
+    public UserSettings withBackgroundColor(RgbColor replacement) {
         return new UserSettings(
                 clockFormat,
                 secondsVisibility,

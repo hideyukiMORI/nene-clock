@@ -16,8 +16,8 @@ class UserSettingsTest {
         assertThat(settings.windowTopmost()).isEqualTo(WindowTopmost.DISABLED);
         assertThat(settings.typeface()).isEqualTo(Typeface.DEFAULT);
         assertThat(settings.fontSize()).isEqualTo(FontSize.DEFAULT);
-        assertThat(settings.fontColor()).isEqualTo(RgbaColor.DEFAULT_FONT);
-        assertThat(settings.backgroundColor()).isEqualTo(RgbaColor.DEFAULT_BACKGROUND);
+        assertThat(settings.fontColor()).isEqualTo(RgbColor.DEFAULT_FONT);
+        assertThat(settings.backgroundColor()).isEqualTo(RgbColor.DEFAULT_BACKGROUND);
     }
 
     // 「成分が null の UserSettings を作れない」ことは NullAway が

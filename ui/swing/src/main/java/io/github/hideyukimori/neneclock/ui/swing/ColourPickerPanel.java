@@ -1,7 +1,7 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
-import io.github.hideyukimori.neneclock.domain.RgbaColor;
-import io.github.hideyukimori.neneclock.domain.RgbaColorOutcome;
+import io.github.hideyukimori.neneclock.domain.RgbColor;
+import io.github.hideyukimori.neneclock.domain.RgbColorOutcome;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -43,7 +43,6 @@ public final class ColourPickerPanel {
     private static final int RED_SHIFT = 16;
     private static final int GREEN_SHIFT = 8;
     private static final int BYTE_MASK = 0xFF;
-    private static final float PERCENT = 100f;
     private static final int SWATCH_ROWS = 3;
     private static final int SWATCH_HEIGHT = 34;
 
@@ -56,24 +55,20 @@ public final class ColourPickerPanel {
     private final JLabel freeform = TextRendering.label("");
     private final JLabel contrast = TextRendering.label("");
     private final MoodChip repair = new MoodChip();
-    private final ValueSlider alpha = new ValueSlider(RgbaColor.MINIMUM_COMPONENT, RgbaColor.MAXIMUM_COMPONENT);
-    private final JLabel alphaCaption = TextRendering.label("");
-    private final JLabel alphaValue = TextRendering.label("");
 
-    private Consumer<RgbaColor> chosen = colour -> {};
+    private Consumer<RgbColor> chosen = colour -> {};
     private ColourEditing editing = new ColourEditing(UserSettings.defaults(), SettingsDestination.FONT_COLOUR);
 
     /** 部品を組み立てる。中身は {@code render*} が決める。 */
     public ColourPickerPanel(TypefaceFontLoader typefaces) {
         this.preview = new ClockPreview(typefaces);
-        for (RgbaColor value : SwatchPresets.all()) {
+        for (RgbColor value : SwatchPresets.all()) {
             ColourSwatch swatch = new ColourSwatch(value);
             swatch.onChosen(picked -> chosen.accept(picked));
             presets.add(swatch);
             swatches.add(swatch.component());
         }
         repair.onPressed(() -> chosen.accept(readableAgainst(editing.counterpart())));
-        alpha.onMoved(level -> chosen.accept(editing.editing().withAlpha(level)));
         layOut();
         listen();
     }
@@ -84,7 +79,7 @@ public final class ColourPickerPanel {
     }
 
     /** 色が選ばれたことの宛先を 1 度だけ結ぶ。 */
-    public void onColourChosen(Consumer<RgbaColor> action) {
+    public void onColourChosen(Consumer<RgbColor> action) {
         this.chosen = Objects.requireNonNull(action, "action");
     }
 
@@ -97,13 +92,7 @@ public final class ColourPickerPanel {
         if (!hex.isFocusOwner()) {
             hex.setText(SettingsFormPanel.hexOf(shown.editing()).substring(1));
         }
-        renderAlpha(shown.editing(), shownTheme);
-        // 🔑 コントラストは**不透明として**計算する。透けた先に何があるかは読みようがない（ADR 0011）。
-        renderContrast(
-                ContrastReading.between(
-                        settings.fontColor().asOpaque(),
-                        settings.backgroundColor().asOpaque()),
-                shownTheme);
+        renderContrast(ContrastReading.between(settings.fontColor(), settings.backgroundColor()), shownTheme);
         for (ColourSwatch swatch : presets) {
             swatch.renderSelection(swatch.holds(shown.editing()), shownTheme);
         }
@@ -115,33 +104,18 @@ public final class ColourPickerPanel {
      *
      * <p>ここで凝った色を提案しないのは、これが「好みの提案」ではなく「読めない状態からの脱出」だからである。
      */
-    private static RgbaColor readableAgainst(RgbaColor other) {
-        ContrastReading darker = ContrastReading.between(RgbaColor.DEFAULT_FONT, other);
-        return darker.ratio() >= ContrastReading.between(white(), other).ratio() ? RgbaColor.DEFAULT_FONT : white();
+    private static RgbColor readableAgainst(RgbColor other) {
+        ContrastReading darker = ContrastReading.between(RgbColor.DEFAULT_FONT, other);
+        return darker.ratio() >= ContrastReading.between(white(), other).ratio() ? RgbColor.DEFAULT_FONT : white();
     }
 
-    private static RgbaColor white() {
-        return switch (RgbaColor.opaque(
-                RgbaColor.MAXIMUM_COMPONENT, RgbaColor.MAXIMUM_COMPONENT, RgbaColor.MAXIMUM_COMPONENT)) {
-            case RgbaColorOutcome.Accepted accepted -> accepted.value();
+    private static RgbColor white() {
+        return switch (RgbColor.of(
+                RgbColor.MAXIMUM_COMPONENT, RgbColor.MAXIMUM_COMPONENT, RgbColor.MAXIMUM_COMPONENT)) {
+            case RgbColorOutcome.Accepted accepted -> accepted.value();
             // 上限そのものなので、ここへは来ない。
-            case RgbaColorOutcome.Rejected outOfRange -> RgbaColor.DEFAULT_FONT;
+            case RgbColorOutcome.Rejected outOfRange -> RgbColor.DEFAULT_FONT;
         };
-    }
-
-    private void renderAlpha(RgbaColor shown, UiTheme shownTheme) {
-        alpha.renderValue(shown.alpha(), shownTheme);
-        alphaCaption.setText(shownTheme.text(UiText.OPACITY));
-        alphaCaption.setFont(shownTheme.font(SMALL_POINTS));
-        alphaCaption.setForeground(shownTheme.palette().textMuted());
-        alphaValue.setText(percentOf(shown.alpha()));
-        alphaValue.setFont(shownTheme.font(SMALL_POINTS));
-        alphaValue.setForeground(shownTheme.palette().text());
-    }
-
-    /** 透明度を人が読む形にする。0..255 は道具の都合で、利用者の言葉ではない。 */
-    private static String percentOf(int level) {
-        return Math.round(level * PERCENT / (float) RgbaColor.MAXIMUM_COMPONENT) + "%";
     }
 
     private void renderContrast(ContrastReading reading, UiTheme shownTheme) {
@@ -191,10 +165,6 @@ public final class ColourPickerPanel {
         swatches.setPreferredSize(new Dimension(0, gridHeight));
         surface.add(swatches);
         surface.add(Box.createVerticalStrut(SIDE));
-        JComponent alphaRow = alphaRow();
-        alphaRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        surface.add(alphaRow);
-        surface.add(Box.createVerticalStrut(GAP + HEX_GAP));
         JComponent hexRow = hexRow();
         hexRow.setAlignmentX(Component.LEFT_ALIGNMENT);
         surface.add(hexRow);
@@ -203,20 +173,6 @@ public final class ColourPickerPanel {
         contrastRow.setAlignmentX(Component.LEFT_ALIGNMENT);
         surface.add(contrastRow);
         surface.add(Box.createVerticalGlue());
-    }
-
-    private JComponent alphaRow() {
-        JPanel row = new JPanel();
-        row.setOpaque(false);
-        row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-        row.add(alphaCaption);
-        row.add(Box.createHorizontalStrut(GAP + HEX_GAP));
-        row.add(alpha.component());
-        row.add(Box.createHorizontalStrut(GAP));
-        row.add(alphaValue);
-        row.add(Box.createHorizontalGlue());
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, CONTRAST_ROW_HEIGHT));
-        return row;
     }
 
     private JComponent hexRow() {
@@ -261,12 +217,11 @@ public final class ColourPickerPanel {
         }
         try {
             int packed = Integer.parseInt(typed, RADIX);
-            switch (RgbaColor.opaque(
+            switch (RgbColor.of(
                     (packed >> RED_SHIFT) & BYTE_MASK, (packed >> GREEN_SHIFT) & BYTE_MASK, packed & BYTE_MASK)) {
                 // 打ち込まれた HEX は色だけを決める。透明度は帯で決まっているので保つ。
-                case RgbaColorOutcome.Accepted accepted ->
-                    chosen.accept(accepted.value().withAlpha(editing.editing().alpha()));
-                case RgbaColorOutcome.Rejected outOfRange ->
+                case RgbColorOutcome.Accepted accepted -> chosen.accept(accepted.value());
+                case RgbColorOutcome.Rejected outOfRange ->
                     hex.setText(SettingsFormPanel.hexOf(editing.editing()).substring(1));
             }
         } catch (NumberFormatException notHex) {

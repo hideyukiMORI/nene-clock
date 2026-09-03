@@ -10,8 +10,8 @@ import io.github.hideyukimori.neneclock.domain.DateVisibility;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.FontSizeOutcome;
 import io.github.hideyukimori.neneclock.domain.Language;
-import io.github.hideyukimori.neneclock.domain.RgbaColor;
-import io.github.hideyukimori.neneclock.domain.RgbaColorOutcome;
+import io.github.hideyukimori.neneclock.domain.RgbColor;
+import io.github.hideyukimori.neneclock.domain.RgbColorOutcome;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
 import io.github.hideyukimori.neneclock.domain.SettingsSchemaVersion;
 import io.github.hideyukimori.neneclock.domain.Typeface;
@@ -45,14 +45,11 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
     private static final String KEY_BACKGROUND_GREEN = "backgroundGreen";
     private static final String KEY_BACKGROUND_BLUE = "backgroundBlue";
     private static final String KEY_LANGUAGE = "language";
-    private static final String KEY_FONT_ALPHA = "fontAlpha";
-    private static final String KEY_BACKGROUND_ALPHA = "backgroundAlpha";
 
     private static final int SCHEMA_WITHOUT_APPEARANCE = 1;
     private static final int SCHEMA_WITH_ENVIRONMENT_FONTS = 2;
     private static final int SCHEMA_WITH_BACKGROUND = 4;
     private static final int SCHEMA_WITH_LANGUAGE = 5;
-    private static final int SCHEMA_WITH_ALPHA = 6;
     private static final int SCHEMA_ABSENT = 0;
     private static final int INTEGER_ABSENT = -1;
 
@@ -105,8 +102,6 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         node.putInt(KEY_BACKGROUND_GREEN, settings.backgroundColor().green());
         node.putInt(KEY_BACKGROUND_BLUE, settings.backgroundColor().blue());
         node.put(KEY_LANGUAGE, settings.language().name());
-        node.putInt(KEY_FONT_ALPHA, settings.fontColor().alpha());
-        node.putInt(KEY_BACKGROUND_ALPHA, settings.backgroundColor().alpha());
         try {
             node.flush();
         } catch (BackingStoreException failure) {
@@ -120,7 +115,8 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
      *
      * <p>v1 は書体と文字色を持たない。v2 は「実行環境の書体名」を持つが、その名前は同梱書体の
      * 集合とは別物である（ADR 0006）。同じ名前の同梱書体があればそれを引き継ぎ、無ければ既定へ落とす。
-     * v3 までは背景色を持たず、v4 までは言語を、v5 までは透明度を持たない。
+     * v3 までは背景色を持たず、v4 までは言語を持たない。
+     * v6 は透明度を持っていたが、v7 で**捨てた**（ADR 0012）。読むときは無視する。
      * 欠けている分は domain の既定値で埋める。推測はしない。
      */
     private SettingsLoadOutcome restore(SettingsSchemaVersion stored) {
@@ -136,14 +132,10 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
 
     /** v2 以降が持つ見た目の項目を読む。持たない版の分は既定で埋める。 */
     private SettingsLoadOutcome restoreAppearance(UserSettings carried, SettingsSchemaVersion stored) {
-        RgbaColor color =
-                readColour(new ColourKeys(KEY_FONT_RED, KEY_FONT_GREEN, KEY_FONT_BLUE, KEY_FONT_ALPHA), stored);
-        RgbaColor background = stored.value() < SCHEMA_WITH_BACKGROUND
-                ? RgbaColor.DEFAULT_BACKGROUND
-                : readColour(
-                        new ColourKeys(
-                                KEY_BACKGROUND_RED, KEY_BACKGROUND_GREEN, KEY_BACKGROUND_BLUE, KEY_BACKGROUND_ALPHA),
-                        stored);
+        RgbColor color = readColour(KEY_FONT_RED, KEY_FONT_GREEN, KEY_FONT_BLUE);
+        RgbColor background = stored.value() < SCHEMA_WITH_BACKGROUND
+                ? RgbColor.DEFAULT_BACKGROUND
+                : readColour(KEY_BACKGROUND_RED, KEY_BACKGROUND_GREEN, KEY_BACKGROUND_BLUE);
         Typeface typeface =
                 stored.value() == SCHEMA_WITH_ENVIRONMENT_FONTS ? carriedTypefaceFromEnvironmentName() : readTypeface();
         Language language = stored.value() < SCHEMA_WITH_LANGUAGE
@@ -184,8 +176,8 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
                 topmost,
                 Typeface.DEFAULT,
                 fontSize,
-                RgbaColor.DEFAULT_FONT,
-                RgbaColor.DEFAULT_BACKGROUND,
+                RgbColor.DEFAULT_FONT,
+                RgbColor.DEFAULT_BACKGROUND,
                 Language.DEFAULT);
     }
 
@@ -221,18 +213,13 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         return Typeface.DEFAULT;
     }
 
-    /** 色 1 つを読む鍵の組。v6 より前は透明度の鍵が無く、不透明として読む。 */
-    private record ColourKeys(String red, String green, String blue, String alpha) {}
-
-    private @Nullable RgbaColor readColour(ColourKeys keys, SettingsSchemaVersion stored) {
-        int alpha = stored.value() < SCHEMA_WITH_ALPHA ? RgbaColor.OPAQUE : node.getInt(keys.alpha(), INTEGER_ABSENT);
-        return switch (RgbaColor.of(
-                node.getInt(keys.red(), INTEGER_ABSENT),
-                node.getInt(keys.green(), INTEGER_ABSENT),
-                node.getInt(keys.blue(), INTEGER_ABSENT),
-                alpha)) {
-            case RgbaColorOutcome.Accepted accepted -> accepted.value();
-            case RgbaColorOutcome.Rejected outOfRange -> null;
+    private @Nullable RgbColor readColour(String redKey, String greenKey, String blueKey) {
+        return switch (RgbColor.of(
+                node.getInt(redKey, INTEGER_ABSENT),
+                node.getInt(greenKey, INTEGER_ABSENT),
+                node.getInt(blueKey, INTEGER_ABSENT))) {
+            case RgbColorOutcome.Accepted accepted -> accepted.value();
+            case RgbColorOutcome.Rejected outOfRange -> null;
         };
     }
 
