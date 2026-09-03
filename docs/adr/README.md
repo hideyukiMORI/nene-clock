@@ -22,3 +22,4 @@ ADR は「なぜそう決めたか」「何を却下したか」を書く。
 | [0005](0005-composition-root-owns-the-terminal.md) | 端末とプロセス終了コードは合成ルートが持つ | 受理 |
 | [0006](0006-typefaces-are-bundled-not-discovered.md) | 書体は同梱する。実行環境からは読まない | 受理 |
 | [0007](0007-one-colour-type-two-roles.md) | 色の型は 1 つにし、役割は成分名で語る | 受理 |
+| [0008](0008-the-window-is-the-clock.md) | 窓そのものを時計にする。枠と設定タブをやめる | 受理 |

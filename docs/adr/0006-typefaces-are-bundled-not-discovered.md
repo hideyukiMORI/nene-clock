@@ -46,6 +46,12 @@ FR-043 はそれを「利用可能性は環境依存の事実であり、保存�
 - **active**: 記録された SHA-256 が実体と一致することを同モジュールのテストが見る。
   ファイルを差し替えて記録を直し忘れても、記録だけ書き換えても落ちる
 - **active**: 全 30 定数について OFL 本文が同梱されていることを見る
+- **active**: 既定インスタンスが Regular であることを見る（追記・2026-09-04）。
+  Java 21 には可変フォントの軸を選ぶ API が無く、`Font[wght].ttf` は既定のアウトラインで描かれる。
+  Google の可変フォントはその既定が最も細いマスタであることがあり、初版では Montserrat が Thin、
+  Manrope と Source Code Pro が ExtraLight、Bitter が Thin で描かれていた。
+  **「読み込める」ことしか見ていなかったので、画面を見るまで気づけなかった**（gate-proofs 9.4）。
+  この 4 書体は Lato / Work Sans / Fira Mono / Zilla Slab へ差し替えた
 - **active**: `platform.txt` はすべてのモジュールに適用される。
   `GraphicsEnvironment` を書けば、どのモジュールでもビルドが落ちる
 - **planned**: 「同梱ファイルはあるが列挙に無い」（余ったファイル）の検出。
