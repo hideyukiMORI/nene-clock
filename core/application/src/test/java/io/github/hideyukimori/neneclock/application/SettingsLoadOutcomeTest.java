@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.hideyukimori.neneclock.domain.ClockFormat;
 import io.github.hideyukimori.neneclock.domain.DateVisibility;
+import io.github.hideyukimori.neneclock.domain.FontColor;
+import io.github.hideyukimori.neneclock.domain.FontFamily;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
@@ -19,7 +21,9 @@ class SettingsLoadOutcomeTest {
                 SecondsVisibility.HIDDEN,
                 DateVisibility.HIDDEN,
                 WindowTopmost.ENABLED,
-                FontSize.DEFAULT);
+                FontFamily.DEFAULT,
+                FontSize.DEFAULT,
+                FontColor.DEFAULT);
 
         SettingsLoadOutcome outcome = new SettingsLoadOutcome.Restored(stored);
 

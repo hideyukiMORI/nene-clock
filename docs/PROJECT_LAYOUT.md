@@ -81,10 +81,13 @@
 
 意味の正本を持つ。
 
-- 表示に関わる値型（`FontSize`・`SettingsSchemaVersion`）
+- 表示に関わる値型（`FontFamily`・`FontSize`・`FontColor`・`SettingsSchemaVersion`）
 - 閉じた選択肢（`ClockFormat`・`SecondsVisibility`・`DateVisibility`・`WindowTopmost`）
 - 不変の設定値（`UserSettings`）
-- domain 内で共有する拒否理由（`FontSizeRejection`）
+- 拒否理由と結果型（`FontFamilyRejection` / `FontSizeRejection` / `FontColorRejection` と対応する `*Outcome`）
+
+不変条件を持つ値型は `record` ではなく `final class` にする。`record` の正準コンストラクタは
+公開度を下げられず、生成経路が 2 本になるため（JAV-007）。
 
 UI 状態・シリアライズ注釈・永続化・現在時刻を持たない。
 **production 依存の追加そのものをビルドが拒否する**（ARC-003）。
@@ -111,6 +114,7 @@ Swing・`java.util.prefs`・ファイル・ネットワークを知らない。
 
 `SettingsStorePort` の実装をただ 1 つ持つ。保存形式は版を持ち（ARC-009）、
 読めない値は既定値へ黙って落とさず、型のある失敗として返す。
+版の移行もこのモジュールに閉じる（ADR 0003）。`load()` は保存領域を書き換えない。
 
 ### `:ui:swing`
 

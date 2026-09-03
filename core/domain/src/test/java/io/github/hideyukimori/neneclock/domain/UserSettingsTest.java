@@ -14,7 +14,9 @@ class UserSettingsTest {
         assertThat(settings.secondsVisibility()).isEqualTo(SecondsVisibility.SHOWN);
         assertThat(settings.dateVisibility()).isEqualTo(DateVisibility.SHOWN);
         assertThat(settings.windowTopmost()).isEqualTo(WindowTopmost.DISABLED);
+        assertThat(settings.fontFamily()).isEqualTo(FontFamily.DEFAULT);
         assertThat(settings.fontSize()).isEqualTo(FontSize.DEFAULT);
+        assertThat(settings.fontColor()).isEqualTo(FontColor.DEFAULT);
     }
 
     // 「成分が null の UserSettings を作れない」ことは NullAway が
