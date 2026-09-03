@@ -1,6 +1,5 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
-import io.github.hideyukimori.neneclock.domain.FontSize;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -15,10 +14,12 @@ import javax.swing.JPanel;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 文字の大きさを選ぶ帯。範囲は {@link FontSize} の下限と上限そのものなので、
- * この部品からは範囲外の値が出てこない（FR-041）。
+ * 値を選ぶ帯。**範囲は外から渡す。**
+ *
+ * <p>この部品からは範囲外の値が出てこない。文字の大きさ（FR-041）にも透明度（FR-044 / FR-046）にも
+ * 使うが、範囲を知っているのは呼ぶ側であって、この部品ではない。
  */
-public final class SizeSlider {
+public final class ValueSlider {
 
     private static final int HEIGHT = 22;
     private static final int WIDTH = 220;
@@ -32,23 +33,29 @@ public final class SizeSlider {
         }
     };
 
-    private IntConsumer moved = points -> {};
-    private @Nullable Palette palette;
-    private int points = FontSize.DEFAULT.points();
+    private final int minimum;
+    private final int maximum;
 
-    /** 部品を組み立てる。 */
-    public SizeSlider() {
+    private IntConsumer moved = value -> {};
+    private @Nullable Palette palette;
+    private int value;
+
+    /** 動かせる範囲を決めて組み立てる。 */
+    public ValueSlider(int minimum, int maximum) {
+        this.minimum = minimum;
+        this.maximum = maximum;
+        this.value = minimum;
         surface.setOpaque(false);
         surface.setPreferredSize(new Dimension(WIDTH, HEIGHT));
         MouseAdapter pointer = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent event) {
-                moved.accept(pointsAt(event.getX()));
+                moved.accept(valueAt(event.getX()));
             }
 
             @Override
             public void mouseDragged(MouseEvent event) {
-                moved.accept(pointsAt(event.getX()));
+                moved.accept(valueAt(event.getX()));
             }
         };
         surface.addMouseListener(pointer);
@@ -66,22 +73,20 @@ public final class SizeSlider {
     }
 
     /** 現在値と配色を反映する。 */
-    public void renderPoints(int current, UiTheme theme) {
-        this.points = current;
+    public void renderValue(int current, UiTheme theme) {
+        this.value = current;
         this.palette = Objects.requireNonNull(theme, "theme").palette();
         surface.repaint();
     }
 
-    private int pointsAt(int x) {
+    private int valueAt(int x) {
         int usable = Math.max(1, surface.getWidth() - KNOB);
         double ratio = Math.min(1.0, Math.max(0.0, (x - KNOB / 2.0) / usable));
-        int span = FontSize.MAXIMUM_POINTS - FontSize.MINIMUM_POINTS;
-        return FontSize.MINIMUM_POINTS + (int) Math.round(ratio * span);
+        return minimum + (int) Math.round(ratio * (maximum - minimum));
     }
 
     private double ratioOfCurrent() {
-        int span = FontSize.MAXIMUM_POINTS - FontSize.MINIMUM_POINTS;
-        return (points - FontSize.MINIMUM_POINTS) / (double) span;
+        return (value - minimum) / (double) Math.max(1, maximum - minimum);
     }
 
     private void paintTrack(Graphics graphics) {

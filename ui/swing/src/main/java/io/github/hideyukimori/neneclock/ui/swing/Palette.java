@@ -1,6 +1,6 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
-import io.github.hideyukimori.neneclock.domain.RgbColor;
+import io.github.hideyukimori.neneclock.domain.RgbaColor;
 import java.awt.Color;
 
 /**
@@ -45,7 +45,7 @@ public final class Palette {
     }
 
     /** 時計の背景色から決める。ここが唯一の生成経路。 */
-    public static Palette from(RgbColor background) {
+    public static Palette from(RgbaColor background) {
         return new Palette(luminanceOf(background) >= LIGHT_THRESHOLD);
     }
 
@@ -109,7 +109,7 @@ public final class Palette {
         return light;
     }
 
-    private static double luminanceOf(RgbColor colour) {
+    private static double luminanceOf(RgbaColor colour) {
         return (RED_WEIGHT * colour.red() + GREEN_WEIGHT * colour.green() + BLUE_WEIGHT * colour.blue())
                 / FULL_COMPONENT;
     }

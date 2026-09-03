@@ -9,7 +9,6 @@ import io.github.hideyukimori.neneclock.domain.Language;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import io.github.hideyukimori.neneclock.domain.WindowTopmost;
-import java.awt.Color;
 import java.awt.Component;
 import java.util.List;
 import java.util.Locale;
@@ -47,7 +46,7 @@ public final class SettingsFormPanel {
     private final ToggleSwitch date = new ToggleSwitch();
     private final ToggleSwitch topmost = new ToggleSwitch();
     private final DetailButton typeface = new DetailButton();
-    private final SizeSlider size = new SizeSlider();
+    private final ValueSlider size = new ValueSlider(FontSize.MINIMUM_POINTS, FontSize.MAXIMUM_POINTS);
     private final JLabel sizeValue = TextRendering.label("");
     private final DetailButton fontColour = new DetailButton();
     private final DetailButton background = new DetailButton();
@@ -110,7 +109,7 @@ public final class SettingsFormPanel {
         seconds.renderState(settings.secondsVisibility() == SecondsVisibility.SHOWN, theme);
         date.renderState(settings.dateVisibility() == DateVisibility.SHOWN, theme);
         topmost.renderState(settings.windowTopmost() == WindowTopmost.ENABLED, theme);
-        size.renderPoints(settings.fontSize().points(), theme);
+        size.renderValue(settings.fontSize().points(), theme);
         sizeValue.setText(String.valueOf(settings.fontSize().points()));
         sizeValue.setFont(theme.font(STATUS_POINTS));
         sizeValue.setForeground(theme.palette().text());
@@ -119,9 +118,10 @@ public final class SettingsFormPanel {
                         settings.typeface().displayName(), null, typefaces.load(settings.typeface(), SAMPLE_POINTS)),
                 theme);
         fontColour.renderValue(
-                new DetailValue(hexOf(settings.fontColor()), awtColour(settings.fontColor()), null), theme);
+                new DetailValue(hexOf(settings.fontColor()), AwtColour.of(settings.fontColor()), null), theme);
         background.renderValue(
-                new DetailValue(hexOf(settings.backgroundColor()), awtColour(settings.backgroundColor()), null), theme);
+                new DetailValue(hexOf(settings.backgroundColor()), AwtColour.of(settings.backgroundColor()), null),
+                theme);
         renderChrome(theme);
     }
 
@@ -213,11 +213,7 @@ public final class SettingsFormPanel {
         }
     }
 
-    private static Color awtColour(io.github.hideyukimori.neneclock.domain.RgbColor colour) {
-        return new Color(colour.red(), colour.green(), colour.blue());
-    }
-
-    static String hexOf(io.github.hideyukimori.neneclock.domain.RgbColor colour) {
+    static String hexOf(io.github.hideyukimori.neneclock.domain.RgbaColor colour) {
         return String.format(Locale.ROOT, "#%02X%02X%02X", colour.red(), colour.green(), colour.blue());
     }
 }

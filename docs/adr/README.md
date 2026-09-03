@@ -25,3 +25,4 @@ ADR は「なぜそう決めたか」「何を却下したか」を書く。
 | [0008](0008-the-window-is-the-clock.md) | 窓そのものを時計にする。枠と設定タブをやめる | 受理 |
 | [0009](0009-language-is-a-setting-not-a-locale.md) | 言語は設定であって、実行環境のロケールではない | 受理 |
 | [0010](0010-no-button-that-does-nothing.md) | 押しても何も起きないボタンを置かない（移動アイコンをやめる） | 受理 |
+| [0011](0011-transparency-is-asked-for-not-assumed.md) | 半透明は「頼んで、断られたら諦める」 | 受理 |

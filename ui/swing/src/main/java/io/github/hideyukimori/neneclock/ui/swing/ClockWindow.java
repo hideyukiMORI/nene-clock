@@ -1,9 +1,9 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
-import io.github.hideyukimori.neneclock.domain.RgbColor;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.IllegalComponentStateException;
 import java.awt.Point;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -23,9 +23,11 @@ import org.jspecify.annotations.Nullable;
  * <p>OS のタイトルバーを持たないので、移動と終了の手段は自分で持つ。窓のどこを掴んでも動き、
  * ホバーしたときだけ操作用のクローム（{@link WindowChrome}）が現れる。
  *
- * <p>角丸は環境が対応していれば適用し、対応していなければ角のまま描く。半透明の可否は
- * 環境依存であり、それを読む手段（{@code GraphicsEnvironment}）はこのアプリには無い（ADR 0006）。
- * だから「試して、断られたら諦める」形にしてある。
+ * <p>半透明と角丸は環境依存である。可否を読む手段（{@code GraphicsEnvironment}）はこのアプリに
+ * 無い（ADR 0006）ので、**試して、断られたら諦める**形にしてある（ADR 0011）。
+ *
+ * <p>半透明が使えるなら、地も角丸も {@link ClockPanel} が描く（縁が滑らかになる）。
+ * 使えないなら、地は不透明で描き、角丸は {@code setShape} の切り抜きで作る。
  */
 public final class ClockWindow {
 
@@ -33,12 +35,14 @@ public final class ClockWindow {
     private static final int INITIAL_HEIGHT = 240;
     private static final int MINIMUM_WIDTH = 320;
     private static final int MINIMUM_HEIGHT = 160;
-    private static final int CORNER = 16;
+    private static final int CORNER = ClockPanel.CORNER;
     private static final int CHROME_MARGIN = 10;
 
     private final JFrame frame = new JFrame("NeNe Clock");
     private final ClockPanel clockPanel;
     private final WindowChrome chrome;
+
+    private final boolean translucent;
 
     private @Nullable Point grabbedAt;
 
@@ -48,6 +52,7 @@ public final class ClockWindow {
         this.chrome = Objects.requireNonNull(chrome, "chrome");
         frame.setUndecorated(true);
         frame.setIconImages(AppIcon.images());
+        this.translucent = askForTranslucency();
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         frame.setContentPane(clockPanel.component());
         frame.setSize(new Dimension(INITIAL_WIDTH, INITIAL_HEIGHT));
@@ -59,6 +64,20 @@ public final class ClockWindow {
         roundTheCorners();
     }
 
+    /**
+     * 画素ごとの半透明を頼んでみる。
+     *
+     * <p>断られたら不透明で描く。可否を先に読む手段は無いので、頼んで返事を見るしかない。
+     */
+    private boolean askForTranslucency() {
+        try {
+            frame.setBackground(new Color(0, 0, 0, 0));
+            return true;
+        } catch (UnsupportedOperationException | IllegalComponentStateException refused) {
+            return false;
+        }
+    }
+
     /** 設定を窓へ反映する。UI 状態の反映経路はここ 1 本（CNF-004）。 */
     public void renderSettings(UserSettings settings) {
         Objects.requireNonNull(settings, "settings");
@@ -68,10 +87,13 @@ public final class ClockWindow {
                     case DISABLED -> false;
                 };
         frame.setAlwaysOnTop(topmost);
-        clockPanel.renderSettings(settings);
+        clockPanel.renderSettings(settings, translucent);
+        if (!translucent) {
+            frame.setBackground(AwtColour.opaque(settings.backgroundColor()));
+        }
         fitToClock();
         chrome.renderColours(
-                awtColour(settings.fontColor()),
+                AwtColour.opaque(settings.fontColor()),
                 Palette.from(settings.backgroundColor()).warning());
     }
 
@@ -177,15 +199,15 @@ public final class ClockWindow {
                 .setBounds(frame.getWidth() - size.width - CHROME_MARGIN, CHROME_MARGIN, size.width, size.height);
     }
 
+    /** 角を丸める。半透明が使えるなら {@link ClockPanel} が描くので、切り抜きは要らない。 */
     private void roundTheCorners() {
+        if (translucent) {
+            return;
+        }
         try {
             frame.setShape(new RoundRectangle2D.Double(0, 0, frame.getWidth(), frame.getHeight(), CORNER, CORNER));
         } catch (UnsupportedOperationException unsupported) {
             // 角丸に対応していない環境。角のまま描く。デザインはそれで成立するようにしてある。
         }
-    }
-
-    private static Color awtColour(RgbColor colour) {
-        return new Color(colour.red(), colour.green(), colour.blue());
     }
 }

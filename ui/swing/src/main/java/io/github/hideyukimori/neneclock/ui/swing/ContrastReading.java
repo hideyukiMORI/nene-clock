@@ -1,6 +1,6 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
-import io.github.hideyukimori.neneclock.domain.RgbColor;
+import io.github.hideyukimori.neneclock.domain.RgbaColor;
 
 /**
  * 文字色と背景色の読みやすさ（FR-046）。
@@ -25,7 +25,7 @@ public record ContrastReading(double ratio) {
     private static final double GLARE = 0.05;
 
     /** 2 色から読み取る。 */
-    public static ContrastReading between(RgbColor foreground, RgbColor background) {
+    public static ContrastReading between(RgbaColor foreground, RgbaColor background) {
         double first = relativeLuminance(foreground);
         double second = relativeLuminance(background);
         double lighter = Math.max(first, second);
@@ -38,7 +38,7 @@ public record ContrastReading(double ratio) {
         return ratio < READABLE_ENOUGH;
     }
 
-    private static double relativeLuminance(RgbColor colour) {
+    private static double relativeLuminance(RgbaColor colour) {
         return RED_WEIGHT * channel(colour.red())
                 + GREEN_WEIGHT * channel(colour.green())
                 + BLUE_WEIGHT * channel(colour.blue());
