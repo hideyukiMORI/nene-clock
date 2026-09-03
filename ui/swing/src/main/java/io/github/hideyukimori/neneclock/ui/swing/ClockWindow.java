@@ -47,6 +47,7 @@ public final class ClockWindow {
         this.clockPanel = Objects.requireNonNull(clockPanel, "clockPanel");
         this.chrome = Objects.requireNonNull(chrome, "chrome");
         frame.setUndecorated(true);
+        frame.setIconImages(AppIcon.images());
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         frame.setContentPane(clockPanel.component());
         frame.setSize(new Dimension(INITIAL_WIDTH, INITIAL_HEIGHT));
