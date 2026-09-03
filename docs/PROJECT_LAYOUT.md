@@ -25,7 +25,7 @@
     java.util.prefs に触れる唯一のモジュール
 
 :adapters:font-catalog
-    実行環境の書体一覧を読める唯一のモジュール
+    同梱書体（TrueType）を持つ唯一のモジュール
 
 :core:application
     ポートの宣言、表示値の生成、結果型
@@ -124,10 +124,12 @@ Swing・`java.util.prefs`・ファイル・ネットワークを知らない。
 
 ### `:adapters:font-catalog`
 
-`FontCatalogPort` の実装をただ 1 つ持つ。
-🔑 **`config/forbiddenapis/platform.txt` を適用しない唯一のモジュール**であり、
-`GraphicsEnvironment` を触れるのはここだけである。時計は読めないままなので
-`determinism.txt` は適用したままにしてある。
+`TypefaceBinaryPort` の実装をただ 1 つ持ち、同梱書体の TrueType ファイルを resources に持つ。
+出所（上流の commit と SHA-256）は `typefaces/provenance.tsv` に記録し、テストが実体と突き合わせる。
+
+🔑 **かつてここは `config/forbiddenapis/platform.txt` を適用しない唯一のモジュールだった。**
+書体を同梱したことで `GraphicsEnvironment` を読む必要が無くなり、その適用除外を畳んだ（ADR 0006）。
+**いまは platform.txt を外すモジュールが 1 つも無い。**
 
 ### `:ui:swing`
 

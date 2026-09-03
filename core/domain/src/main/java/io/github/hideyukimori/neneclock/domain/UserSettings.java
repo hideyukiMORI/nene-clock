@@ -14,7 +14,7 @@ public record UserSettings(
         SecondsVisibility secondsVisibility,
         DateVisibility dateVisibility,
         WindowTopmost windowTopmost,
-        FontFamily fontFamily,
+        Typeface typeface,
         FontSize fontSize,
         FontColor fontColor) {
 
@@ -23,7 +23,7 @@ public record UserSettings(
         Objects.requireNonNull(secondsVisibility, "secondsVisibility");
         Objects.requireNonNull(dateVisibility, "dateVisibility");
         Objects.requireNonNull(windowTopmost, "windowTopmost");
-        Objects.requireNonNull(fontFamily, "fontFamily");
+        Objects.requireNonNull(typeface, "typeface");
         Objects.requireNonNull(fontSize, "fontSize");
         Objects.requireNonNull(fontColor, "fontColor");
     }
@@ -35,7 +35,7 @@ public record UserSettings(
                 SecondsVisibility.SHOWN,
                 DateVisibility.SHOWN,
                 WindowTopmost.DISABLED,
-                FontFamily.DEFAULT,
+                Typeface.DEFAULT,
                 FontSize.DEFAULT,
                 FontColor.DEFAULT);
     }

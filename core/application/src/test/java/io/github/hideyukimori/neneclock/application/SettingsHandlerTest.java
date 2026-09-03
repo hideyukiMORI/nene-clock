@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.github.hideyukimori.neneclock.domain.ClockFormat;
 import io.github.hideyukimori.neneclock.domain.DateVisibility;
 import io.github.hideyukimori.neneclock.domain.FontColor;
-import io.github.hideyukimori.neneclock.domain.FontFamily;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
+import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import io.github.hideyukimori.neneclock.domain.WindowTopmost;
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ class SettingsHandlerTest {
             SecondsVisibility.HIDDEN,
             DateVisibility.HIDDEN,
             WindowTopmost.ENABLED,
-            FontFamily.DEFAULT,
+            Typeface.DEFAULT,
             FontSize.DEFAULT,
             FontColor.DEFAULT);
 

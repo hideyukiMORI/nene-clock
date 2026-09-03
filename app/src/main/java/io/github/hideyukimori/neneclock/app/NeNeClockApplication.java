@@ -1,18 +1,18 @@
 package io.github.hideyukimori.neneclock.app;
 
-import io.github.hideyukimori.neneclock.adapter.fontcatalog.AwtFontCatalogAdapter;
+import io.github.hideyukimori.neneclock.adapter.fontcatalog.BundledTypefaceAdapter;
 import io.github.hideyukimori.neneclock.adapter.preferences.PreferencesSettingsAdapter;
 import io.github.hideyukimori.neneclock.adapter.systemtime.SystemWallClockAdapter;
 import io.github.hideyukimori.neneclock.application.ClockFaceQuery;
-import io.github.hideyukimori.neneclock.application.FontCatalogPort;
 import io.github.hideyukimori.neneclock.application.SettingsHandler;
 import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
 import io.github.hideyukimori.neneclock.application.SettingsStorePort;
-import io.github.hideyukimori.neneclock.application.SettingsView;
+import io.github.hideyukimori.neneclock.application.TypefaceBinaryPort;
 import io.github.hideyukimori.neneclock.ui.swing.ClockPanel;
 import io.github.hideyukimori.neneclock.ui.swing.ClockTicker;
 import io.github.hideyukimori.neneclock.ui.swing.MainFrame;
 import io.github.hideyukimori.neneclock.ui.swing.SettingsPanel;
+import io.github.hideyukimori.neneclock.ui.swing.TypefaceFontLoader;
 import java.awt.HeadlessException;
 import java.lang.reflect.InvocationTargetException;
 import javax.swing.SwingUtilities;
@@ -57,22 +57,22 @@ public final class NeNeClockApplication {
 
     private static void start() {
         SettingsStorePort settingsStore = PreferencesSettingsAdapter.userScoped();
-        FontCatalogPort fontCatalog = AwtFontCatalogAdapter.system();
+        TypefaceBinaryPort typefaces = BundledTypefaceAdapter.bundled();
         SettingsHandler settings = SettingsHandler.restoredFrom(settingsStore);
         ClockFaceQuery clockFace = new ClockFaceQuery(SystemWallClockAdapter.system());
 
-        ClockPanel clockPanel = new ClockPanel();
+        ClockPanel clockPanel = new ClockPanel(new TypefaceFontLoader(typefaces));
         SettingsPanel settingsPanel = new SettingsPanel();
         MainFrame frame = new MainFrame(clockPanel, settingsPanel);
 
         settingsPanel.onSettingsRequested(requested -> {
             SettingsSaveOutcome outcome = settings.apply(requested);
-            frame.renderSettings(new SettingsView(fontCatalog.availableFamilies(), settings.current()));
+            frame.renderSettings(settings.current());
             frame.renderSaveOutcome(outcome);
             clockPanel.renderFace(clockFace.currentFace(settings.current()));
         });
 
-        frame.renderSettings(new SettingsView(fontCatalog.availableFamilies(), settings.current()));
+        frame.renderSettings(settings.current());
         clockPanel.renderFace(clockFace.currentFace(settings.current()));
 
         ClockTicker ticker = new ClockTicker(() -> clockPanel.renderFace(clockFace.currentFace(settings.current())));

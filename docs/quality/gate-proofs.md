@@ -238,12 +238,52 @@ FAILURE: Build failed with an exception.
 
 ---
 
+## 9. 同梱書体（Issue #34 / ADR 0006）
+
+### 9.1 `platform.txt` の適用除外が本当に無くなったか
+
+例外区画を畳んだと**書いた**だけでは証明にならない。`:adapters:font-catalog` に
+`GraphicsEnvironment` の呼び出しを一時的に足して、落ちることを確かめた（実測）。
+
+```text
+> Task :adapters:font-catalog:forbiddenApisMain FAILED
+Forbidden method invocation: java.awt.GraphicsEnvironment#getLocalGraphicsEnvironment()
+  [実行環境そのものの情報（利用可能な書体・ツールキット）は読まない。書体は同梱してある（ARC-007 / ADR 0006）]
+```
+
+🔴 **この実測で規約の嘘が 1 件見つかった。** 最初に落ちたときのメッセージは
+「実行環境そのものの情報（利用可能な書体など）は **`:adapters:font-catalog` からのみ読む**」だった。
+そのモジュールが読まなくなった以上、**もう誰も読めない**のだから、この文言は事実と違う。
+落ちたこと（規則 ID）だけを見ていたら、規則が自分について嘘をついたまま通っていた。
+`config/forbiddenapis/platform.txt` の文言を直したうえで取り直したのが上の出力である。
+
+### 9.2 出所の記録が実体とずれたら落ちるか
+
+`typefaces/provenance.tsv` の SHA-256 を 1 文字変えて実行した（実測）。
+
+```text
+TypefaceProvenanceTest > everyRecordedChecksumMatchesTheBundledFile() FAILED
+> Task :adapters:font-catalog:test FAILED
+```
+
+落ちたのは**チェックサムの検査**であって、書体が読めないことによる別の失敗ではない。
+記録だけを書き換えても、ファイルだけを差し替えても、同じ検査が落ちる。
+
+### 9.3 30 書体すべてが「描ける形」で入っているか
+
+`everyBundledFileIsAFontAwtCanCreate` は「ファイルがある」で止めず、
+`Font.createFont` が通ることまで見ている。壊れた TTF でもバイト列は返るため、
+存在の確認だけでは同梱の正しさを示せない。30 件すべて緑（実測）。
+
+---
+
 ## 8. まだ証明していないもの
 
 🔴 **ここに書いていないものは、証明されていない。**
 
 | 対象 | 状態 |
 | --- | --- |
-| WSLg での表示（`./gradlew run`） | **未確認**。この作業環境では WSLg が無効化されていた（Windows 側 `.wslconfig` の `guiApplications=false`。`/mnt/wslg` に X ソケットが無く `DISPLAY` も未設定）。設定を戻したうえで施主の手元で確認する（#14）。単体テストが headless で通っていることは表示の証拠ではない（QLT-012） |
+| WSLg での表示（`./gradlew run`） | **施主の手元で表示を確認済み（2026-09-04）。** 記録の整備は #14 に残る。単体テストが headless で通っていることは表示の証拠ではない（QLT-012） |
+| 同梱書体が**実際に描かれる**こと | **未確認**。`Font.createFont` が通ることまでは示したが、窓の中でその書体で描かれていることは目視でしか示せない（#36 と同時に確認する） |
 | SHA-256 dependency verification | **未導入**（QLT-011 の planned 部分） |
 | `planned` と書いた規則の強制 | 未実装であることを強制マトリクスに明記している。実装したときに状態を書き換える |

@@ -9,11 +9,10 @@ import io.github.hideyukimori.neneclock.domain.ClockFormat;
 import io.github.hideyukimori.neneclock.domain.DateVisibility;
 import io.github.hideyukimori.neneclock.domain.FontColor;
 import io.github.hideyukimori.neneclock.domain.FontColorOutcome;
-import io.github.hideyukimori.neneclock.domain.FontFamily;
-import io.github.hideyukimori.neneclock.domain.FontFamilyOutcome;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.FontSizeOutcome;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
+import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import io.github.hideyukimori.neneclock.domain.WindowTopmost;
 import java.util.prefs.BackingStoreException;
@@ -55,7 +54,7 @@ class PreferencesSettingsAdapterTest {
                 SecondsVisibility.HIDDEN,
                 DateVisibility.HIDDEN,
                 WindowTopmost.ENABLED,
-                family("Serif"),
+                Typeface.ORBITRON,
                 FontSize.DEFAULT,
                 color(10, 20, 30));
 
@@ -102,26 +101,54 @@ class PreferencesSettingsAdapterTest {
         assertThat(node.getInt("schemaVersion", 0)).isEqualTo(1);
     }
 
-    /** v1 で保存されていた設定を v2 の型で表したもの。書体と文字色は既定値になる。 */
+    /** v1 で保存されていた設定を現在の型で表したもの。書体と文字色は既定値になる。 */
     private static UserSettings versionOneSettings() {
         return new UserSettings(
                 ClockFormat.HOUR_12,
                 SecondsVisibility.HIDDEN,
                 DateVisibility.HIDDEN,
                 WindowTopmost.ENABLED,
-                FontFamily.DEFAULT,
+                Typeface.DEFAULT,
                 size(96),
                 FontColor.DEFAULT);
     }
 
     @Test
-    void refusesAnUnknownFontFamily() {
+    void refusesAnUnknownTypeface() {
         PreferencesSettingsAdapter.at(node).save(UserSettings.defaults());
-        node.put("fontFamily", " ");
+        node.put("typeface", "COMIC_SANS");
 
         SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
 
         assertThat(outcome).isEqualTo(new SettingsLoadOutcome.Defaulted(SettingsLoadFailure.INVALID_VALUE));
+    }
+
+    @Test
+    void migratesVersionTwoAndKeepsEverythingButTheEnvironmentFont() {
+        writeVersionTwo("DejaVu Sans");
+
+        SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
+
+        // 実行環境の書体名は同梱書体の集合に無い。設定を捨てずに、書体だけ既定へ落とす。
+        assertThat(outcome)
+                .isEqualTo(new SettingsLoadOutcome.Restored(new UserSettings(
+                        ClockFormat.HOUR_12,
+                        SecondsVisibility.HIDDEN,
+                        DateVisibility.HIDDEN,
+                        WindowTopmost.ENABLED,
+                        Typeface.DEFAULT,
+                        size(96),
+                        color(10, 20, 30))));
+    }
+
+    @Test
+    void keepsAVersionTwoChoiceWhenTheSameTypefaceIsBundled() {
+        writeVersionTwo(Typeface.ORBITRON.displayName());
+
+        SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
+
+        assertThat(((SettingsLoadOutcome.Restored) outcome).settings().typeface())
+                .isEqualTo(Typeface.ORBITRON);
     }
 
     @Test
@@ -167,8 +194,18 @@ class PreferencesSettingsAdapterTest {
         node.putInt("fontPoints", settings.fontSize().points());
     }
 
-    private static FontFamily family(String name) {
-        return ((FontFamilyOutcome.Accepted) FontFamily.of(name)).value();
+    /** v2 の保存値を書く。v2 は「実行環境の書体名」を持ち、同梱書体の識別子は持たない。 */
+    private void writeVersionTwo(String environmentFontName) {
+        node.putInt("schemaVersion", 2);
+        node.put("clockFormat", ClockFormat.HOUR_12.name());
+        node.put("secondsVisibility", SecondsVisibility.HIDDEN.name());
+        node.put("dateVisibility", DateVisibility.HIDDEN.name());
+        node.put("windowTopmost", WindowTopmost.ENABLED.name());
+        node.putInt("fontPoints", 96);
+        node.put("fontFamily", environmentFontName);
+        node.putInt("fontRed", 10);
+        node.putInt("fontGreen", 20);
+        node.putInt("fontBlue", 30);
     }
 
     private static FontColor color(int red, int green, int blue) {
