@@ -76,7 +76,13 @@ public final class ClockPanel {
         return panel;
     }
 
-    /** 表示文字列を反映する。 */
+    /**
+     * 表示文字列を反映する。
+     *
+     * <p>🔴 面**全体**を描き直す。文字を変えるだけだと、Swing はラベルの矩形しか塗り直さない。
+     * 地は {@link AlphaComposite#Src} で描いており、これは塗った範囲の画素を**透明度ごと
+     * 置き換える**ので、その長方形だけが消えて描き直され、境目が毎秒ちらついた（FR-002 / Issue #55）。
+     */
     public void renderFace(ClockFace face) {
         Objects.requireNonNull(face, "face");
         time.setText(face.time());
@@ -87,6 +93,7 @@ public final class ClockPanel {
             }
             case DateLine.Hidden hidden -> date.setVisible(false);
         }
+        panel.repaint();
     }
 
     /** 設定を反映する。半透明で描けない環境では、地を不透明にして描く。 */
