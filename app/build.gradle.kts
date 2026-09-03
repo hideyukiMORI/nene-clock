@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(project(":adapters:system-time"))
     implementation(project(":adapters:preferences"))
+    implementation(project(":adapters:font-catalog"))
     implementation(project(":ui:swing"))
 }
 

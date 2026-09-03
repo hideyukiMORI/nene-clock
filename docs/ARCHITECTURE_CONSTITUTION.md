@@ -95,7 +95,8 @@ Gradle のモジュールグラフでは塞げない（依存を宣言しなく�
 
 | 状態 | 意味 | 所有者 | 変更経路 |
 | --- | --- | --- | --- |
-| `UserSettings` | 保存される利用者設定 | `:core:domain` の値型 | `SettingsStorePort` 経由の保存のみ |
+| 現在の `UserSettings` | いま使っている利用者設定 | `:core:application` の `SettingsHandler` | `apply(UserSettings)` のみ（ADR 0004） |
+| 保存された `UserSettings` | 再起動をまたぐ利用者設定 | `:adapters:preferences` | `SettingsStorePort` 経由の保存のみ |
 | 表示文字列（`ClockFace`） | 画面に出す整形済みの値 | `:core:application` の `ClockFaceQuery` | 生成のみ。UI は保持しない |
 | Swing 部品の状態 | 描画のための一時状態 | `:ui:swing` の各部品 | `render*` メソッドのみ |
 
@@ -107,7 +108,14 @@ Gradle のモジュールグラフでは塞げない（依存を宣言しなく�
 ### ARC-005 — 可変性は隔離区画にのみ存在する
 
 外から見える domain / application の状態は不変とする。可変な状態を持ってよいのは
-`:ui:swing` の Swing 部品の内部だけである（Swing の API がそう出来ている）。
+次の **2 つの区画だけ**である。
+
+| 区画 | 何が可変か | なぜ必要か |
+| --- | --- | --- |
+| `:ui:swing` の Swing 部品の内部 | 部品の描画状態 | Swing の API がそう出来ている |
+| `:core:application` の `SettingsHandler` | 「現在の設定」を指す参照 1 つ | 設定を変えられる以上、現在値の所有者が 1 つ要る（ADR 0004） |
+
+後者が可変に持つのは**不変な値への参照**であって、値そのものは不変である。
 
 隔離区画は次を守る。
 
@@ -115,7 +123,11 @@ Gradle のモジュールグラフでは塞げない（依存を宣言しなく�
 - 受け取るのは検証済みの値型だけ
 - 同じ入力に対して同じ描画結果になる
 
-- 機械強制: **active**（`fields().that().areStatic().should().beFinal()` ＝ ArchUnit）
+🔴 **3 つ目の区画を作らない。** 必要になったら、この表と ADR を先に変える。
+区画が増えるたびに ArchUnit の除外が伸びるので、伸びること自体が警告になる。
+
+- 機械強制: **active**（`:core:domain` の全フィールドが `final` ＝ ArchUnit）
+- 機械強制: **active**（`:core:application` のフィールドは `SettingsHandler` を除き `final` ＝ ArchUnit）
 - 機械強制: **planned**（可変コレクションの返却検出）
 
 ### ARC-006 — 合成は明示的である

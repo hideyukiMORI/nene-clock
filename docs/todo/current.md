@@ -14,10 +14,17 @@
 - [x] GitHub へ push し、`main` の ruleset を設定して [quality/gate-proofs.md](../quality/gate-proofs.md) に記録する
 - [ ] WSLg での表示確認を記録する（QLT-012）— #14
 
+## M0.1（設定 GUI・完了）
+
+- [x] FR-043 書体・FR-044 文字色を値型として持つ — #23
+- [x] FR-042 保存形式 v2 と v1 からの移行（既存の設定を失わない）— #23
+- [x] FR-045 設定画面から 7 項目すべてを変更でき、即座に反映され保存される — #24
+- [x] 実行環境の書体一覧を読める場所を `:adapters:font-catalog` 1 つに限定 — #24
+
 ## M1（未着手）
 
 - [ ] FR-010 ストップウォッチ（単調時刻・状態機械）— #15
 - [ ] FR-020 カウントダウンタイマー（目標時刻からの計算）— #16
-- [ ] FR-050 残り 3 タブ（設定 UI を含む）— #17
+- [ ] FR-050 残り 2 タブ（Stopwatch / Timer）— #17
 - [ ] SWG-004 / SWG-005 の機械強制を `planned` → `active` — #18
 - [ ] QLT-011 の SHA-256 dependency verification を `planned` → `active` — #19

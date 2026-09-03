@@ -24,6 +24,9 @@
 :adapters:preferences
     java.util.prefs に触れる唯一のモジュール
 
+:adapters:font-catalog
+    実行環境の書体一覧を読める唯一のモジュール
+
 :core:application
     ポートの宣言、表示値の生成、結果型
 
@@ -52,6 +55,9 @@
     -> :core:application, :core:domain
 
 :adapters:preferences
+    -> :core:application, :core:domain
+
+:adapters:font-catalog
     -> :core:application, :core:domain
 
 :ui:swing
@@ -115,6 +121,13 @@ Swing・`java.util.prefs`・ファイル・ネットワークを知らない。
 `SettingsStorePort` の実装をただ 1 つ持つ。保存形式は版を持ち（ARC-009）、
 読めない値は既定値へ黙って落とさず、型のある失敗として返す。
 版の移行もこのモジュールに閉じる（ADR 0003）。`load()` は保存領域を書き換えない。
+
+### `:adapters:font-catalog`
+
+`FontCatalogPort` の実装をただ 1 つ持つ。
+🔑 **`config/forbiddenapis/platform.txt` を適用しない唯一のモジュール**であり、
+`GraphicsEnvironment` を触れるのはここだけである。時計は読めないままなので
+`determinism.txt` は適用したままにしてある。
 
 ### `:ui:swing`
 

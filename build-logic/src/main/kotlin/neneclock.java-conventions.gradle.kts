@@ -77,6 +77,7 @@ val projectSignatures =
     files(
         rootProject.file("config/forbiddenapis/base.txt"),
         rootProject.file("config/forbiddenapis/determinism.txt"),
+        rootProject.file("config/forbiddenapis/platform.txt"),
     )
 
 forbiddenApis {

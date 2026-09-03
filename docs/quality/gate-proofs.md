@@ -30,13 +30,19 @@ CI: ubuntu-24.04 / Temurin 21 / 同梱 Wrapper
 | P10 | CNF-004 | `render*` 以外のメソッドで `setEnabled(...)` を呼ぶ | `validateConformance` | **失敗** |
 | P11 | JAV-009 | 未使用の import を残す | `:core:domain:checkstyleMain` | **失敗** |
 | P12 | CNF-011 | どこからも読み込まれない設定ファイルを `config/` に置く | `validateConformance` | **失敗** |
+| P13 | ARC-007 | `:ui:swing` で `GraphicsEnvironment.getLocalGraphicsEnvironment()` を呼ぶ | `:ui:swing:forbiddenApisMain` | **失敗** |
 
-**復帰の確認**: 12 件すべてについて、仕込みを戻したあと `./gradlew check` が終了コード 0 で成功した。
+**復帰の確認**: 13 件すべてについて、仕込みを戻したあと `./gradlew check` が終了コード 0 で成功した。
 
-**除外側の確認（ARC-007）**: `:adapters:system-time` は `LocalDateTime.now(Clock)` /
-`Clock.system(ZoneId)` / `ZoneId.systemDefault()` を呼んでいる。いずれも `determinism.txt` に
-載っている署名だが、このモジュールだけ同ファイルを適用しないため `:adapters:system-time:check` は成功する。
-**禁止が効いていることと、唯一の窓口が通ることの両方を見ている。**
+**除外側の確認**: 例外区画が 2 つある。どちらも「禁止が効いていること」と
+「唯一の窓口が通ること」の両方を見ている。
+
+| 区画 | 適用しない署名 | 呼んでいる禁止 API | 結果 |
+| --- | --- | --- | --- |
+| `:adapters:system-time` | `determinism.txt` | `LocalDateTime.now(Clock)` / `Clock.system(ZoneId)` / `ZoneId.systemDefault()` | `check` 成功 |
+| `:adapters:font-catalog` | `platform.txt` | `GraphicsEnvironment.getLocalGraphicsEnvironment()` | `check` 成功 |
+
+`:adapters:font-catalog` は `determinism.txt` を適用したままなので、書体は読めても時計は読めない。
 
 ---
 
@@ -82,6 +88,9 @@ P11 [ant:checkstyle] [ERROR] core/domain/.../SettingsSchemaVersion.java:3:8:
 
 P12 CNF-011 config/forbiddenapis/orphan.txt
       — この設定ファイルを読み込むビルドスクリプトが無い。置いても効かない
+
+P13 Forbidden method invocation: java.awt.GraphicsEnvironment#getLocalGraphicsEnvironment()
+      [実行環境そのものの情報（利用可能な書体など）は :adapters:font-catalog からのみ読む（ARC-007）]
 ```
 
 ---

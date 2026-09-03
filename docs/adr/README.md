@@ -18,3 +18,4 @@ ADR は「なぜそう決めたか」「何を却下したか」を書く。
 | [0001](0001-strictness-is-mechanically-enforced.md) | 厳格さは機械で強制する | 受理 |
 | [0002](0002-initial-build-toolchain.md) | 初期ビルドツールチェーン | 受理 |
 | [0003](0003-settings-schema-migration.md) | 設定スキーマの移行方針 | 受理 |
+| [0004](0004-settings-state-owner.md) | 現在の設定の所有者を application に置く | 受理 |
