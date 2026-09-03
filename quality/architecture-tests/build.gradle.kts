@@ -9,6 +9,7 @@ dependencies {
     testImplementation(project(":core:application"))
     testImplementation(project(":adapters:system-time"))
     testImplementation(project(":adapters:preferences"))
+    testImplementation(project(":adapters:font-catalog"))
     testImplementation(project(":ui:swing"))
     testImplementation(project(":app"))
     testImplementation(libs.archunit)

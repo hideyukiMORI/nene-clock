@@ -1,0 +1,3 @@
+@defaultMessage 実行環境そのものの情報（利用可能な書体など）は :adapters:font-catalog からのみ読む（ARC-007）
+java.awt.GraphicsEnvironment#getLocalGraphicsEnvironment()
+java.awt.Toolkit#getDefaultToolkit()

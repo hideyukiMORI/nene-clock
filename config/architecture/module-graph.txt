@@ -12,6 +12,7 @@ module :core:domain
 module :core:application
 module :adapters:system-time
 module :adapters:preferences
+module :adapters:font-catalog
 module :ui:swing
 module :app
 module :quality:architecture-tests
@@ -21,10 +22,13 @@ edge :adapters:system-time -> :core:application
 edge :adapters:system-time -> :core:domain
 edge :adapters:preferences -> :core:application
 edge :adapters:preferences -> :core:domain
+edge :adapters:font-catalog -> :core:application
+edge :adapters:font-catalog -> :core:domain
 edge :ui:swing -> :core:application
 edge :ui:swing -> :core:domain
 edge :app -> :core:application
 edge :app -> :core:domain
 edge :app -> :adapters:system-time
 edge :app -> :adapters:preferences
+edge :app -> :adapters:font-catalog
 edge :app -> :ui:swing
