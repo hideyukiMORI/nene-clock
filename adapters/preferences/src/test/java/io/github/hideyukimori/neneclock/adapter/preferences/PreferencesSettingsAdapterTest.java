@@ -7,10 +7,10 @@ import io.github.hideyukimori.neneclock.application.SettingsLoadOutcome;
 import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
 import io.github.hideyukimori.neneclock.domain.ClockFormat;
 import io.github.hideyukimori.neneclock.domain.DateVisibility;
-import io.github.hideyukimori.neneclock.domain.FontColor;
-import io.github.hideyukimori.neneclock.domain.FontColorOutcome;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.FontSizeOutcome;
+import io.github.hideyukimori.neneclock.domain.RgbColor;
+import io.github.hideyukimori.neneclock.domain.RgbColorOutcome;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
 import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
@@ -56,7 +56,8 @@ class PreferencesSettingsAdapterTest {
                 WindowTopmost.ENABLED,
                 Typeface.ORBITRON,
                 FontSize.DEFAULT,
-                color(10, 20, 30));
+                color(10, 20, 30),
+                color(40, 50, 60));
 
         SettingsSaveOutcome saveOutcome = adapter.save(stored);
 
@@ -110,7 +111,8 @@ class PreferencesSettingsAdapterTest {
                 WindowTopmost.ENABLED,
                 Typeface.DEFAULT,
                 size(96),
-                FontColor.DEFAULT);
+                RgbColor.DEFAULT_FONT,
+                RgbColor.DEFAULT_BACKGROUND);
     }
 
     @Test
@@ -138,7 +140,8 @@ class PreferencesSettingsAdapterTest {
                         WindowTopmost.ENABLED,
                         Typeface.DEFAULT,
                         size(96),
-                        color(10, 20, 30))));
+                        color(10, 20, 30),
+                        RgbColor.DEFAULT_BACKGROUND)));
     }
 
     @Test
@@ -152,9 +155,58 @@ class PreferencesSettingsAdapterTest {
     }
 
     @Test
+    void migratesVersionThreeByFillingInTheBackgroundColour() {
+        writeVersionThree();
+
+        SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
+
+        assertThat(((SettingsLoadOutcome.Restored) outcome).settings())
+                .isEqualTo(new UserSettings(
+                        ClockFormat.HOUR_12,
+                        SecondsVisibility.HIDDEN,
+                        DateVisibility.HIDDEN,
+                        WindowTopmost.ENABLED,
+                        Typeface.ORBITRON,
+                        size(96),
+                        color(10, 20, 30),
+                        RgbColor.DEFAULT_BACKGROUND));
+    }
+
+    @Test
+    void refusesABackgroundComponentOutsideTheAllowedRange() {
+        PreferencesSettingsAdapter.at(node).save(UserSettings.defaults());
+        node.putInt("backgroundBlue", RgbColor.MAXIMUM_COMPONENT + 1);
+
+        SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
+
+        assertThat(outcome).isEqualTo(new SettingsLoadOutcome.Defaulted(SettingsLoadFailure.INVALID_VALUE));
+    }
+
+    @Test
+    void keepsTheFontAndBackgroundColoursApart() {
+        // 同じ型の成分が 2 つ並ぶので、取り違えると気づきにくい（ADR 0007）。
+        PreferencesSettingsAdapter adapter = PreferencesSettingsAdapter.at(node);
+        UserSettings stored = new UserSettings(
+                ClockFormat.HOUR_24,
+                SecondsVisibility.SHOWN,
+                DateVisibility.SHOWN,
+                WindowTopmost.DISABLED,
+                Typeface.DEFAULT,
+                FontSize.DEFAULT,
+                color(1, 2, 3),
+                color(250, 251, 252));
+
+        adapter.save(stored);
+        UserSettings restored = ((SettingsLoadOutcome.Restored) adapter.load()).settings();
+
+        assertThat(restored.fontColor()).isEqualTo(color(1, 2, 3));
+        assertThat(restored.backgroundColor()).isEqualTo(color(250, 251, 252));
+    }
+
+    @Test
     void refusesAColourComponentOutsideTheAllowedRange() {
         PreferencesSettingsAdapter.at(node).save(UserSettings.defaults());
-        node.putInt("fontGreen", FontColor.MAXIMUM_COMPONENT + 1);
+        node.putInt("fontGreen", RgbColor.MAXIMUM_COMPONENT + 1);
 
         SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
 
@@ -194,6 +246,13 @@ class PreferencesSettingsAdapterTest {
         node.putInt("fontPoints", settings.fontSize().points());
     }
 
+    /** v3 の保存値を書く。v3 は同梱書体の識別子を持つが、背景色を持たない。 */
+    private void writeVersionThree() {
+        writeVersionTwo("ignored");
+        node.putInt("schemaVersion", 3);
+        node.put("typeface", Typeface.ORBITRON.name());
+    }
+
     /** v2 の保存値を書く。v2 は「実行環境の書体名」を持ち、同梱書体の識別子は持たない。 */
     private void writeVersionTwo(String environmentFontName) {
         node.putInt("schemaVersion", 2);
@@ -208,8 +267,8 @@ class PreferencesSettingsAdapterTest {
         node.putInt("fontBlue", 30);
     }
 
-    private static FontColor color(int red, int green, int blue) {
-        return ((FontColorOutcome.Accepted) FontColor.of(red, green, blue)).value();
+    private static RgbColor color(int red, int green, int blue) {
+        return ((RgbColorOutcome.Accepted) RgbColor.of(red, green, blue)).value();
     }
 
     private static FontSize size(int points) {

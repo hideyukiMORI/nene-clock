@@ -277,7 +277,30 @@ TypefaceProvenanceTest > everyRecordedChecksumMatchesTheBundledFile() FAILED
 
 ---
 
-## 8. まだ証明していないもの
+## 10. 背景色（Issue #35 / ADR 0007）
+
+### 10.1 文字色と背景色の取り違えは、型では止まらない
+
+ADR 0007 は「色の型を 1 つにする」と決めた。その代償として、
+`UserSettings` に同じ型の成分が 2 つ並び、**取り違えてもコンパイルが通る**。
+
+止まらないことを実測で確かめた。`PreferencesSettingsAdapter` の復元で
+文字色と背景色を入れ替えたところ、**コンパイルは通り**、テストが落ちた（実測）。
+
+```text
+PreferencesSettingsAdapterTest > keepsTheFontAndBackgroundColoursApart() FAILED
+PreferencesSettingsAdapterTest > roundTripsSavedSettings() FAILED
+PreferencesSettingsAdapterTest > migratesVersionTwoAndKeepsEverythingButTheEnvironmentFont() FAILED
+PreferencesSettingsAdapterTest > migratesVersionThreeByFillingInTheBackgroundColour() FAILED
+```
+
+🔴 **これは「機械で止めた」ではない。テストで捕まえているだけである。**
+強制マトリクスにも ADR にも `planned` として書いた。
+型で止める道（色の型を 2 つに分ける）は、同じ不変条件が 2 か所に写るため却下した。
+
+---
+
+## 11. まだ証明していないもの
 
 🔴 **ここに書いていないものは、証明されていない。**
 

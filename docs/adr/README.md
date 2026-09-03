@@ -21,3 +21,4 @@ ADR は「なぜそう決めたか」「何を却下したか」を書く。
 | [0004](0004-settings-state-owner.md) | 現在の設定の所有者を application に置く | 受理 |
 | [0005](0005-composition-root-owns-the-terminal.md) | 端末とプロセス終了コードは合成ルートが持つ | 受理 |
 | [0006](0006-typefaces-are-bundled-not-discovered.md) | 書体は同梱する。実行環境からは読まない | 受理 |
+| [0007](0007-one-colour-type-two-roles.md) | 色の型は 1 つにし、役割は成分名で語る | 受理 |

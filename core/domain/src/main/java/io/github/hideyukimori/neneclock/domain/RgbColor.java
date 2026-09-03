@@ -1,12 +1,16 @@
 package io.github.hideyukimori.neneclock.domain;
 
 /**
- * 文字色。RGB の 3 成分だけを持ち、透明度は持たない（FR-044）。
+ * 色。RGB の 3 成分だけを持ち、透明度は持たない（FR-044 / FR-046）。
  *
  * <p>コンストラクタは非公開で、生成経路は {@link #of(int, int, int)} ただ 1 本（JAV-007）。
  * 描画に使う色型（{@code java.awt.Color}）への変換は UI の仕事であり、domain は知らない。
+ *
+ * <p>🔑 文字色と背景色は**同じ型**で表す。「各成分が 0..255」という規則は 1 つであり、
+ * それを 2 つの型に写すと同じ規則が 2 か所に存在することになる（ADR 0007）。
+ * どちらの色かを語るのは、この型ではなく {@link UserSettings} の成分名である（ARC-004）。
  */
-public final class FontColor {
+public final class RgbColor {
 
     /** 各成分の下限。 */
     public static final int MINIMUM_COMPONENT = 0;
@@ -15,24 +19,27 @@ public final class FontColor {
     public static final int MAXIMUM_COMPONENT = 255;
 
     /** 既定の文字色（黒）。仕様 FR-040 と一致する。 */
-    public static final FontColor DEFAULT = new FontColor(MINIMUM_COMPONENT, MINIMUM_COMPONENT, MINIMUM_COMPONENT);
+    public static final RgbColor DEFAULT_FONT = new RgbColor(MINIMUM_COMPONENT, MINIMUM_COMPONENT, MINIMUM_COMPONENT);
+
+    /** 既定の背景色。仕様 FR-040 と一致する。 */
+    public static final RgbColor DEFAULT_BACKGROUND = new RgbColor(0xF5, 0xF2, 0xEB);
 
     private final int red;
     private final int green;
     private final int blue;
 
-    private FontColor(int red, int green, int blue) {
+    private RgbColor(int red, int green, int blue) {
         this.red = red;
         this.green = green;
         this.blue = blue;
     }
 
     /** 各成分を検証して生成する。ここが唯一の生成経路。 */
-    public static FontColorOutcome of(int red, int green, int blue) {
+    public static RgbColorOutcome of(int red, int green, int blue) {
         if (isOutOfRange(red) || isOutOfRange(green) || isOutOfRange(blue)) {
-            return new FontColorOutcome.Rejected(FontColorRejection.COMPONENT_OUT_OF_RANGE);
+            return new RgbColorOutcome.Rejected(RgbColorRejection.COMPONENT_OUT_OF_RANGE);
         }
-        return new FontColorOutcome.Accepted(new FontColor(red, green, blue));
+        return new RgbColorOutcome.Accepted(new RgbColor(red, green, blue));
     }
 
     /** 赤成分。 */
@@ -52,7 +59,7 @@ public final class FontColor {
 
     @Override
     public boolean equals(Object other) {
-        return other instanceof FontColor color && color.red == red && color.green == green && color.blue == blue;
+        return other instanceof RgbColor color && color.red == red && color.green == green && color.blue == blue;
     }
 
     @Override
@@ -62,7 +69,7 @@ public final class FontColor {
 
     @Override
     public String toString() {
-        return "FontColor[" + red + "," + green + "," + blue + "]";
+        return "RgbColor[" + red + "," + green + "," + blue + "]";
     }
 
     private static boolean isOutOfRange(int component) {

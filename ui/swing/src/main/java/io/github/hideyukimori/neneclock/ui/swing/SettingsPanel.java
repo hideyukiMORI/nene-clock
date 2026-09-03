@@ -5,10 +5,10 @@ import io.github.hideyukimori.neneclock.application.SettingsSaveFailure;
 import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
 import io.github.hideyukimori.neneclock.domain.ClockFormat;
 import io.github.hideyukimori.neneclock.domain.DateVisibility;
-import io.github.hideyukimori.neneclock.domain.FontColor;
-import io.github.hideyukimori.neneclock.domain.FontColorOutcome;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.FontSizeOutcome;
+import io.github.hideyukimori.neneclock.domain.RgbColor;
+import io.github.hideyukimori.neneclock.domain.RgbColorOutcome;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
 import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
@@ -28,6 +28,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 設定タブ（FR-045）。
@@ -50,11 +51,13 @@ public final class SettingsPanel {
     private final JSpinner size = new JSpinner(new SpinnerNumberModel(
             FontSize.DEFAULT.points(), FontSize.MINIMUM_POINTS, FontSize.MAXIMUM_POINTS, SIZE_STEP));
     private final JButton colour = new JButton();
+    private final JButton background = new JButton();
     private final JLabel status = new JLabel(" ");
 
     private SettingsIntentSink sink = requested -> {};
     private UserSettings shown = UserSettings.defaults();
-    private FontColor chosenColour = FontColor.DEFAULT;
+    private RgbColor chosenColour = RgbColor.DEFAULT_FONT;
+    private RgbColor chosenBackground = RgbColor.DEFAULT_BACKGROUND;
 
     /** 部品を組み立てる。表示内容は {@code render*} が決める。 */
     public SettingsPanel() {
@@ -76,6 +79,7 @@ public final class SettingsPanel {
     public void renderSettings(UserSettings settings) {
         shown = Objects.requireNonNull(settings, "settings");
         chosenColour = shown.fontColor();
+        chosenBackground = shown.backgroundColor();
         typeface.setSelectedItem(shown.typeface());
         format.setSelectedItem(shown.clockFormat());
         size.setValue(shown.fontSize().points());
@@ -96,10 +100,18 @@ public final class SettingsPanel {
     }
 
     private void renderColour() {
-        Color preview = new Color(chosenColour.red(), chosenColour.green(), chosenColour.blue());
-        colour.setForeground(preview);
-        colour.setText(String.format(
-                Locale.ROOT, "#%02X%02X%02X", chosenColour.red(), chosenColour.green(), chosenColour.blue()));
+        colour.setForeground(awtColour(chosenColour));
+        colour.setText(hexOf(chosenColour));
+        background.setForeground(awtColour(chosenBackground));
+        background.setText(hexOf(chosenBackground));
+    }
+
+    private static Color awtColour(RgbColor value) {
+        return new Color(value.red(), value.green(), value.blue());
+    }
+
+    private static String hexOf(RgbColor value) {
+        return String.format(Locale.ROOT, "#%02X%02X%02X", value.red(), value.green(), value.blue());
     }
 
     private void layOut() {
@@ -111,6 +123,7 @@ public final class SettingsPanel {
         addRow(row++, "Typeface", typeface);
         addRow(row++, "Font size", size);
         addRow(row++, "Font colour", colour);
+        addRow(row++, "Background colour", background);
         addRow(row, "", status);
     }
 
@@ -134,7 +147,8 @@ public final class SettingsPanel {
         topmost.addActionListener(event -> submitIfChanged());
         typeface.addActionListener(event -> submitIfChanged());
         size.addChangeListener(event -> submitIfChanged());
-        colour.addActionListener(event -> chooseColour());
+        colour.addActionListener(event -> chooseFontColour());
+        background.addActionListener(event -> chooseBackgroundColour());
     }
 
     /**
@@ -158,7 +172,8 @@ public final class SettingsPanel {
                 topmost.isSelected() ? WindowTopmost.ENABLED : WindowTopmost.DISABLED,
                 selectedTypeface(),
                 selectedSize(),
-                chosenColour);
+                chosenColour,
+                chosenBackground);
     }
 
     private Typeface selectedTypeface() {
@@ -173,24 +188,34 @@ public final class SettingsPanel {
         };
     }
 
-    private void chooseColour() {
-        Color initial = new Color(chosenColour.red(), chosenColour.green(), chosenColour.blue());
-        Color picked = JColorChooser.showDialog(panel, "Font colour", initial);
-        if (picked == null) {
-            return;
-        }
-        switch (FontColor.of(picked.getRed(), picked.getGreen(), picked.getBlue())) {
-            case FontColorOutcome.Accepted accepted -> applyColour(accepted.value());
-            case FontColorOutcome.Rejected outOfRange -> {
-                // 色選択ダイアログは 0..255 の外を返さない。返したなら選ばなかった扱いにする。
-            }
+    private void chooseFontColour() {
+        RgbColor picked = ask("Font colour", chosenColour);
+        if (picked != null) {
+            chosenColour = picked;
+            renderColour();
+            submitIfChanged();
         }
     }
 
-    private void applyColour(FontColor picked) {
-        chosenColour = picked;
-        renderColour();
-        submitIfChanged();
+    private void chooseBackgroundColour() {
+        RgbColor picked = ask("Background colour", chosenBackground);
+        if (picked != null) {
+            chosenBackground = picked;
+            renderColour();
+            submitIfChanged();
+        }
+    }
+
+    private @Nullable RgbColor ask(String title, RgbColor current) {
+        Color picked = JColorChooser.showDialog(panel, title, awtColour(current));
+        if (picked == null) {
+            return null;
+        }
+        return switch (RgbColor.of(picked.getRed(), picked.getGreen(), picked.getBlue())) {
+            case RgbColorOutcome.Accepted accepted -> accepted.value();
+            // 色選択ダイアログは 0..255 の外を返さない。返したなら選ばなかった扱いにする。
+            case RgbColorOutcome.Rejected outOfRange -> null;
+        };
     }
 
     private static String describe(SettingsSaveFailure reason) {
