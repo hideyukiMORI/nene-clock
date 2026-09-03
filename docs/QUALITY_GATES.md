@@ -185,7 +185,7 @@ waiver ファイルの命名・必須項目（Rule / Scope / Issue / Expires）�
 | ARC-003 | active | ArchUnit `PlatformIsolationRulesTest` |
 | ARC-004 | active（一部） | CNF-004。二重保持の検出は planned |
 | ARC-005 | active（一部） | ArchUnit の static final 検査。可変コレクション返却は planned |
-| ARC-006 | active（一部） | ArchUnit ＋ forbidden-apis `Class#newInstance()` |
+| ARC-006 | active（一部） | ArchUnit ＋ forbidden-apis（`Class#newInstance()` / 標準ストリーム / `System.exit` は `:app` のみ許可） |
 | ARC-007 | active | forbidden-apis `config/forbiddenapis/determinism.txt` |
 | ARC-008 | planned | レビュー事項 |
 | ARC-009 | planned | 型としては存在。移行の網羅はテストの仕事 |

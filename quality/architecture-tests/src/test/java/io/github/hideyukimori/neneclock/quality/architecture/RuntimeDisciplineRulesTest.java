@@ -15,6 +15,7 @@ class RuntimeDisciplineRulesTest {
 
     private static final String DOMAIN = "io.github.hideyukimori.neneclock.domain..";
     private static final String APPLICATION = "io.github.hideyukimori.neneclock.application..";
+    private static final String COMPOSITION_ROOT = "io.github.hideyukimori.neneclock.app..";
 
     private static final JavaClasses PRODUCTION = new ClassFileImporter()
             .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
@@ -78,8 +79,17 @@ class RuntimeDisciplineRulesTest {
     }
 
     @Test
-    void noStandardStreamsAndNoGenericExceptions() {
-        GeneralCodingRules.NO_CLASSES_SHOULD_ACCESS_STANDARD_STREAMS.check(PRODUCTION);
+    void onlyTheCompositionRootTalksToTheTerminal() {
+        noClasses()
+                .that()
+                .resideOutsideOfPackage(COMPOSITION_ROOT)
+                .should(GeneralCodingRules.ACCESS_STANDARD_STREAMS)
+                .because("ARC-006: 端末へ出せるのは合成ルートだけ（ADR 0005）")
+                .check(PRODUCTION);
+    }
+
+    @Test
+    void noGenericExceptionsAndNoHiddenWiring() {
         GeneralCodingRules.NO_CLASSES_SHOULD_THROW_GENERIC_EXCEPTIONS.check(PRODUCTION);
         GeneralCodingRules.NO_CLASSES_SHOULD_USE_JAVA_UTIL_LOGGING.check(PRODUCTION);
         GeneralCodingRules.NO_CLASSES_SHOULD_USE_FIELD_INJECTION.check(PRODUCTION);

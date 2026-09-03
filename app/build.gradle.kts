@@ -1,3 +1,5 @@
+import de.thetaphi.forbiddenapis.gradle.CheckForbiddenApis
+
 plugins {
     id("neneclock.java-conventions")
     application
@@ -16,4 +18,17 @@ dependencies {
 
 application {
     mainClass.set("io.github.hideyukimori.neneclock.app.NeNeClockApplication")
+}
+
+// 🔑 合成ルートだけが端末とプロセスの終了コードを扱ってよい（ADR 0005）。
+//    窓が出る前に失敗したとき、利用者へ届く経路は端末しか無いため。
+//    ほかのモジュールで同じことを書いたら forbidden-apis と ArchUnit が拒否する。
+tasks.withType<CheckForbiddenApis>().configureEach {
+    bundledSignatures = setOf("jdk-unsafe", "jdk-deprecated", "jdk-non-portable", "jdk-internal", "jdk-reflection")
+    signaturesFiles =
+        files(
+            rootProject.file("config/forbiddenapis/base.txt"),
+            rootProject.file("config/forbiddenapis/determinism.txt"),
+            rootProject.file("config/forbiddenapis/platform.txt"),
+        )
 }
