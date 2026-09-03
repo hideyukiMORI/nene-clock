@@ -31,8 +31,9 @@ CI: ubuntu-24.04 / Temurin 21 / 同梱 Wrapper
 | P11 | JAV-009 | 未使用の import を残す | `:core:domain:checkstyleMain` | **失敗** |
 | P12 | CNF-011 | どこからも読み込まれない設定ファイルを `config/` に置く | `validateConformance` | **失敗** |
 | P13 | ARC-007 | `:ui:swing` で `GraphicsEnvironment.getLocalGraphicsEnvironment()` を呼ぶ | `:ui:swing:forbiddenApisMain` | **失敗** |
+| P14 | ARC-006 | `:ui:swing` で `System.err.println(...)` を呼ぶ | `:ui:swing:forbiddenApisMain` / `:quality:architecture-tests:test` | **失敗**（2 層とも） |
 
-**復帰の確認**: 13 件すべてについて、仕込みを戻したあと `./gradlew check` が終了コード 0 で成功した。
+**復帰の確認**: 14 件すべてについて、仕込みを戻したあと `./gradlew check` が終了コード 0 で成功した。
 
 **除外側の確認**: 例外区画が 2 つある。どちらも「禁止が効いていること」と
 「唯一の窓口が通ること」の両方を見ている。
@@ -41,6 +42,7 @@ CI: ubuntu-24.04 / Temurin 21 / 同梱 Wrapper
 | --- | --- | --- | --- |
 | `:adapters:system-time` | `determinism.txt` | `LocalDateTime.now(Clock)` / `Clock.system(ZoneId)` / `ZoneId.systemDefault()` | `check` 成功 |
 | `:adapters:font-catalog` | `platform.txt` | `GraphicsEnvironment.getLocalGraphicsEnvironment()` | `check` 成功 |
+| `:app` | `process-control.txt` ＋ bundled `jdk-system-out` | `System.err.println` / `System.exit` | `check` 成功 |
 
 `:adapters:font-catalog` は `determinism.txt` を適用したままなので、書体は読めても時計は読めない。
 
@@ -91,6 +93,14 @@ P12 CNF-011 config/forbiddenapis/orphan.txt
 
 P13 Forbidden method invocation: java.awt.GraphicsEnvironment#getLocalGraphicsEnvironment()
       [実行環境そのものの情報（利用可能な書体など）は :adapters:font-catalog からのみ読む（ARC-007）]
+
+P14 Forbidden field access: java.lang.System#err
+      [prints to System.err; should only be used for debugging, not in production code]
+    java.lang.AssertionError: Architecture Violation [Priority: MEDIUM] - Rule 'no classes that
+    reside outside of package 'io.github.hideyukimori.neneclock.app..' should access standard
+    streams, because ARC-006: 端末へ出せるのは合成ルートだけ（ADR 0005）' was violated (1 times):
+    Method <io.github.hideyukimori.neneclock.ui.swing.ClockTicker.start()> gets field
+    <java.lang.System.err> in (ClockTicker.java:25)
 ```
 
 ---
@@ -201,12 +211,39 @@ ruleset の内容は GitHub API で読み戻して確認した。
 
 ---
 
-## 7. まだ証明していないもの
+## 7. 表示が無い環境での起動（Issue #30）
+
+表示が無い状態で `./gradlew run` を実行したときの実測。
+
+修正前:
+
+```text
+Exception in thread "AWT-EventQueue-0" java.awt.HeadlessException: ...（20 行のスタックトレース）
+BUILD SUCCESSFUL in 2s
+```
+
+🔴 **失敗しているのに終了コード 0**。例外が EDT 上で起きるため `main` が知らずに正常終了していた。
+
+修正後（実測）:
+
+```text
+NeNe Clock needs a graphical display, but none is available.
+On WSL: set guiApplications=true in .wslconfig, then run 'wsl --shutdown' on Windows.
+
+FAILURE: Build failed with an exception.
+> Process 'command '.../java'' finished with non-zero exit value 1
+```
+
+`grep -c "\tat "` は **0**（スタックトレースなし）。`./gradlew run` の終了コードは **1**。
+
+---
+
+## 8. まだ証明していないもの
 
 🔴 **ここに書いていないものは、証明されていない。**
 
 | 対象 | 状態 |
 | --- | --- |
-| WSLg での表示（`./gradlew run`） | **未確認**。この作業環境からは X サーバへ到達できない（実測: `java.awt.AWTError: Can't connect to X11 window server using ':0'`。`/tmp/.X11-unix` が存在しない）。単体テストが headless で通っていることは表示の証拠ではない（QLT-012） |
+| WSLg での表示（`./gradlew run`） | **未確認**。この作業環境では WSLg が無効化されていた（Windows 側 `.wslconfig` の `guiApplications=false`。`/mnt/wslg` に X ソケットが無く `DISPLAY` も未設定）。設定を戻したうえで施主の手元で確認する（#14）。単体テストが headless で通っていることは表示の証拠ではない（QLT-012） |
 | SHA-256 dependency verification | **未導入**（QLT-011 の planned 部分） |
 | `planned` と書いた規則の強制 | 未実装であることを強制マトリクスに明記している。実装したときに状態を書き換える |

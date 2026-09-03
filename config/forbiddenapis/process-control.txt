@@ -1,0 +1,4 @@
+@defaultMessage プロセスを終わらせる判断は合成ルート（:app）の責務。ライブラリ層で exit しない（ARC-006 / ADR 0005）
+java.lang.System#exit(int)
+java.lang.Runtime#halt(int)
+java.lang.Runtime#exit(int)

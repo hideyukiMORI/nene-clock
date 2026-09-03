@@ -5,11 +5,6 @@ java.util.GregorianCalendar
 java.text.SimpleDateFormat
 java.text.DateFormat
 
-@defaultMessage プロセスを終わらせる判断は合成ルートの責務。ライブラリ層で exit しない（ARC-006）
-java.lang.System#exit(int)
-java.lang.Runtime#halt(int)
-java.lang.Runtime#exit(int)
-
 @defaultMessage 例外を握り潰す・標準エラーへ吐く経路を作らない（JAV-005）
 java.lang.Throwable#printStackTrace()
 
