@@ -17,7 +17,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * ホバーしたときだけ現れる、ウィンドウ操作のレール（FR-047）。
  *
- * <p>3 つのアイコンを右上に横並びで持つ。時計の文字に重ならない位置に置くのは
+ * <p>設定と終了の 2 つを右上に横並びで持つ。移動は置かない——窓のどこを掴んでも動くので、
+ * 置くと「押しても何も起きないボタン」になる（ADR 0010）。時計の文字に重ならない位置に置くのは
  * このクラスの外（{@link ClockWindow}）の仕事で、ここは自分の中だけを描く。
  *
  * <p>可変なのは「いま見えている度合い」と「どのアイコンの上にいるか」の 2 つだけで、
@@ -43,7 +44,7 @@ public final class WindowChrome {
     private static final int ICON_ALPHA_HOVERED = 255;
     private static final int ICON_ALPHA_RESTING = 190;
 
-    private static final List<ChromeIcon> ICONS = List.of(ChromeIcon.MOVE, ChromeIcon.SETTINGS, ChromeIcon.CLOSE);
+    private static final List<ChromeIcon> ICONS = List.of(ChromeIcon.SETTINGS, ChromeIcon.CLOSE);
 
     private final Timer fade = new Timer(FADE_INTERVAL_MILLIS, event -> stepFade());
 

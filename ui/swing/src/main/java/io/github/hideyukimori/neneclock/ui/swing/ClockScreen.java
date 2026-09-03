@@ -136,8 +136,8 @@ public final class ClockScreen {
         switch (icon) {
             case SETTINGS -> dialog.display();
             case CLOSE -> quit.run();
-            // 移動は掴んで動かすもので、押して起きることは無い。窓のどこを掴んでも動く。
-            case MOVE, BACK -> {
+            // 戻るはモーダルの中の操作で、クロームからは飛んでこない。
+            case BACK -> {
                 // 何もしない。
             }
         }

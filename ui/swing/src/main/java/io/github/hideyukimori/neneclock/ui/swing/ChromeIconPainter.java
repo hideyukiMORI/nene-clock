@@ -26,9 +26,6 @@ final class ChromeIconPainter {
     private static final double GEAR_TOOTH_OUTER = 9.6;
     private static final int GEAR_TEETH = 8;
     private static final double CENTRE = 12.0;
-    private static final double CROSS_END = 20.8;
-    private static final double CROSS_START = 3.2;
-    private static final double ARROW_DEPTH = 2.8;
     private static final double CLOSE_START = 6.5;
     private static final double CLOSE_END = 17.5;
     private static final double HALF_TURN = Math.PI;
@@ -47,34 +44,11 @@ final class ChromeIconPainter {
         scaled.setColor(colour);
         scaled.setStroke(new BasicStroke((float) STROKE, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         switch (icon) {
-            case MOVE -> paintMove(scaled);
             case SETTINGS -> paintSettings(scaled);
             case CLOSE -> paintClose(scaled);
             case BACK -> paintBack(scaled);
         }
         scaled.dispose();
-    }
-
-    private static void paintMove(Graphics2D canvas) {
-        canvas.draw(new Line2D.Double(CENTRE, CROSS_START, CENTRE, CROSS_END));
-        canvas.draw(new Line2D.Double(CROSS_START, CENTRE, CROSS_END, CENTRE));
-        canvas.draw(arrowHead(CENTRE, CROSS_START, 0, 1));
-        canvas.draw(arrowHead(CENTRE, CROSS_END, 0, -1));
-        canvas.draw(arrowHead(CROSS_START, CENTRE, 1, 0));
-        canvas.draw(arrowHead(CROSS_END, CENTRE, -1, 0));
-    }
-
-    /** 矢の先端 (tipX, tipY) から、内側へ (towardX, towardY) 方向に開く「く」の字。 */
-    private static Path2D arrowHead(double tipX, double tipY, double towardX, double towardY) {
-        double baseX = tipX + towardX * ARROW_DEPTH;
-        double baseY = tipY + towardY * ARROW_DEPTH;
-        double spreadX = towardY * ARROW_DEPTH;
-        double spreadY = towardX * ARROW_DEPTH;
-        Path2D head = new Path2D.Double();
-        head.moveTo(baseX + spreadX, baseY + spreadY);
-        head.lineTo(tipX, tipY);
-        head.lineTo(baseX - spreadX, baseY - spreadY);
-        return head;
     }
 
     private static void paintSettings(Graphics2D canvas) {

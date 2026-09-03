@@ -24,3 +24,4 @@ ADR は「なぜそう決めたか」「何を却下したか」を書く。
 | [0007](0007-one-colour-type-two-roles.md) | 色の型は 1 つにし、役割は成分名で語る | 受理 |
 | [0008](0008-the-window-is-the-clock.md) | 窓そのものを時計にする。枠と設定タブをやめる | 受理 |
 | [0009](0009-language-is-a-setting-not-a-locale.md) | 言語は設定であって、実行環境のロケールではない | 受理 |
+| [0010](0010-no-button-that-does-nothing.md) | 押しても何も起きないボタンを置かない（移動アイコンをやめる） | 受理 |
