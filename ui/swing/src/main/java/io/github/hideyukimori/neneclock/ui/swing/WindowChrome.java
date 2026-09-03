@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
@@ -105,7 +104,7 @@ public final class WindowChrome {
             return;
         }
         Graphics2D canvas = (Graphics2D) graphics.create();
-        canvas.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        TextRendering.smooth(canvas);
         canvas.setColor(withVisibility(ink, RAIL_ALPHA));
         canvas.fill(new RoundRectangle2D.Double(0, 0, surface.getWidth(), surface.getHeight(), RAIL_ARC, RAIL_ARC));
         for (int index = 0; index < ICONS.size(); index++) {

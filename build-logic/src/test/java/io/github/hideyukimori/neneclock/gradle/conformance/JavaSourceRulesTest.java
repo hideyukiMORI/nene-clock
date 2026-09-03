@@ -1,5 +1,6 @@
 package io.github.hideyukimori.neneclock.gradle.conformance;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -158,6 +159,70 @@ class JavaSourceRulesTest {
                     """;
 
             assertEquals(List.of(), ruleIds("core/domain/src/main/java/Sample.java", source));
+        }
+    }
+
+    @Nested
+    @DisplayName("CNF-012 テキスト部品は TextRendering を通して作る")
+    class TextComponents {
+
+        @Test
+        void rejectsALabelBuiltDirectlyInTheUi() {
+            String source =
+                    """
+                    package io.github.hideyukimori.neneclock.ui.swing;
+
+                    final class Sample {
+                        private final JLabel caption = new JLabel("hello");
+                    }
+                    """;
+
+            assertTrue(ruleIds("ui/swing/src/main/java/Sample.java", source).contains("CNF-012"));
+        }
+
+        @Test
+        void rejectsATextFieldBuiltDirectlyInTheUi() {
+            String source =
+                    """
+                    package io.github.hideyukimori.neneclock.ui.swing;
+
+                    final class Sample {
+                        private final JTextField hex = new JTextField(6);
+                    }
+                    """;
+
+            assertTrue(ruleIds("ui/swing/src/main/java/Sample.java", source).contains("CNF-012"));
+        }
+
+        @Test
+        void allowsTheOneFileThatOwnsTheHints() {
+            String source =
+                    """
+                    package io.github.hideyukimori.neneclock.ui.swing;
+
+                    final class TextRendering {
+                        static JLabel label(String text) {
+                            return new JLabel(text);
+                        }
+                    }
+                    """;
+
+            assertFalse(ruleIds("ui/swing/src/main/java/TextRendering.java", source)
+                    .contains("CNF-012"));
+        }
+
+        @Test
+        void ignoresTheSameConstructionOutsideTheUi() {
+            String source =
+                    """
+                    package io.github.hideyukimori.neneclock.app;
+
+                    final class Sample {
+                        private final JLabel caption = new JLabel("hello");
+                    }
+                    """;
+
+            assertFalse(ruleIds("app/src/main/java/Sample.java", source).contains("CNF-012"));
         }
     }
 

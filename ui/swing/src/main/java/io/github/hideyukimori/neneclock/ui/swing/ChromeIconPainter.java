@@ -39,7 +39,7 @@ final class ChromeIconPainter {
     /** アイコン 1 つを、左上 (x, y) から size 四方に描く。 */
     static void paint(Graphics2D canvas, ChromeIcon icon, Color colour, IconBox box) {
         Graphics2D scaled = (Graphics2D) canvas.create();
-        scaled.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        TextRendering.smooth(scaled);
         scaled.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
         scaled.translate(box.x(), box.y());
         double factor = box.size() / GRID;

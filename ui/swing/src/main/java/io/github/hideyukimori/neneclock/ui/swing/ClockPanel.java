@@ -39,8 +39,8 @@ public final class ClockPanel {
 
     private final TypefaceFontLoader typefaces;
     private final JPanel panel = new JPanel(new GridBagLayout());
-    private final JLabel time = new JLabel("", SwingConstants.CENTER);
-    private final JLabel date = new JLabel("", SwingConstants.CENTER);
+    private final JLabel time = TextRendering.centredLabel("", SwingConstants.CENTER);
+    private final JLabel date = TextRendering.centredLabel("", SwingConstants.CENTER);
 
     /** 部品を組み立てる。表示内容は {@code render*} が決める。 */
     public ClockPanel(TypefaceFontLoader typefaces) {

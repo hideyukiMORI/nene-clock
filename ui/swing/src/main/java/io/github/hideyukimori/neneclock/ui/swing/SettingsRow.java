@@ -21,7 +21,7 @@ public final class SettingsRow {
 
     /** ラベルと操作を組にして 1 行にする。 */
     public SettingsRow(String label, JComponent control, boolean withRule) {
-        this.caption = new JLabel(Objects.requireNonNull(label, "label"));
+        this.caption = TextRendering.label(Objects.requireNonNull(label, "label"));
         this.ruled = withRule;
         caption.setFont(caption.getFont().deriveFont(Font.PLAIN, LABEL_POINTS));
         JPanel right = new JPanel(new BorderLayout());

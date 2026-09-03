@@ -6,7 +6,6 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
@@ -73,7 +72,7 @@ public final class ColourSwatch {
 
     private void paintSwatch(Graphics graphics) {
         Graphics2D canvas = (Graphics2D) graphics.create();
-        canvas.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        TextRendering.smooth(canvas);
         int width = surface.getWidth();
         canvas.setColor(new Color(value.red(), value.green(), value.blue()));
         canvas.fill(new RoundRectangle2D.Double(INSET, INSET, width - DOUBLE_INSET, HEIGHT - DOUBLE_INSET, ARC, ARC));
