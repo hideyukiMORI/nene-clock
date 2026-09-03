@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!--
+  NeNe Clock の Checkstyle 設定（唯一の正本）。
+  役割分担: 整形は Spotless、null は NullAway、レイヤは ArchUnit、固有規約は validateConformance。
+  ここが見るのは「構造と複雑度」（JAV-011 / JAV-012 / JAV-005 / JAV-009）だけにする。
+  suppressions ファイルは持たない（CNF-008）。
+-->
+<module name="Checker">
+    <property name="charset" value="UTF-8"/>
+    <property name="severity" value="error"/>
+    <property name="fileExtensions" value="java"/>
+
+    <module name="NewlineAtEndOfFile"/>
+    <module name="FileLength">
+        <property name="max" value="400"/>
+    </module>
+
+    <module name="TreeWalker">
+        <!-- JAV-011: 1 ファイル 1 主要宣言 -->
+        <module name="OneTopLevelClass"/>
+        <module name="OuterTypeFilename"/>
+
+        <!-- JAV-012: 複雑度に上限を置く -->
+        <module name="MethodLength">
+            <property name="max" value="40"/>
+            <property name="countEmpty" value="false"/>
+        </module>
+        <module name="ParameterNumber">
+            <property name="max" value="4"/>
+            <property name="tokens" value="METHOD_DEF"/>
+        </module>
+        <module name="CyclomaticComplexity">
+            <property name="max" value="10"/>
+        </module>
+        <module name="NestedIfDepth">
+            <property name="max" value="3"/>
+        </module>
+        <module name="NestedForDepth">
+            <property name="max" value="2"/>
+        </module>
+        <module name="NestedTryDepth">
+            <property name="max" value="1"/>
+        </module>
+        <module name="BooleanExpressionComplexity">
+            <property name="max" value="3"/>
+        </module>
+
+        <!-- JAV-005: 期待される失敗は例外で表さない -->
+        <module name="IllegalCatch">
+            <property name="illegalClassNames"
+                      value="java.lang.Exception, java.lang.Throwable, java.lang.RuntimeException, java.lang.Error"/>
+        </module>
+        <module name="IllegalThrows"/>
+
+        <!-- JAV-003 / JAV-006: 公開状態は不変・生の値を持ち回らない -->
+        <module name="VisibilityModifier">
+            <property name="protectedAllowed" value="false"/>
+            <property name="packageAllowed" value="false"/>
+        </module>
+        <module name="FinalClass"/>
+        <module name="MagicNumber">
+            <property name="ignoreAnnotation" value="true"/>
+        </module>
+        <module name="ArrayTypeStyle"/>
+
+        <!-- JAV-009: 言語マジックと暗黙の依存を減らす -->
+        <module name="IllegalImport">
+            <property name="illegalPkgs" value="sun, com.sun, jdk.internal"/>
+        </module>
+        <module name="AvoidStarImport"/>
+        <module name="UnusedImports"/>
+        <module name="RedundantImport"/>
+        <module name="EqualsHashCode"/>
+        <module name="CovariantEquals"/>
+        <module name="StringLiteralEquality"/>
+        <module name="ModifiedControlVariable"/>
+        <module name="MultipleVariableDeclarations"/>
+        <module name="NeedBraces"/>
+        <module name="FallThrough"/>
+
+        <!-- 公開宣言は説明を持つ（外から読める設計であることを保つ） -->
+        <module name="JavadocType">
+            <property name="scope" value="public"/>
+            <property name="excludeScope" value="package"/>
+        </module>
+        <module name="InterfaceIsType"/>
+    </module>
+</module>
