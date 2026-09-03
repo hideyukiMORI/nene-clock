@@ -1,23 +1,25 @@
-# Build output
-build/
-build-logic/build/
-.gradle/
-
-# JDK / tooling caches
-.kotlin/
+# Gradle build output（パターンはアンカーする。`build/` だけだと Java の
+# パッケージ名に build が含まれるときにソースまで無視される・実測あり）
+/build/
+/*/build/
+/*/*/build/
+/.gradle/
+/*/.gradle/
+/.kotlin/
+/*/.kotlin/
 
 # IDE state
-.idea/
+/.idea/
 *.iml
-.vscode/
-.settings/
-.classpath
-.project
+/.vscode/
+/.settings/
+/.classpath
+/.project
 
 # OS noise
 .DS_Store
 Thumbs.db
 
 # Local environment
-local.properties
+/local.properties
 *.log

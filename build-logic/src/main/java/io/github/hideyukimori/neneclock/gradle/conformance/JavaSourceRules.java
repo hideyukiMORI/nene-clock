@@ -1,0 +1,227 @@
+package io.github.hideyukimori.neneclock.gradle.conformance;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * production Java ソースに対する規約検査（CNF-001 / 002 / 003 / 004 / 006 / 007）。
+ *
+ * <p>ファイルシステムを知らない。呼び出し側が {@link SourceFile} を与える。
+ */
+public final class JavaSourceRules {
+
+    /** 常に禁止する型名の語尾。文脈次第で妥当な語（Processor 等）は機械では拒否しない。 */
+    private static final Set<String> FORBIDDEN_TYPE_SUFFIXES =
+            Set.of("Manager", "Helper", "Util", "Utils", "Common");
+
+    /** 常に禁止するパッケージ名の構成要素。 */
+    private static final Set<String> FORBIDDEN_PACKAGE_SEGMENTS =
+            Set.of("utils", "helpers", "managers", "misc", "common");
+
+    private static final Pattern PACKAGE_DECLARATION = Pattern.compile("^\\s*package\\s+([\\w.]+)\\s*;");
+
+    private static final Pattern TYPE_DECLARATION =
+            Pattern.compile("\\b(?:class|interface|enum|record|@interface)\\s+(\\w+)");
+
+    private static final Pattern METHOD_DECLARATION =
+            Pattern.compile("^\\s*(?:(?:public|protected|private|static|final|abstract|synchronized|native|default|strictfp)\\s+)*"
+                    + "[\\w$<>\\[\\],.?\\s]+?\\s+(\\w+)\\s*\\(");
+
+    private static final Set<String> NOT_METHOD_NAMES =
+            Set.of("if", "for", "while", "switch", "catch", "return", "synchronized", "new", "try", "do", "else");
+
+    private static final Pattern SUPPRESSION = Pattern.compile("@SuppressWarnings");
+
+    private static final Pattern WAIVER_REFERENCE = Pattern.compile("//\\s*Waiver:\\s*(WVR-\\d{4})");
+
+    private static final Pattern TASK_MARKER = Pattern.compile("\\b(TODO|FIXME)\\b");
+
+    private static final Pattern ISSUE_REFERENCE = Pattern.compile("\\(#\\d+\\)");
+
+    /** UI 状態の反映を許すメソッド名の接頭辞。 */
+    private static final String RENDER_METHOD_PREFIX = "render";
+
+    /** 反映経路を 1 本に固定したい UI 呼び出し。 */
+    private static final List<String> RENDER_ONLY_CALLS = List.of("setEnabled(", "setAlwaysOnTop(");
+
+    private JavaSourceRules() {}
+
+    public static Result check(SourceFile file) {
+        List<Violation> violations = new ArrayList<>();
+        List<String> referencedWaivers = new ArrayList<>();
+
+        boolean uiSource = file.path().startsWith("ui/");
+        boolean block = false;
+        int depth = 0;
+        int topLevelTypes = 0;
+        String primaryType = null;
+        String previousCode = "";
+        Deque<Method> methods = new ArrayDeque<>();
+
+        for (int index = 0; index < file.lines().size(); index++) {
+            int lineNumber = index + 1;
+            String raw = file.lines().get(index);
+            CodeText text = CodeText.scan(raw, block);
+            block = text.inBlockComment();
+            String code = text.code();
+
+            checkPackage(file, violations, lineNumber, code);
+            checkTaskMarker(file, violations, lineNumber, text.comment());
+            checkSuppression(file, violations, referencedWaivers, lineNumber, code, previousCode);
+
+            if (code.contains("default:") || code.contains("default ->")) {
+                violations.add(new Violation(
+                        "CNF-003",
+                        file.path(),
+                        lineNumber,
+                        "switch に default を書かない。網羅性検査を無効化する"));
+            }
+
+            Matcher typeMatcher = TYPE_DECLARATION.matcher(code);
+            while (typeMatcher.find()) {
+                String typeName = typeMatcher.group(1);
+                if (depth == 0) {
+                    topLevelTypes++;
+                    if (primaryType == null) {
+                        primaryType = typeName;
+                    }
+                }
+                checkTypeName(file, violations, lineNumber, typeName);
+            }
+
+            String declaredMethod = methodNameOf(code);
+            int depthBeforeLine = depth;
+            depth += countOf(code, '{') - countOf(code, '}');
+            if (declaredMethod != null && code.contains("{")) {
+                methods.push(new Method(declaredMethod, depthBeforeLine));
+            }
+            while (!methods.isEmpty() && depth <= methods.peek().openedAtDepth()) {
+                methods.pop();
+            }
+
+            if (uiSource) {
+                checkRenderOnlyCall(file, violations, lineNumber, code, methods.peek());
+            }
+            if (!code.isBlank()) {
+                previousCode = raw;
+            }
+        }
+
+        if (topLevelTypes > 1) {
+            violations.add(Violation.atFile(
+                    "CNF-007", file.path(), "トップレベル型が " + topLevelTypes + " 個ある。1 ファイル 1 主要宣言"));
+        }
+        if (primaryType != null && !file.fileName().equals(primaryType + ".java")) {
+            violations.add(Violation.atFile(
+                    "CNF-007", file.path(), "ファイル名が主要型 " + primaryType + " と一致しない"));
+        }
+        return new Result(List.copyOf(violations), List.copyOf(referencedWaivers));
+    }
+
+    private static void checkPackage(SourceFile file, List<Violation> violations, int lineNumber, String code) {
+        Matcher matcher = PACKAGE_DECLARATION.matcher(code);
+        if (!matcher.find()) {
+            return;
+        }
+        for (String segment : matcher.group(1).split("\\.")) {
+            if (FORBIDDEN_PACKAGE_SEGMENTS.contains(segment)) {
+                violations.add(new Violation(
+                        "CNF-001", file.path(), lineNumber, "禁止されたパッケージ名の構成要素: " + segment));
+            }
+        }
+    }
+
+    private static void checkTypeName(SourceFile file, List<Violation> violations, int lineNumber, String typeName) {
+        for (String suffix : FORBIDDEN_TYPE_SUFFIXES) {
+            if (typeName.equals(suffix) || typeName.endsWith(suffix)) {
+                violations.add(new Violation(
+                        "CNF-001", file.path(), lineNumber, "禁止された総称型名: " + typeName + "（役割を名前で語る）"));
+                return;
+            }
+        }
+    }
+
+    private static void checkTaskMarker(SourceFile file, List<Violation> violations, int lineNumber, String comment) {
+        if (TASK_MARKER.matcher(comment).find() && !ISSUE_REFERENCE.matcher(comment).find()) {
+            violations.add(new Violation(
+                    "CNF-006", file.path(), lineNumber, "TODO / FIXME には Issue 番号 (#N) を書く"));
+        }
+    }
+
+    private static void checkSuppression(
+            SourceFile file,
+            List<Violation> violations,
+            List<String> referencedWaivers,
+            int lineNumber,
+            String code,
+            String previousLine) {
+        if (!SUPPRESSION.matcher(code).find()) {
+            return;
+        }
+        if (code.contains("\"all\"")) {
+            violations.add(new Violation(
+                    "CNF-002", file.path(), lineNumber, "@SuppressWarnings(\"all\") は waiver でも許可されない"));
+            return;
+        }
+        Matcher waiver = WAIVER_REFERENCE.matcher(previousLine);
+        if (!waiver.find()) {
+            violations.add(new Violation(
+                    "CNF-002",
+                    file.path(),
+                    lineNumber,
+                    "@SuppressWarnings の直前行に // Waiver: WVR-NNNN が必要"));
+            return;
+        }
+        referencedWaivers.add(waiver.group(1));
+    }
+
+    private static void checkRenderOnlyCall(
+            SourceFile file, List<Violation> violations, int lineNumber, String code, Method enclosing) {
+        for (String call : RENDER_ONLY_CALLS) {
+            if (!code.contains(call)) {
+                continue;
+            }
+            if (enclosing != null && enclosing.name().startsWith(RENDER_METHOD_PREFIX)) {
+                continue;
+            }
+            String where = enclosing == null ? "メソッド外" : enclosing.name();
+            violations.add(new Violation(
+                    "CNF-004",
+                    file.path(),
+                    lineNumber,
+                    call + " を " + where + " で呼んでいる。UI 状態の反映は render* からのみ"));
+        }
+    }
+
+    private static String methodNameOf(String code) {
+        Matcher matcher = METHOD_DECLARATION.matcher(code);
+        if (!matcher.find()) {
+            return null;
+        }
+        String name = matcher.group(1);
+        if (NOT_METHOD_NAMES.contains(name)) {
+            return null;
+        }
+        return name;
+    }
+
+    private static int countOf(String text, char target) {
+        int count = 0;
+        for (int index = 0; index < text.length(); index++) {
+            if (text.charAt(index) == target) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private record Method(String name, int openedAtDepth) {}
+
+    /** 1 ファイルの検査結果。参照された waiver ID は台帳検査（CNF-009）へ渡す。 */
+    public record Result(List<Violation> violations, List<String> referencedWaivers) {}
+}

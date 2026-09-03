@@ -1,0 +1,30 @@
+# 承認されたモジュールと、許可された production 依存辺。
+# ここに無いモジュール／依存は validateConformance（CNF-010）が拒否する。
+# 正本の説明は docs/PROJECT_LAYOUT.md。両者が食い違ったら merge を止める。
+
+# 中間コンテナ（build.gradle.kts を持たない入れ物）。Gradle 上は project なので明示する。
+module :core
+module :adapters
+module :ui
+module :quality
+
+module :core:domain
+module :core:application
+module :adapters:system-time
+module :adapters:preferences
+module :ui:swing
+module :app
+module :quality:architecture-tests
+
+edge :core:application -> :core:domain
+edge :adapters:system-time -> :core:application
+edge :adapters:system-time -> :core:domain
+edge :adapters:preferences -> :core:application
+edge :adapters:preferences -> :core:domain
+edge :ui:swing -> :core:application
+edge :ui:swing -> :core:domain
+edge :app -> :core:application
+edge :app -> :core:domain
+edge :app -> :adapters:system-time
+edge :app -> :adapters:preferences
+edge :app -> :ui:swing
