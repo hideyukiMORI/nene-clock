@@ -53,6 +53,10 @@ public final class ConformanceCheck {
         violations.addAll(WaiverLedger.check(waiverFiles, waiverIndex, referencedWaivers, today));
 
         violations.addAll(BaselineRules.check(allPaths, configurationFiles));
+
+        List<SourceFile> wiringSources =
+                read(allPaths, path -> path.endsWith(".gradle.kts") || path.startsWith("build-logic/src/main/java/"));
+        violations.addAll(ConfigurationWiringRules.check(allPaths, wiringSources));
         violations.addAll(ModuleGraphRules.check(moduleGraph, approvedModules, approvedEdges));
         return List.copyOf(violations);
     }
