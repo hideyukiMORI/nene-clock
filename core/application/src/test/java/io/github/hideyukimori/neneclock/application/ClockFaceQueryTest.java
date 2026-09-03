@@ -6,7 +6,7 @@ import io.github.hideyukimori.neneclock.domain.ClockFormat;
 import io.github.hideyukimori.neneclock.domain.DateVisibility;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.Language;
-import io.github.hideyukimori.neneclock.domain.RgbaColor;
+import io.github.hideyukimori.neneclock.domain.RgbColor;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
 import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
@@ -80,8 +80,8 @@ class ClockFaceQueryTest {
                 WindowTopmost.DISABLED,
                 Typeface.DEFAULT,
                 FontSize.DEFAULT,
-                RgbaColor.DEFAULT_FONT,
-                RgbaColor.DEFAULT_BACKGROUND,
+                RgbColor.DEFAULT_FONT,
+                RgbColor.DEFAULT_BACKGROUND,
                 Language.DEFAULT);
     }
 }

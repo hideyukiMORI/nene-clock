@@ -9,7 +9,7 @@ package io.github.hideyukimori.neneclock.domain;
 public record SettingsSchemaVersion(int value) {
 
     /** 現在アプリが書き出す版。 */
-    public static final SettingsSchemaVersion CURRENT = new SettingsSchemaVersion(6);
+    public static final SettingsSchemaVersion CURRENT = new SettingsSchemaVersion(7);
 
     /** 移行して読める最も古い版。これより古い版は存在しない。 */
     public static final SettingsSchemaVersion EARLIEST_MIGRATABLE = new SettingsSchemaVersion(1);

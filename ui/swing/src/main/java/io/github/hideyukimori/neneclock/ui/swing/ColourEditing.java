@@ -1,6 +1,6 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
-import io.github.hideyukimori.neneclock.domain.RgbaColor;
+import io.github.hideyukimori.neneclock.domain.RgbColor;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import java.util.Objects;
 
@@ -18,7 +18,7 @@ public record ColourEditing(UserSettings settings, SettingsDestination role) {
     }
 
     /** いじっている色。 */
-    public RgbaColor editing() {
+    public RgbColor editing() {
         return switch (role) {
             case BACKGROUND_COLOUR -> settings.backgroundColor();
             case FONT_COLOUR, FORM, TYPEFACE -> settings.fontColor();
@@ -26,7 +26,7 @@ public record ColourEditing(UserSettings settings, SettingsDestination role) {
     }
 
     /** いじっていないほうの色。読める色を選び直すときの相手になる。 */
-    public RgbaColor counterpart() {
+    public RgbColor counterpart() {
         return switch (role) {
             case BACKGROUND_COLOUR -> settings.fontColor();
             case FONT_COLOUR, FORM, TYPEFACE -> settings.backgroundColor();

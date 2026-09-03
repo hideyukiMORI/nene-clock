@@ -1,7 +1,7 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
-import io.github.hideyukimori.neneclock.domain.RgbaColor;
-import io.github.hideyukimori.neneclock.domain.RgbaColorOutcome;
+import io.github.hideyukimori.neneclock.domain.RgbColor;
+import io.github.hideyukimori.neneclock.domain.RgbColorOutcome;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,20 +29,20 @@ public final class SwatchPresets {
     private SwatchPresets() {}
 
     /** 並び順のままのプリセット。 */
-    public static List<RgbaColor> all() {
-        List<RgbaColor> colours = new ArrayList<>();
+    public static List<RgbColor> all() {
+        List<RgbColor> colours = new ArrayList<>();
         for (int packed : VALUES) {
             colours.add(unpack(packed));
         }
         return List.copyOf(colours);
     }
 
-    private static RgbaColor unpack(int packed) {
-        return switch (RgbaColor.opaque(
+    private static RgbColor unpack(int packed) {
+        return switch (RgbColor.of(
                 (packed >> RED_SHIFT) & BYTE_MASK, (packed >> GREEN_SHIFT) & BYTE_MASK, packed & BYTE_MASK)) {
-            case RgbaColorOutcome.Accepted accepted -> accepted.value();
+            case RgbColorOutcome.Accepted accepted -> accepted.value();
             // 定数は 24 bit に収めてあるので、ここへは来ない。
-            case RgbaColorOutcome.Rejected outOfRange -> RgbaColor.DEFAULT_FONT;
+            case RgbColorOutcome.Rejected outOfRange -> RgbColor.DEFAULT_FONT;
         };
     }
 }

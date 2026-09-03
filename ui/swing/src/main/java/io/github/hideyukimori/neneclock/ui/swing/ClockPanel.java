@@ -3,16 +3,12 @@ package io.github.hideyukimori.neneclock.ui.swing;
 import io.github.hideyukimori.neneclock.application.ClockFace;
 import io.github.hideyukimori.neneclock.application.DateLine;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
-import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.RenderingHints;
-import java.awt.geom.RoundRectangle2D;
 import java.util.Objects;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -40,7 +36,7 @@ public final class ClockPanel {
     private static final String WIDEST_DATE = "0000-00-00";
     private static final int PADDING = 30;
 
-    /** 角丸の半径。窓の形はこの絵が決める。 */
+    /** 角丸の半径。窓の切り抜きに使う。 */
     static final int CORNER = 16;
 
     private static final int LINE_GAP = 10;
@@ -61,8 +57,8 @@ public final class ClockPanel {
     /** 部品を組み立てる。表示内容は {@code render*} が決める。 */
     public ClockPanel(TypefaceFontLoader typefaces) {
         this.typefaces = Objects.requireNonNull(typefaces, "typefaces");
-        // 🔑 地を自分で描く。窓に任せると、半透明も角丸も窓の性質に縛られる（ADR 0011）。
-        panel.setOpaque(false);
+        // 地は自分で描く。色は設定から来るので、Swing の背景色に預けない。
+        panel.setOpaque(true);
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.gridx = 0;
         constraints.gridy = 0;
@@ -96,12 +92,12 @@ public final class ClockPanel {
         panel.repaint();
     }
 
-    /** 設定を反映する。半透明で描けない環境では、地を不透明にして描く。 */
-    public void renderSettings(UserSettings settings, boolean translucent) {
+    /** 設定を反映する。 */
+    public void renderSettings(UserSettings settings) {
         Objects.requireNonNull(settings, "settings");
         int points = settings.fontSize().points();
         Color foreground = AwtColour.of(settings.fontColor());
-        fill = translucent ? AwtColour.of(settings.backgroundColor()) : AwtColour.opaque(settings.backgroundColor());
+        fill = AwtColour.of(settings.backgroundColor());
         time.setFont(typefaces.load(settings.typeface(), points));
         time.setForeground(foreground);
         date.setFont(typefaces.load(settings.typeface(), Math.max(MINIMUM_DATE_POINTS, points / DATE_FONT_DIVISOR)));
@@ -121,12 +117,9 @@ public final class ClockPanel {
         return new Dimension(width + PADDING * 2, height + PADDING * 2);
     }
 
+    /** 地を描く。角丸は窓の切り抜き（{@code setShape}）が作る。 */
     private void paintGround(Graphics graphics) {
-        Graphics2D canvas = (Graphics2D) graphics.create();
-        canvas.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        canvas.setComposite(AlphaComposite.Src);
-        canvas.setColor(fill);
-        canvas.fill(new RoundRectangle2D.Double(0, 0, panel.getWidth(), panel.getHeight(), CORNER, CORNER));
-        canvas.dispose();
+        graphics.setColor(fill);
+        graphics.fillRect(0, 0, panel.getWidth(), panel.getHeight());
     }
 }
