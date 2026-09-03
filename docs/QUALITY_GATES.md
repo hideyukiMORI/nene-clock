@@ -181,6 +181,16 @@ waiver ファイルの命名・必須項目（Rule / Scope / Issue / Expires）�
 （Issue #41。実測は [quality/gate-proofs.md](quality/gate-proofs.md) 第 12 節）。
 自前描画の部品だけヒントを立てていたので、**同じ画面の中で描き方が 2 通り**になっていた。
 
+### CNF-013 — 画面に出す文言は 1 か所に集める
+
+`ui/` の Java ソースに、日本語を含む文字列リテラルを書くことを拒否する。
+文言は `UiText` に集める（FR-048）。例外の説明文だけは外す（利用者ではなく開発者に向けた文である）。
+
+🔴 この規則も事故から生まれた。**文言の検査を足した直後に、その検査を迂回した**
+（Issue #42）。言語の選択肢だけを `List.of("日本語", "English")` とリテラルで書いていたので、
+`UiText` を見る検査は緑のまま、英語 UI では豆腐（□□□）で描かれていた。
+実測は [quality/gate-proofs.md](quality/gate-proofs.md) 第 13 節。
+
 ---
 
 ## 3. 強制マトリクス
@@ -234,6 +244,7 @@ waiver ファイルの命名・必須項目（Rule / Scope / Issue / Expires）�
 | CNF-010 | active | `ModuleGraphRules` |
 | CNF-011 | active | `ConfigurationWiringRules` |
 | CNF-012 | active | `JavaSourceRules` |
+| CNF-013 | active | `JavaSourceRules` |
 
 ---
 

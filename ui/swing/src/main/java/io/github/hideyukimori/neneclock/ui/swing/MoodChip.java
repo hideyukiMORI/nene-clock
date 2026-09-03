@@ -10,6 +10,7 @@ import java.awt.geom.RoundRectangle2D;
 import java.util.Objects;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import org.jspecify.annotations.Nullable;
 
 /** 書体を雰囲気で絞り込む札。選ばれているものが反転した面になる。 */
 public final class MoodChip {
@@ -19,7 +20,7 @@ public final class MoodChip {
     private static final int SIDE_PAD = 11;
     private static final float LABEL_POINTS = 11f;
 
-    private final String label;
+    private String label = "";
 
     private final JPanel surface = new JPanel(null) {
         @Override
@@ -28,15 +29,12 @@ public final class MoodChip {
         }
     };
 
-    private Palette palette = Palette.from(io.github.hideyukimori.neneclock.domain.RgbColor.DEFAULT_BACKGROUND);
+    private @Nullable UiTheme theme;
     private boolean selected;
 
-    /** 表示名を決めて組み立てる。 */
-    public MoodChip(String label) {
-        this.label = Objects.requireNonNull(label, "label");
+    /** 組み立てる。表示名は言語で変わるので {@code render*} が持ち込む。 */
+    public MoodChip() {
         surface.setOpaque(false);
-        surface.setPreferredSize(new Dimension(measure(), HEIGHT));
-        surface.setMaximumSize(new Dimension(measure(), HEIGHT));
     }
 
     /** 画面に載せるための Swing 部品。 */
@@ -55,24 +53,34 @@ public final class MoodChip {
         });
     }
 
-    /** 選択状態と配色を反映する。 */
-    public void renderSelection(boolean chosen, Palette colours) {
+    /** 表示名・選択状態・配色を反映する。 */
+    public void renderSelection(String text, boolean chosen, UiTheme shown) {
+        this.label = Objects.requireNonNull(text, "text");
         this.selected = chosen;
-        this.palette = Objects.requireNonNull(colours, "colours");
+        this.theme = Objects.requireNonNull(shown, "shown");
+        int width = measure(shown);
+        surface.setPreferredSize(new Dimension(width, HEIGHT));
+        surface.setMaximumSize(new Dimension(width, HEIGHT));
+        surface.revalidate();
         surface.repaint();
     }
 
-    private int measure() {
-        FontMetrics metrics = surface.getFontMetrics(surface.getFont().deriveFont(LABEL_POINTS));
+    private int measure(UiTheme shown) {
+        FontMetrics metrics = surface.getFontMetrics(shown.font(LABEL_POINTS));
         return metrics.stringWidth(label) + SIDE_PAD * 2;
     }
 
     private void paintChip(Graphics graphics) {
+        UiTheme theme = this.theme;
+        if (theme == null) {
+            return;
+        }
+        Palette palette = theme.palette();
         Graphics2D canvas = (Graphics2D) graphics.create();
         TextRendering.smooth(canvas);
         canvas.setColor(selected ? palette.inverted() : palette.wash());
         canvas.fill(new RoundRectangle2D.Double(0, 0, surface.getWidth(), HEIGHT, ARC, ARC));
-        canvas.setFont(surface.getFont().deriveFont(LABEL_POINTS));
+        canvas.setFont(theme.font(LABEL_POINTS));
         FontMetrics metrics = canvas.getFontMetrics();
         canvas.setColor(selected ? palette.onInverted() : palette.textMuted());
         canvas.drawString(

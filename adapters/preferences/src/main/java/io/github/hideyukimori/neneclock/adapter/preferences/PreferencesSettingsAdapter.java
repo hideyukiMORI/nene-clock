@@ -9,6 +9,7 @@ import io.github.hideyukimori.neneclock.domain.ClockFormat;
 import io.github.hideyukimori.neneclock.domain.DateVisibility;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.FontSizeOutcome;
+import io.github.hideyukimori.neneclock.domain.Language;
 import io.github.hideyukimori.neneclock.domain.RgbColor;
 import io.github.hideyukimori.neneclock.domain.RgbColorOutcome;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
@@ -43,10 +44,12 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
     private static final String KEY_BACKGROUND_RED = "backgroundRed";
     private static final String KEY_BACKGROUND_GREEN = "backgroundGreen";
     private static final String KEY_BACKGROUND_BLUE = "backgroundBlue";
+    private static final String KEY_LANGUAGE = "language";
 
     private static final int SCHEMA_WITHOUT_APPEARANCE = 1;
     private static final int SCHEMA_WITH_ENVIRONMENT_FONTS = 2;
     private static final int SCHEMA_WITH_BACKGROUND = 4;
+    private static final int SCHEMA_WITH_LANGUAGE = 5;
     private static final int SCHEMA_ABSENT = 0;
     private static final int INTEGER_ABSENT = -1;
 
@@ -98,6 +101,7 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         node.putInt(KEY_BACKGROUND_RED, settings.backgroundColor().red());
         node.putInt(KEY_BACKGROUND_GREEN, settings.backgroundColor().green());
         node.putInt(KEY_BACKGROUND_BLUE, settings.backgroundColor().blue());
+        node.put(KEY_LANGUAGE, settings.language().name());
         try {
             node.flush();
         } catch (BackingStoreException failure) {
@@ -111,7 +115,7 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
      *
      * <p>v1 は書体と文字色を持たない。v2 は「実行環境の書体名」を持つが、その名前は同梱書体の
      * 集合とは別物である（ADR 0006）。同じ名前の同梱書体があればそれを引き継ぎ、無ければ既定へ落とす。
-     * v3 までは背景色を持たない（ADR 0007）。欠けている分は domain の既定値で埋める。推測はしない。
+     * v3 までは背景色を持たず、v4 までは言語を持たない。欠けている分は domain の既定値で埋める。推測はしない。
      */
     private SettingsLoadOutcome restore(SettingsSchemaVersion stored) {
         UserSettings carried = readSettingsSharedByEveryVersion();
@@ -136,6 +140,12 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         if (background == null) {
             return invalidValue();
         }
+        Language language = stored.value() < SCHEMA_WITH_LANGUAGE
+                ? Language.DEFAULT
+                : lookup(Language.values(), node.get(KEY_LANGUAGE, null));
+        if (language == null) {
+            return invalidValue();
+        }
         return new SettingsLoadOutcome.Restored(new UserSettings(
                 carried.clockFormat(),
                 carried.secondsVisibility(),
@@ -144,7 +154,8 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
                 typeface,
                 carried.fontSize(),
                 color,
-                background));
+                background,
+                language));
     }
 
     /** v1 から変わっていない 5 項目。書体と文字色は既定値のまま返す。 */
@@ -168,7 +179,8 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
                 Typeface.DEFAULT,
                 fontSize,
                 RgbColor.DEFAULT_FONT,
-                RgbColor.DEFAULT_BACKGROUND);
+                RgbColor.DEFAULT_BACKGROUND,
+                Language.DEFAULT);
     }
 
     private static SettingsLoadOutcome invalidValue() {

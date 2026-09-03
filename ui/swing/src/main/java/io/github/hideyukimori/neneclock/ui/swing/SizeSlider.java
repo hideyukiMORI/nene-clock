@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.function.IntConsumer;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 文字の大きさを選ぶ帯。範囲は {@link FontSize} の下限と上限そのものなので、
@@ -32,7 +33,7 @@ public final class SizeSlider {
     };
 
     private IntConsumer moved = points -> {};
-    private Palette palette = Palette.from(io.github.hideyukimori.neneclock.domain.RgbColor.DEFAULT_BACKGROUND);
+    private @Nullable Palette palette;
     private int points = FontSize.DEFAULT.points();
 
     /** 部品を組み立てる。 */
@@ -65,9 +66,9 @@ public final class SizeSlider {
     }
 
     /** 現在値と配色を反映する。 */
-    public void renderPoints(int current, Palette colours) {
+    public void renderPoints(int current, UiTheme theme) {
         this.points = current;
-        this.palette = Objects.requireNonNull(colours, "colours");
+        this.palette = Objects.requireNonNull(theme, "theme").palette();
         surface.repaint();
     }
 
@@ -84,6 +85,10 @@ public final class SizeSlider {
     }
 
     private void paintTrack(Graphics graphics) {
+        Palette palette = this.palette;
+        if (palette == null) {
+            return;
+        }
         Graphics2D canvas = (Graphics2D) graphics.create();
         TextRendering.smooth(canvas);
         double top = (HEIGHT - TRACK) / 2.0;

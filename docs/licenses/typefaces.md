@@ -11,6 +11,8 @@ NeNe Clock は表示用の書体を **30 種類同梱している**（FR-043 / [
 上流はいずれも [google/fonts](https://github.com/google/fonts) の
 commit `205859f680703e449fe05dce0f792cc041d6dc89`。
 
+## 時計の書体（30）
+
 | 定数 | 書体 | 雰囲気 | 上流のパス |
 | --- | --- | --- | --- |
 | `INTER` | Inter | SANS | `ofl/inter/Inter[opsz,wght].ttf` |
@@ -43,6 +45,15 @@ commit `205859f680703e449fe05dce0f792cc041d6dc89`。
 | `CAVEAT` | Caveat | HAND | `ofl/caveat/Caveat[wght].ttf` |
 | `PACIFICO` | Pacifico | HAND | `ofl/pacifico/Pacifico-Regular.ttf` |
 | `DANCING_SCRIPT` | Dancing Script | HAND | `ofl/dancingscript/DancingScript[wght].ttf` |
+
+## 画面の書体（2）
+
+利用者は直接選ばない。言語から決まる（FR-048 / [ADR 0009](../adr/0009-language-is-a-setting-not-a-locale.md)）。
+
+| 定数 | 書体 | 言語 | 上流のパス |
+| --- | --- | --- | --- |
+| `ZEN_KAKU_GOTHIC_NEW` | Zen Kaku Gothic New | 日本語 | `ofl/zenkakugothicnew/ZenKakuGothicNew-Regular.ttf` |
+| `ARIMO` | Arimo | English | `ofl/arimo/Arimo[wght].ttf` |
 
 ## 🔴 可変フォントを足すときの注意
 

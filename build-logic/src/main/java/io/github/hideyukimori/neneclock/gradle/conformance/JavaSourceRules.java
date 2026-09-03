@@ -55,6 +55,12 @@ public final class JavaSourceRules {
     /** テキスト部品を組み立ててよい唯一のファイル。 */
     private static final String TEXT_RENDERING_FILE = "TextRendering.java";
 
+    /** 画面に出す文言を書いてよい唯一のファイル。 */
+    private static final String UI_TEXT_FILE = "UiText.java";
+
+    /** 開発者へ向けた文（例外の説明）だけは、文言の検査から外す。 */
+    private static final String THROW_STATEMENT = "throw ";
+
     private JavaSourceRules() {}
 
     public static Result check(SourceFile file) {
@@ -113,6 +119,7 @@ public final class JavaSourceRules {
             if (uiSource) {
                 checkRenderOnlyCall(file, violations, lineNumber, code, methods.peek());
                 checkTextComponent(file, violations, lineNumber, code);
+                checkDisplayText(file, violations, new Literal(lineNumber, code, text.literals()));
             }
             // 🔴 直前「行」であってコード行ではない。waiver は `// Waiver: WVR-NNNN` という
             //    コメント行なので、コード行だけを覚えると永久に見つからない（Issue #26）。
@@ -211,6 +218,46 @@ public final class JavaSourceRules {
                         construction + " を直接書かない。TextRendering を通す（SWG-006）"));
             }
         }
+    }
+
+    /**
+     * 画面に出す文言をリテラルで書いていないか（CNF-013）。
+     *
+     * <p>文言は {@code UiText} に集める。言語ごとにファイルを分けず 1 定数が両方を持つので、
+     * そこを通れば片方の言語を忘れられない。**リテラルで直接書くと、その仕組みを迂回できる。**
+     *
+     * <p>🔴 実際に迂回した。言語の選択肢だけを {@code List.of("日本語", "English")} と書いていて、
+     * 英語 UI で豆腐（□□□）になった。文言の検査は緑のままだった（Issue #42）。
+     *
+     * <p>例外の説明文だけは外す。あれは利用者ではなく、開発者に向けた文である。
+     */
+    private static void checkDisplayText(SourceFile file, List<Violation> violations, Literal literal) {
+        if (file.fileName().equals(UI_TEXT_FILE) || literal.code().contains(THROW_STATEMENT)) {
+            return;
+        }
+        if (containsJapanese(literal.contents())) {
+            violations.add(new Violation(
+                    "CNF-013",
+                    file.path(),
+                    literal.lineNumber(),
+                    "画面に出す文言をリテラルで書かない。UiText を通す（FR-048）"));
+        }
+    }
+
+    /** 1 行ぶんのリテラルと、その行のコード。 */
+    private record Literal(int lineNumber, String code, String contents) {}
+
+    private static boolean containsJapanese(String text) {
+        for (int index = 0; index < text.length(); index++) {
+            Character.UnicodeBlock block = Character.UnicodeBlock.of(text.charAt(index));
+            if (Character.UnicodeBlock.HIRAGANA.equals(block)
+                    || Character.UnicodeBlock.KATAKANA.equals(block)
+                    || Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS.equals(block)
+                    || Character.UnicodeBlock.CJK_SYMBOLS_AND_PUNCTUATION.equals(block)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void checkRenderOnlyCall(

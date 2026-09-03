@@ -11,11 +11,13 @@ public final class CodeText {
 
     private final String code;
     private final String comment;
+    private final String literals;
     private final boolean inBlockComment;
 
-    private CodeText(String code, String comment, boolean inBlockComment) {
+    private CodeText(String code, String comment, String literals, boolean inBlockComment) {
         this.code = code;
         this.comment = comment;
+        this.literals = literals;
         this.inBlockComment = inBlockComment;
     }
 
@@ -28,6 +30,11 @@ public final class CodeText {
         return comment;
     }
 
+    /** 文字列リテラル・文字リテラルの中身。文言の検査（CNF-013）が使う。 */
+    public String literals() {
+        return literals;
+    }
+
     public boolean inBlockComment() {
         return inBlockComment;
     }
@@ -35,6 +42,7 @@ public final class CodeText {
     public static CodeText scan(String line, boolean startsInBlockComment) {
         StringBuilder codeOut = new StringBuilder(line.length());
         StringBuilder commentOut = new StringBuilder();
+        StringBuilder literalOut = new StringBuilder();
         boolean block = startsInBlockComment;
         boolean inString = false;
         boolean inChar = false;
@@ -65,6 +73,7 @@ public final class CodeText {
                     continue;
                 }
                 codeOut.append(' ');
+                literalOut.append(current);
                 index++;
                 continue;
             }
@@ -85,6 +94,6 @@ public final class CodeText {
             codeOut.append(current);
             index++;
         }
-        return new CodeText(codeOut.toString(), commentOut.toString(), block);
+        return new CodeText(codeOut.toString(), commentOut.toString(), literalOut.toString(), block);
     }
 }

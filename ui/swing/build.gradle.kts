@@ -8,3 +8,9 @@ dependencies {
     implementation(project(":core:application"))
     implementation(project(":core:domain"))
 }
+
+// 🔑 テストだけ同梱書体の実体に触れる。文言がその言語の書体で描けるかは、
+//    実体が無いと確かめられない（FR-048）。production の依存は増やさない。
+dependencies {
+    testImplementation(project(":adapters:font-catalog"))
+}

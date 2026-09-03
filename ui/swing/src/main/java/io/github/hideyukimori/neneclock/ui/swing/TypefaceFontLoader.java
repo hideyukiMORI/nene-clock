@@ -1,7 +1,7 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
 import io.github.hideyukimori.neneclock.application.TypefaceBinaryPort;
-import io.github.hideyukimori.neneclock.domain.Typeface;
+import io.github.hideyukimori.neneclock.domain.BundledTypeface;
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.io.ByteArrayInputStream;
@@ -24,13 +24,13 @@ public final class TypefaceFontLoader {
     }
 
     /** 指定の大きさの書体を作る。同梱が壊れていれば梱包の誤りとして落とす。 */
-    public Font load(Typeface typeface, int points) {
+    public Font load(BundledTypeface typeface, int points) {
         Objects.requireNonNull(typeface, "typeface");
         try {
             return Font.createFont(Font.TRUETYPE_FONT, new ByteArrayInputStream(typefaces.read(typeface)))
                     .deriveFont(Font.PLAIN, (float) points);
         } catch (FontFormatException | IOException failure) {
-            throw new IllegalStateException("同梱書体を Font にできない: " + typeface.name(), failure);
+            throw new IllegalStateException("同梱書体を Font にできない: " + typeface.constantName(), failure);
         }
     }
 }

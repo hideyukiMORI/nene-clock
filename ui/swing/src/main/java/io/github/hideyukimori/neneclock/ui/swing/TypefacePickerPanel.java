@@ -34,6 +34,7 @@ public final class TypefacePickerPanel {
     private static final int CHIP_GAP = 6;
     private static final int SCROLLBAR_WIDTH = 8;
     private static final int CHIP_ROW_HEIGHT = 46;
+    private static final String ALL = "ALL";
 
     private final JPanel surface = new JPanel(new BorderLayout());
     private final JPanel grid = new JPanel(new GridLayout(0, COLUMNS, GAP, GAP));
@@ -45,7 +46,7 @@ public final class TypefacePickerPanel {
     private Consumer<Typeface> chosen = typeface -> {};
     private @Nullable TypefaceMood filter;
     private Typeface selected = Typeface.DEFAULT;
-    private Palette palette = Palette.from(io.github.hideyukimori.neneclock.domain.RgbColor.DEFAULT_BACKGROUND);
+    private @Nullable UiTheme theme;
 
     /** 30 枚の札を作る。書体の読み込みはここで 1 度だけ行う。 */
     public TypefacePickerPanel(TypefaceFontLoader typefaces) {
@@ -71,23 +72,26 @@ public final class TypefacePickerPanel {
     }
 
     /** いま選ばれている書体と配色を反映する。 */
-    public void renderSelection(Typeface current, Palette colours) {
+    public void renderSelection(Typeface current, UiTheme shownTheme) {
         this.selected = Objects.requireNonNull(current, "current");
-        this.palette = Objects.requireNonNull(colours, "colours");
-        surface.setBackground(colours.surface());
-        chips.setBackground(colours.surface());
-        grid.setBackground(colours.surface());
-        scroller.getViewport().setBackground(colours.surface());
+        this.theme = Objects.requireNonNull(shownTheme, "shownTheme");
+        Palette palette = shownTheme.palette();
+        surface.setBackground(palette.surface());
+        chips.setBackground(palette.surface());
+        grid.setBackground(palette.surface());
+        scroller.getViewport().setBackground(palette.surface());
         for (Map.Entry<Typeface, TypefaceCard> entry : cards.entrySet()) {
-            entry.getValue().renderSelection(entry.getKey() == current, colours);
+            entry.getValue().renderSelection(entry.getKey() == current, shownTheme);
         }
-        renderChips();
+        renderChips(shownTheme);
     }
 
-    private void renderChips() {
+    private void renderChips(UiTheme shownTheme) {
         for (Map.Entry<String, MoodChip> entry : filters.entrySet()) {
-            boolean active = entry.getKey().equals(filter == null ? "すべて" : filter.name());
-            entry.getValue().renderSelection(active, palette);
+            String key = entry.getKey();
+            boolean active = key.equals(filter == null ? ALL : filter.name());
+            String label = key.equals(ALL) ? shownTheme.text(UiText.ALL_MOODS) : labelOf(TypefaceMood.valueOf(key));
+            entry.getValue().renderSelection(label, active, shownTheme);
         }
     }
 
@@ -96,20 +100,23 @@ public final class TypefacePickerPanel {
         chips.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, CHIP_GAP, 0));
         chips.setPreferredSize(new Dimension(0, CHIP_ROW_HEIGHT));
         chips.setBorder(BorderFactory.createEmptyBorder(CHIPS_TOP, SIDE, CHIPS_BOTTOM, SIDE));
-        addChip("すべて", null);
+        addChip(null);
         for (TypefaceMood mood : TypefaceMood.values()) {
-            addChip(labelOf(mood), mood);
+            addChip(mood);
         }
     }
 
-    private void addChip(String label, @Nullable TypefaceMood mood) {
-        MoodChip chip = new MoodChip(label);
+    private void addChip(@Nullable TypefaceMood mood) {
+        MoodChip chip = new MoodChip();
         chip.onPressed(() -> {
             filter = mood;
             renderGrid();
-            renderSelection(selected, palette);
+            UiTheme shownTheme = theme;
+            if (shownTheme != null) {
+                renderSelection(selected, shownTheme);
+            }
         });
-        filters.put(mood == null ? "すべて" : mood.name(), chip);
+        filters.put(mood == null ? ALL : mood.name(), chip);
         chips.add(chip.component());
     }
 

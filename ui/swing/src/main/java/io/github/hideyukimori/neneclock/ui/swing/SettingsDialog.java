@@ -2,12 +2,9 @@ package io.github.hideyukimori.neneclock.ui.swing;
 
 import io.github.hideyukimori.neneclock.application.SettingsSaveFailure;
 import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
-import io.github.hideyukimori.neneclock.domain.RgbColor;
-import io.github.hideyukimori.neneclock.domain.UserSettings;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Frame;
 import java.awt.geom.RoundRectangle2D;
 import java.util.Objects;
@@ -17,6 +14,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 設定モーダル（FR-045 / FR-047）。ギアから開き、3 つの画面を持つ。
@@ -43,8 +41,8 @@ public final class SettingsDialog {
     private final JPanel body = new JPanel(cards);
     private final JPanel header = new JPanel(new BorderLayout());
     private final JPanel footer = new JPanel(new BorderLayout());
-    private final JLabel title = TextRendering.label("設定");
-    private final JLabel status = TextRendering.label("変更はすぐに反映され、そのまま保存されます");
+    private final JLabel title = TextRendering.label("");
+    private final JLabel status = TextRendering.label("");
     private final IconButton back = new IconButton(ChromeIcon.BACK);
     private final IconButton close = new IconButton(ChromeIcon.CLOSE);
 
@@ -53,7 +51,8 @@ public final class SettingsDialog {
     private final ColourPickerPanel colours;
 
     private SettingsDestination showing = SettingsDestination.FORM;
-    private Palette palette = Palette.from(RgbColor.DEFAULT_BACKGROUND);
+    private boolean saved = true;
+    private @Nullable UiTheme theme;
 
     /** 3 つの画面を束ねて 1 つのモーダルにする。 */
     public SettingsDialog(Frame owner, SettingsPanels panels) {
@@ -67,6 +66,13 @@ public final class SettingsDialog {
         layOut();
         listen();
         roundTheCorners();
+    }
+
+    /** いま出ている画面の見出しを描き直す。言語が変わったときに要る。 */
+    private void renderTitle(UiTheme shownTheme) {
+        title.setText(titleOf(showing, shownTheme));
+        title.setFont(shownTheme.font(TITLE_POINTS));
+        status.setFont(shownTheme.font(STATUS_POINTS));
     }
 
     /** 開く。開くたびに一覧の画面から始める。 */
@@ -89,7 +95,10 @@ public final class SettingsDialog {
     public void show(SettingsDestination destination) {
         showing = Objects.requireNonNull(destination, "destination");
         cards.show(body, cardNameOf(destination));
-        title.setText(titleOf(destination));
+        UiTheme shownTheme = theme;
+        if (shownTheme != null) {
+            renderTitle(shownTheme);
+        }
         back.component().setVisible(destination != SettingsDestination.FORM);
     }
 
@@ -98,9 +107,12 @@ public final class SettingsDialog {
         return showing;
     }
 
-    /** 配色を反映する。時計の背景色の明るさに追従する。 */
-    public void renderColours(UserSettings settings) {
-        palette = Palette.from(settings.backgroundColor());
+    /** 配色と言語を反映する。配色は時計の背景色の明るさに追従する。 */
+    public void renderTheme(UiTheme shownTheme) {
+        theme = Objects.requireNonNull(shownTheme, "shownTheme");
+        Palette palette = shownTheme.palette();
+        renderTitle(shownTheme);
+        renderStatusText(shownTheme);
         dialog.getContentPane().setBackground(palette.surface());
         header.setBackground(palette.surface());
         footer.setBackground(palette.surface());
@@ -113,38 +125,45 @@ public final class SettingsDialog {
         footer.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, palette.hairline()),
                 BorderFactory.createEmptyBorder(0, SIDE, 0, SIDE)));
-        back.renderColours(palette);
-        close.renderColours(palette);
+        back.renderColours(shownTheme);
+        close.renderColours(shownTheme);
+    }
+
+    /** 状態行を、いまの言語で書き直す。 */
+    private void renderStatusText(UiTheme shownTheme) {
+        status.setText(shownTheme.text(saved ? UiText.SAVED : UiText.NOT_SAVED));
+        status.setForeground(
+                saved ? shownTheme.palette().textMuted() : shownTheme.palette().warning());
     }
 
     /** 保存の結果を伝える。失敗を握り潰さない（FR-045）。 */
     public void renderSaveOutcome(SettingsSaveOutcome outcome) {
         Objects.requireNonNull(outcome, "outcome");
-        switch (outcome) {
-            case SettingsSaveOutcome.Saved saved -> {
-                status.setText("変更はすぐに反映され、そのまま保存されます");
-                status.setForeground(palette.textMuted());
-            }
-            case SettingsSaveOutcome.Failed failed -> {
-                status.setText(describe(failed.reason()));
-                status.setForeground(palette.warning());
-            }
+        saved = switch (outcome) {
+            case SettingsSaveOutcome.Saved success -> true;
+            case SettingsSaveOutcome.Failed failed -> describe(failed.reason());
+        };
+        UiTheme shownTheme = theme;
+        if (shownTheme != null) {
+            renderStatusText(shownTheme);
         }
     }
 
-    private static String describe(SettingsSaveFailure reason) {
+    /** 失敗の種類を、伝えるべきかどうかへ落とす。種類が増えたらここが落ちる（JAV-002）。 */
+    private static boolean describe(SettingsSaveFailure reason) {
         return switch (reason) {
-            case UNWRITABLE -> "保存できませんでした。いまは反映されていますが、再起動すると元に戻ります";
+            case UNWRITABLE -> false;
         };
     }
 
-    private static String titleOf(SettingsDestination destination) {
-        return switch (destination) {
-            case FORM -> "設定";
-            case TYPEFACE -> "書体";
-            case FONT_COLOUR -> "文字色";
-            case BACKGROUND_COLOUR -> "背景色";
-        };
+    private static String titleOf(SettingsDestination destination, UiTheme shownTheme) {
+        return shownTheme.text(
+                switch (destination) {
+                    case FORM -> UiText.SETTINGS;
+                    case TYPEFACE -> UiText.TYPEFACE;
+                    case FONT_COLOUR -> UiText.FONT_COLOUR;
+                    case BACKGROUND_COLOUR -> UiText.BACKGROUND_COLOUR;
+                });
     }
 
     private static String cardNameOf(SettingsDestination destination) {
@@ -156,8 +175,6 @@ public final class SettingsDialog {
     }
 
     private void layOut() {
-        title.setFont(title.getFont().deriveFont(Font.BOLD, TITLE_POINTS));
-        status.setFont(status.getFont().deriveFont(Font.PLAIN, STATUS_POINTS));
         JPanel left = new JPanel();
         left.setOpaque(false);
         left.setLayout(new BoxLayout(left, BoxLayout.X_AXIS));

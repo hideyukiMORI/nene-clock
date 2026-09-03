@@ -2,6 +2,8 @@ package io.github.hideyukimori.neneclock.adapter.fontcatalog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.hideyukimori.neneclock.domain.BundledTypeface;
+import io.github.hideyukimori.neneclock.domain.InterfaceTypeface;
 import io.github.hideyukimori.neneclock.domain.Typeface;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -25,16 +27,23 @@ class TypefaceProvenanceTest {
     @Test
     void recordsExactlyTheBundledTypefaces() {
         List<String> expected = new ArrayList<>();
-        for (Typeface typeface : Typeface.values()) {
+        for (BundledTypeface typeface : everyBundledTypeface()) {
             expected.add(BundledTypefaceAdapter.resourceNameOf(typeface));
         }
 
         assertThat(recorded.keySet()).containsExactlyInAnyOrderElementsOf(expected);
     }
 
+    /** 時計の書体と UI の書体をひとつづきに見る。検査を 2 本に分けない。 */
+    private static List<BundledTypeface> everyBundledTypeface() {
+        List<BundledTypeface> all = new ArrayList<>(List.of(Typeface.values()));
+        all.addAll(List.of(InterfaceTypeface.values()));
+        return List.copyOf(all);
+    }
+
     @Test
     void everyRecordedChecksumMatchesTheBundledFile() {
-        for (Typeface typeface : Typeface.values()) {
+        for (BundledTypeface typeface : everyBundledTypeface()) {
             String resource = BundledTypefaceAdapter.resourceNameOf(typeface);
 
             assertThat(sha256Of(BundledTypefaceAdapter.readResource(resource)))
@@ -45,15 +54,15 @@ class TypefaceProvenanceTest {
 
     @Test
     void everyTypefaceCarriesItsLicence() {
-        for (Typeface typeface : Typeface.values()) {
+        for (BundledTypeface typeface : everyBundledTypeface()) {
             String licence =
                     new String(BundledTypefaceAdapter.readResource(licenceNameOf(typeface)), StandardCharsets.UTF_8);
 
-            assertThat(licence).describedAs(typeface.name()).contains("SIL OPEN FONT LICENSE");
+            assertThat(licence).describedAs(typeface.constantName()).contains("SIL OPEN FONT LICENSE");
         }
     }
 
-    private static String licenceNameOf(Typeface typeface) {
+    private static String licenceNameOf(BundledTypeface typeface) {
         return BundledTypefaceAdapter.resourceNameOf(typeface).replace(".ttf", ".license.txt");
     }
 

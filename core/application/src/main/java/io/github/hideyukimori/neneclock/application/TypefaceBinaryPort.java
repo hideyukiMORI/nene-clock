@@ -1,11 +1,11 @@
 package io.github.hideyukimori.neneclock.application;
 
-import io.github.hideyukimori.neneclock.domain.Typeface;
+import io.github.hideyukimori.neneclock.domain.BundledTypeface;
 
 /**
  * 同梱書体の実体（TrueType のバイト列）を得る唯一の窓口（ARC-007 / ADR 0006）。
  *
- * <p>どの書体があるかは domain の {@link Typeface} が知っている。このポートが答えるのは
+ * <p>どの書体があるかは domain の {@link BundledTypeface} が知っている。このポートが答えるのは
  * 「その書体のファイルの中身」だけである。バイト列を {@code java.awt.Font} にするのは UI の仕事で、
  * core は描画の型を知らない（ARC-003）。
  *
@@ -21,5 +21,5 @@ public interface TypefaceBinaryPort {
      *
      * @throws IllegalStateException 同梱されているはずのファイルが読めないとき
      */
-    byte[] read(Typeface typeface);
+    byte[] read(BundledTypeface typeface);
 }

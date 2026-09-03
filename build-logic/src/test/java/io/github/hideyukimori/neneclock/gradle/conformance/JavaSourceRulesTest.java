@@ -163,6 +163,72 @@ class JavaSourceRulesTest {
     }
 
     @Nested
+    @DisplayName("CNF-013 画面に出す文言は UiText に集める")
+    class DisplayText {
+
+        @Test
+        void rejectsJapaneseWrittenStraightIntoAPanel() {
+            String source =
+                    """
+                    package io.github.hideyukimori.neneclock.ui.swing;
+
+                    final class Sample {
+                        void render() {
+                            choice.renderSelection(0, List.of("日本語", "English"), theme);
+                        }
+                    }
+                    """;
+
+            assertTrue(ruleIds("ui/swing/src/main/java/Sample.java", source).contains("CNF-013"));
+        }
+
+        @Test
+        void allowsTheOneFileThatOwnsTheWording() {
+            String source =
+                    """
+                    package io.github.hideyukimori.neneclock.ui.swing;
+
+                    enum UiText {
+                        SETTINGS("設定", "Settings");
+                    }
+                    """;
+
+            assertFalse(ruleIds("ui/swing/src/main/java/UiText.java", source).contains("CNF-013"));
+        }
+
+        @Test
+        void allowsJapaneseInAnExceptionMeantForDevelopers() {
+            String source =
+                    """
+                    package io.github.hideyukimori.neneclock.ui.swing;
+
+                    final class Sample {
+                        void load() {
+                            throw new IllegalStateException("同梱書体を読めない");
+                        }
+                    }
+                    """;
+
+            assertFalse(ruleIds("ui/swing/src/main/java/Sample.java", source).contains("CNF-013"));
+        }
+
+        @Test
+        void ignoresJapaneseInComments() {
+            String source =
+                    """
+                    package io.github.hideyukimori.neneclock.ui.swing;
+
+                    final class Sample {
+                        // 日本語のコメントは文言ではない
+                        void render() {}
+                    }
+                    """;
+
+            assertFalse(ruleIds("ui/swing/src/main/java/Sample.java", source).contains("CNF-013"));
+        }
+    }
+
+    @Nested
     @DisplayName("CNF-012 テキスト部品は TextRendering を通して作る")
     class TextComponents {
 

@@ -9,7 +9,7 @@ package io.github.hideyukimori.neneclock.domain;
  * <p>書体の実体（TTF）を持つのは {@code :adapters:font-catalog} ただ 1 つで、domain は
  * ファイル名も置き場所も知らない。ここが知っているのは「どの書体があるか」だけである。
  */
-public enum Typeface {
+public enum Typeface implements BundledTypeface {
     INTER("Inter", TypefaceMood.SANS),
     ROBOTO("Roboto", TypefaceMood.SANS),
     LATO("Lato", TypefaceMood.SANS),
@@ -60,5 +60,10 @@ public enum Typeface {
     /** この書体の雰囲気。設定画面の絞り込みに使う。 */
     public TypefaceMood mood() {
         return mood;
+    }
+
+    @Override
+    public String constantName() {
+        return name();
     }
 }
