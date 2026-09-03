@@ -2,3 +2,8 @@
 *.jar binary
 gradlew text eol=lf
 gradlew.bat text eol=crlf
+
+# 同梱書体は上流のファイルを無改変で持つ（ADR 0006）。行末の正規化で内容が変わると、
+# provenance.tsv の SHA-256 と実体がずれ、「無改変」という主張自体が嘘になる。
+adapters/font-catalog/src/main/resources/**/typefaces/*.ttf binary
+adapters/font-catalog/src/main/resources/**/typefaces/*.license.txt -text

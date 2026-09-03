@@ -9,12 +9,11 @@ import io.github.hideyukimori.neneclock.domain.ClockFormat;
 import io.github.hideyukimori.neneclock.domain.DateVisibility;
 import io.github.hideyukimori.neneclock.domain.FontColor;
 import io.github.hideyukimori.neneclock.domain.FontColorOutcome;
-import io.github.hideyukimori.neneclock.domain.FontFamily;
-import io.github.hideyukimori.neneclock.domain.FontFamilyOutcome;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.FontSizeOutcome;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
 import io.github.hideyukimori.neneclock.domain.SettingsSchemaVersion;
+import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import io.github.hideyukimori.neneclock.domain.WindowTopmost;
 import java.util.Objects;
@@ -25,8 +24,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * {@link Preferences} に設定を保存する {@link SettingsStorePort} の実装。
  *
- * <p>保存形式を知るのはこのクラスだけである。版の移行もここに閉じる（ADR 0003）。
- * {@link #load()} は保存領域を書き換えない。v2 として書き戻されるのは次の保存のときである。
+ * <p>保存形式を知るのはこのクラスだけである。版の移行もここに閉じる（ADR 0003 / ADR 0006）。
+ * {@link #load()} は保存領域を書き換えない。現在の版として書き戻されるのは次の保存のときである。
  */
 public final class PreferencesSettingsAdapter implements SettingsStorePort {
 
@@ -37,10 +36,13 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
     private static final String KEY_TOPMOST = "windowTopmost";
     private static final String KEY_FONT_POINTS = "fontPoints";
     private static final String KEY_FONT_FAMILY = "fontFamily";
+    private static final String KEY_TYPEFACE = "typeface";
     private static final String KEY_FONT_RED = "fontRed";
     private static final String KEY_FONT_GREEN = "fontGreen";
     private static final String KEY_FONT_BLUE = "fontBlue";
 
+    private static final int SCHEMA_WITHOUT_APPEARANCE = 1;
+    private static final int SCHEMA_WITH_ENVIRONMENT_FONTS = 2;
     private static final int SCHEMA_ABSENT = 0;
     private static final int INTEGER_ABSENT = -1;
 
@@ -85,7 +87,7 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         node.put(KEY_DATE, settings.dateVisibility().name());
         node.put(KEY_TOPMOST, settings.windowTopmost().name());
         node.putInt(KEY_FONT_POINTS, settings.fontSize().points());
-        node.put(KEY_FONT_FAMILY, settings.fontFamily().name());
+        node.put(KEY_TYPEFACE, settings.typeface().name());
         node.putInt(KEY_FONT_RED, settings.fontColor().red());
         node.putInt(KEY_FONT_GREEN, settings.fontColor().green());
         node.putInt(KEY_FONT_BLUE, settings.fontColor().blue());
@@ -100,22 +102,25 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
     /**
      * 版に応じて読む。
      *
-     * <p>v1 は書体と文字色を持たない。欠けている分は domain の既定値で埋める。推測はしない。
+     * <p>v1 は書体と文字色を持たない。v2 は「実行環境の書体名」を持つが、その名前は同梱書体の
+     * 集合とは別物である（ADR 0006）。同じ名前の同梱書体があればそれを引き継ぎ、無ければ既定へ落とす。
+     * 欠けている分は domain の既定値で埋める。推測はしない。
      */
     private SettingsLoadOutcome restore(SettingsSchemaVersion stored) {
         UserSettings carried = readSettingsSharedByEveryVersion();
         if (carried == null) {
             return invalidValue();
         }
-        if (!stored.isSupported()) {
+        if (stored.value() == SCHEMA_WITHOUT_APPEARANCE) {
             return new SettingsLoadOutcome.Restored(carried);
-        }
-        FontFamily family = readFontFamily();
-        if (family == null) {
-            return invalidValue();
         }
         FontColor color = readFontColor();
         if (color == null) {
+            return invalidValue();
+        }
+        Typeface typeface =
+                stored.value() == SCHEMA_WITH_ENVIRONMENT_FONTS ? carriedTypefaceFromEnvironmentName() : readTypeface();
+        if (typeface == null) {
             return invalidValue();
         }
         return new SettingsLoadOutcome.Restored(new UserSettings(
@@ -123,7 +128,7 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
                 carried.secondsVisibility(),
                 carried.dateVisibility(),
                 carried.windowTopmost(),
-                family,
+                typeface,
                 carried.fontSize(),
                 color));
     }
@@ -141,7 +146,7 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         if (date == null || topmost == null || fontSize == null) {
             return null;
         }
-        return new UserSettings(clockFormat, seconds, date, topmost, FontFamily.DEFAULT, fontSize, FontColor.DEFAULT);
+        return new UserSettings(clockFormat, seconds, date, topmost, Typeface.DEFAULT, fontSize, FontColor.DEFAULT);
     }
 
     private static SettingsLoadOutcome invalidValue() {
@@ -155,15 +160,25 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         };
     }
 
-    private @Nullable FontFamily readFontFamily() {
+    private @Nullable Typeface readTypeface() {
+        return lookup(Typeface.values(), node.get(KEY_TYPEFACE, null));
+    }
+
+    /**
+     * v2 が保存していた実行環境の書体名を、同梱書体へ読み替える。
+     *
+     * <p>利用者が選んでいた名前と同じ名前の同梱書体があれば、その選択は生きていたとみなす。
+     * 無ければ既定へ落とす。ここで元の名前を保ったまま持ち回ると、描かれない書体名が
+     * 設定の中に残り続けることになる。
+     */
+    private Typeface carriedTypefaceFromEnvironmentName() {
         String stored = node.get(KEY_FONT_FAMILY, null);
-        if (stored == null) {
-            return null;
+        for (Typeface candidate : Typeface.values()) {
+            if (candidate.displayName().equals(stored)) {
+                return candidate;
+            }
         }
-        return switch (FontFamily.of(stored)) {
-            case FontFamilyOutcome.Accepted accepted -> accepted.value();
-            case FontFamilyOutcome.Rejected rejected -> null;
-        };
+        return Typeface.DEFAULT;
     }
 
     private @Nullable FontColor readFontColor() {

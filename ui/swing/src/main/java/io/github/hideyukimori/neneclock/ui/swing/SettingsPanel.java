@@ -3,22 +3,20 @@ package io.github.hideyukimori.neneclock.ui.swing;
 import io.github.hideyukimori.neneclock.application.SettingsIntentSink;
 import io.github.hideyukimori.neneclock.application.SettingsSaveFailure;
 import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
-import io.github.hideyukimori.neneclock.application.SettingsView;
 import io.github.hideyukimori.neneclock.domain.ClockFormat;
 import io.github.hideyukimori.neneclock.domain.DateVisibility;
 import io.github.hideyukimori.neneclock.domain.FontColor;
 import io.github.hideyukimori.neneclock.domain.FontColorOutcome;
-import io.github.hideyukimori.neneclock.domain.FontFamily;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.FontSizeOutcome;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
+import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import io.github.hideyukimori.neneclock.domain.WindowTopmost;
 import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import javax.swing.JButton;
@@ -48,14 +46,13 @@ public final class SettingsPanel {
     private final JCheckBox seconds = new JCheckBox();
     private final JCheckBox date = new JCheckBox();
     private final JCheckBox topmost = new JCheckBox();
-    private final JComboBox<String> family = new JComboBox<>();
+    private final JComboBox<Typeface> typeface = new JComboBox<>(Typeface.values());
     private final JSpinner size = new JSpinner(new SpinnerNumberModel(
             FontSize.DEFAULT.points(), FontSize.MINIMUM_POINTS, FontSize.MAXIMUM_POINTS, SIZE_STEP));
     private final JButton colour = new JButton();
     private final JLabel status = new JLabel(" ");
 
     private SettingsIntentSink sink = requested -> {};
-    private List<FontFamily> availableFamilies = List.of(FontFamily.DEFAULT);
     private UserSettings shown = UserSettings.defaults();
     private FontColor chosenColour = FontColor.DEFAULT;
 
@@ -75,13 +72,11 @@ public final class SettingsPanel {
         this.sink = Objects.requireNonNull(requested, "requested");
     }
 
-    /** 現在の設定と選べる書体を反映する。 */
-    public void renderSettings(SettingsView view) {
-        Objects.requireNonNull(view, "view");
-        availableFamilies = view.availableFamilies();
-        shown = view.settings();
+    /** 現在の設定を反映する。選べる書体は同梱の 30 種で固定なので、ここでは差し替えない。 */
+    public void renderSettings(UserSettings settings) {
+        shown = Objects.requireNonNull(settings, "settings");
         chosenColour = shown.fontColor();
-        renderFamilyChoices();
+        typeface.setSelectedItem(shown.typeface());
         format.setSelectedItem(shown.clockFormat());
         size.setValue(shown.fontSize().points());
         seconds.setSelected(shown.secondsVisibility() == SecondsVisibility.SHOWN);
@@ -100,14 +95,6 @@ public final class SettingsPanel {
                 });
     }
 
-    private void renderFamilyChoices() {
-        family.removeAllItems();
-        for (FontFamily candidate : availableFamilies) {
-            family.addItem(candidate.name());
-        }
-        family.setSelectedItem(shown.fontFamily().name());
-    }
-
     private void renderColour() {
         Color preview = new Color(chosenColour.red(), chosenColour.green(), chosenColour.blue());
         colour.setForeground(preview);
@@ -121,7 +108,7 @@ public final class SettingsPanel {
         addRow(row++, "Show seconds", seconds);
         addRow(row++, "Show date", date);
         addRow(row++, "Always on top", topmost);
-        addRow(row++, "Font family", family);
+        addRow(row++, "Typeface", typeface);
         addRow(row++, "Font size", size);
         addRow(row++, "Font colour", colour);
         addRow(row, "", status);
@@ -145,7 +132,7 @@ public final class SettingsPanel {
         seconds.addActionListener(event -> submitIfChanged());
         date.addActionListener(event -> submitIfChanged());
         topmost.addActionListener(event -> submitIfChanged());
-        family.addActionListener(event -> submitIfChanged());
+        typeface.addActionListener(event -> submitIfChanged());
         size.addChangeListener(event -> submitIfChanged());
         colour.addActionListener(event -> chooseColour());
     }
@@ -169,19 +156,13 @@ public final class SettingsPanel {
                 seconds.isSelected() ? SecondsVisibility.SHOWN : SecondsVisibility.HIDDEN,
                 date.isSelected() ? DateVisibility.SHOWN : DateVisibility.HIDDEN,
                 topmost.isSelected() ? WindowTopmost.ENABLED : WindowTopmost.DISABLED,
-                selectedFamily(),
+                selectedTypeface(),
                 selectedSize(),
                 chosenColour);
     }
 
-    private FontFamily selectedFamily() {
-        String selected = family.getItemAt(family.getSelectedIndex());
-        for (FontFamily candidate : availableFamilies) {
-            if (candidate.name().equals(selected)) {
-                return candidate;
-            }
-        }
-        return shown.fontFamily();
+    private Typeface selectedTypeface() {
+        return typeface.getItemAt(typeface.getSelectedIndex());
     }
 
     private FontSize selectedSize() {

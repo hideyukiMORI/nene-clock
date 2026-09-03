@@ -1,7 +1,7 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
 import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
-import io.github.hideyukimori.neneclock.application.SettingsView;
+import io.github.hideyukimori.neneclock.domain.UserSettings;
 import java.awt.Dimension;
 import java.util.Objects;
 import javax.swing.JFrame;
@@ -38,16 +38,16 @@ public final class MainFrame {
     }
 
     /** 設定を窓と各タブへ反映する。UI 状態の反映経路はここ 1 本（CNF-004）。 */
-    public void renderSettings(SettingsView view) {
-        Objects.requireNonNull(view, "view");
+    public void renderSettings(UserSettings settings) {
+        Objects.requireNonNull(settings, "settings");
         boolean topmost =
-                switch (view.settings().windowTopmost()) {
+                switch (settings.windowTopmost()) {
                     case ENABLED -> true;
                     case DISABLED -> false;
                 };
         frame.setAlwaysOnTop(topmost);
-        clockPanel.renderSettings(view.settings());
-        settingsPanel.renderSettings(view);
+        clockPanel.renderSettings(settings);
+        settingsPanel.renderSettings(settings);
     }
 
     /** 保存の結果を設定タブへ伝える。 */

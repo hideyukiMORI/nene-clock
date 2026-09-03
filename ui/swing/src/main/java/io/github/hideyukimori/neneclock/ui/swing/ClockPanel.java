@@ -4,7 +4,6 @@ import io.github.hideyukimori.neneclock.application.ClockFace;
 import io.github.hideyukimori.neneclock.application.DateLine;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.util.Objects;
@@ -23,12 +22,14 @@ public final class ClockPanel {
     private static final int DATE_FONT_DIVISOR = 4;
     private static final int MINIMUM_DATE_POINTS = 12;
 
+    private final TypefaceFontLoader typefaces;
     private final JPanel panel = new JPanel(new GridBagLayout());
     private final JLabel time = new JLabel("", SwingConstants.CENTER);
     private final JLabel date = new JLabel("", SwingConstants.CENTER);
 
     /** 部品を組み立てる。表示内容は {@code render*} が決める。 */
-    public ClockPanel() {
+    public ClockPanel(TypefaceFontLoader typefaces) {
+        this.typefaces = Objects.requireNonNull(typefaces, "typefaces");
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.gridx = 0;
         constraints.gridy = 0;
@@ -58,15 +59,14 @@ public final class ClockPanel {
     /** 設定を反映する。 */
     public void renderSettings(UserSettings settings) {
         Objects.requireNonNull(settings, "settings");
-        String family = settings.fontFamily().name();
         int points = settings.fontSize().points();
         Color foreground = new Color(
                 settings.fontColor().red(),
                 settings.fontColor().green(),
                 settings.fontColor().blue());
-        time.setFont(new Font(family, Font.PLAIN, points));
+        time.setFont(typefaces.load(settings.typeface(), points));
         time.setForeground(foreground);
-        date.setFont(new Font(family, Font.PLAIN, Math.max(MINIMUM_DATE_POINTS, points / DATE_FONT_DIVISOR)));
+        date.setFont(typefaces.load(settings.typeface(), Math.max(MINIMUM_DATE_POINTS, points / DATE_FONT_DIVISOR)));
         date.setForeground(foreground);
     }
 }
