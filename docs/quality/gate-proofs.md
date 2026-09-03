@@ -511,7 +511,54 @@ ADR 0011 に `planned` として書いた。
 
 ---
 
-## 16. まだ証明していないもの
+## 16. Windows のショートカットから起動する（Issue #50）
+
+### 16.1 WSLg が .desktop から .lnk を作ることの実測
+
+`/usr/share/applications/nene-clock.desktop` を置いた**約 1 分後**、Windows の Start Menu に
+ショートカットが現れた（実測）。
+
+```text
+/mnt/c/Users/<user>/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Ubuntu-22.04/
+    ImageMagick (color depth=q16) (Ubuntu-22.04).lnk
+    Install RELEASE (Ubuntu-22.04).lnk
+    NeNe Clock (Ubuntu-22.04).lnk        ← 07:02 に生成された
+```
+
+中身（実測）:
+
+```text
+target = C:\Program Files\WSL\wslg.exe
+args   = -d Ubuntu-22.04 --cd "~" -- /opt/nene-clock/bin/app
+```
+
+`wslg.exe` なので**端末の窓が出ない**。Gradle も通らない。
+
+### 16.2 🔴 WSLg のアイコンにはペンギンが合成される
+
+WSLg が `.desktop` の `Icon=` から作る `.ico` には、**Linux アプリの目印としてペンギンが重なる**（実測）。
+製品のアイコンをそのまま出したいので、同じ PNG から自前で `.ico` を作り、
+デスクトップのショートカットの `IconLocation` をそちらへ向けた。
+
+### 16.3 🔴 日本語のフォルダ名で文字化けした
+
+`powershell.exe` の出力を bash で受けると、`デスクトップ` が Shift-JIS のまま届いて壊れた（実測）。
+
+```text
+cp: cannot create regular file '/mnt/c/Users/info/OneDrive/'$'\203''f'…
+```
+
+Windows 側のパス操作は **PowerShell の中に閉じる**ことで直した（`Copy-Item` まで PowerShell が行う）。
+bash へ返す文字列には `[Console]::OutputEncoding = [Text.Encoding]::UTF8` を立てる。
+
+### 16.4 アイコンの絵は 1 つのまま
+
+配布物のアイコンは `./gradlew writeAppIcons` が `AppIcon` から書き出す。
+**画像をリポジトリに置かない。** 置くと「描いている絵」と「置いた絵」が別々に存在し、片方だけ古くなる。
+
+---
+
+## 17. まだ証明していないもの
 
 🔴 **ここに書いていないものは、証明されていない。**
 

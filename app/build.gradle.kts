@@ -32,3 +32,14 @@ tasks.withType<CheckForbiddenApis>().configureEach {
             rootProject.file("config/forbiddenapis/platform.txt"),
         )
 }
+
+// 🔑 配布物のアイコンは、実装（AppIcon）から書き出す。画像をリポジトリに置かない。
+//    置くと「描いている絵」と「置いた絵」が別々に存在し、片方だけ古くなる。
+tasks.register<JavaExec>("writeAppIcons") {
+    group = "distribution"
+    description = "アプリのアイコンを PNG として書き出す（配布物を作るときに使う）"
+    mainClass.set("io.github.hideyukimori.neneclock.app.AppIconFiles")
+    classpath = sourceSets["main"].runtimeClasspath
+    systemProperty("java.awt.headless", "true")
+    args(layout.buildDirectory.dir("icons").get().asFile.path)
+}
