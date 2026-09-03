@@ -7,6 +7,8 @@ import io.github.hideyukimori.neneclock.application.TypefaceBinaryPort;
 import io.github.hideyukimori.neneclock.domain.Typeface;
 import java.awt.Font;
 import java.io.ByteArrayInputStream;
+import java.util.List;
+import java.util.Locale;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -28,6 +30,28 @@ class BundledTypefaceAdapterTest {
         Font created = Font.createFont(Font.TRUETYPE_FONT, new ByteArrayInputStream(typefaces.read(typeface)));
 
         assertThat(created.getFontName()).isNotBlank();
+    }
+
+    /**
+     * 太さの名前。既定インスタンスがこれらであってはならない。
+     *
+     * <p>🔴 この検査は実測から生まれた。可変フォント（`Font[wght].ttf`）を同梱すると、
+     * Java 21 は軸を選べないので**既定のアウトライン**で描く。Google の可変フォントの多くは
+     * 既定が最も細いマスタなので、Montserrat が Thin で、Source Code Pro が ExtraLight で描かれていた。
+     * 「読み込める」ことしか見ていなかったので、画面を見るまで気づけなかった。
+     */
+    private static final List<String> WEIGHT_WORDS =
+            List.of("thin", "extralight", "light", "medium", "semibold", "bold", "black", "italic", "oblique");
+
+    @ParameterizedTest
+    @EnumSource(Typeface.class)
+    void everyTypefaceRendersAtRegularWeight(Typeface typeface) throws Exception {
+        Font created = Font.createFont(Font.TRUETYPE_FONT, new ByteArrayInputStream(typefaces.read(typeface)));
+        String name = created.getFontName().toLowerCase(Locale.ROOT).replace(" ", "");
+
+        assertThat(WEIGHT_WORDS)
+                .describedAs("%s は %s として描かれる", typeface.name(), created.getFontName())
+                .noneMatch(name::contains);
     }
 
     @Test

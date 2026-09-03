@@ -15,20 +15,20 @@ commit `205859f680703e449fe05dce0f792cc041d6dc89`。
 | --- | --- | --- | --- |
 | `INTER` | Inter | SANS | `ofl/inter/Inter[opsz,wght].ttf` |
 | `ROBOTO` | Roboto | SANS | `ofl/roboto/Roboto[wdth,wght].ttf` |
-| `MONTSERRAT` | Montserrat | SANS | `ofl/montserrat/Montserrat[wght].ttf` |
+| `LATO` | Lato | SANS | `ofl/lato/Lato-Regular.ttf` |
 | `POPPINS` | Poppins | SANS | `ofl/poppins/Poppins-Regular.ttf` |
 | `DM_SANS` | DM Sans | SANS | `ofl/dmsans/DMSans[opsz,wght].ttf` |
-| `MANROPE` | Manrope | SANS | `ofl/manrope/Manrope[wght].ttf` |
+| `WORK_SANS` | Work Sans | SANS | `ofl/worksans/WorkSans[wght].ttf` |
 | `PLAYFAIR_DISPLAY` | Playfair Display | SERIF | `ofl/playfairdisplay/PlayfairDisplay[wght].ttf` |
 | `LORA` | Lora | SERIF | `ofl/lora/Lora[wght].ttf` |
 | `EB_GARAMOND` | EB Garamond | SERIF | `ofl/ebgaramond/EBGaramond[wght].ttf` |
-| `BITTER` | Bitter | SERIF | `ofl/bitter/Bitter[wght].ttf` |
+| `ZILLA_SLAB` | Zilla Slab | SERIF | `ofl/zillaslab/ZillaSlab-Regular.ttf` |
 | `CRIMSON_TEXT` | Crimson Text | SERIF | `ofl/crimsontext/CrimsonText-Regular.ttf` |
 | `JETBRAINS_MONO` | JetBrains Mono | MONO | `ofl/jetbrainsmono/JetBrainsMono[wght].ttf` |
 | `ROBOTO_MONO` | Roboto Mono | MONO | `ofl/robotomono/RobotoMono[wght].ttf` |
 | `IBM_PLEX_MONO` | IBM Plex Mono | MONO | `ofl/ibmplexmono/IBMPlexMono-Regular.ttf` |
 | `SPACE_MONO` | Space Mono | MONO | `ofl/spacemono/SpaceMono-Regular.ttf` |
-| `SOURCE_CODE_PRO` | Source Code Pro | MONO | `ofl/sourcecodepro/SourceCodePro[wght].ttf` |
+| `FIRA_MONO` | Fira Mono | MONO | `ofl/firamono/FiraMono-Regular.ttf` |
 | `BEBAS_NEUE` | Bebas Neue | DISPLAY | `ofl/bebasneue/BebasNeue-Regular.ttf` |
 | `ANTON` | Anton | DISPLAY | `ofl/anton/Anton-Regular.ttf` |
 | `OSWALD` | Oswald | DISPLAY | `ofl/oswald/Oswald[wght].ttf` |
@@ -43,6 +43,17 @@ commit `205859f680703e449fe05dce0f792cc041d6dc89`。
 | `CAVEAT` | Caveat | HAND | `ofl/caveat/Caveat[wght].ttf` |
 | `PACIFICO` | Pacifico | HAND | `ofl/pacifico/Pacifico-Regular.ttf` |
 | `DANCING_SCRIPT` | Dancing Script | HAND | `ofl/dancingscript/DancingScript[wght].ttf` |
+
+## 🔴 可変フォントを足すときの注意
+
+Java 21 には**可変フォントの軸を選ぶ API が無い**。同梱した `Font[wght].ttf` は
+既定のアウトラインで描かれ、Google の可変フォントはその既定が最も細いマスタであることがある。
+
+初版では Montserrat が **Thin**、Manrope と Source Code Pro が **ExtraLight**、Bitter が **Thin** で
+描かれていた。読み込めていたのでテストは緑だった。**画面を見るまで気づけなかった。**
+
+いまは `:adapters:font-catalog` のテストが、既定インスタンスの名前に太さの語
+（Thin / Light / Bold 等）が入っていたら落とす。書体を足すときはこの検査を通ること。
 
 ## 更新するとき
 

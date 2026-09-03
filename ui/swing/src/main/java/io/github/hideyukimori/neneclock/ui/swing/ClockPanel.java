@@ -5,6 +5,8 @@ import io.github.hideyukimori.neneclock.application.DateLine;
 import io.github.hideyukimori.neneclock.domain.RgbColor;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FontMetrics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.util.Objects;
@@ -22,6 +24,18 @@ public final class ClockPanel {
 
     private static final int DATE_FONT_DIVISOR = 4;
     private static final int MINIMUM_DATE_POINTS = 12;
+
+    /**
+     * 幅を決めるための最も広い文字列。
+     *
+     * <p>いま出ている文字列で大きさを決めると、等幅でない書体では毎秒わずかに幅が変わり、
+     * 窓が震える。「起こりうる中で最も広いもの」で決めれば、動かない。
+     */
+    private static final String WIDEST_TIME = "00:00:00 AM";
+
+    private static final String WIDEST_DATE = "0000-00-00";
+    private static final int PADDING = 30;
+    private static final int LINE_GAP = 10;
 
     private final TypefaceFontLoader typefaces;
     private final JPanel panel = new JPanel(new GridBagLayout());
@@ -67,6 +81,16 @@ public final class ClockPanel {
         time.setForeground(foreground);
         date.setFont(typefaces.load(settings.typeface(), Math.max(MINIMUM_DATE_POINTS, points / DATE_FONT_DIVISOR)));
         date.setForeground(foreground);
+        panel.setPreferredSize(roomForTheWidestFace());
+    }
+
+    /** いまの書体と大きさで、時計が確実に収まる大きさ。 */
+    private Dimension roomForTheWidestFace() {
+        FontMetrics timeMetrics = panel.getFontMetrics(time.getFont());
+        FontMetrics dateMetrics = panel.getFontMetrics(date.getFont());
+        int width = Math.max(timeMetrics.stringWidth(WIDEST_TIME), dateMetrics.stringWidth(WIDEST_DATE));
+        int height = timeMetrics.getHeight() + LINE_GAP + dateMetrics.getHeight();
+        return new Dimension(width + PADDING * 2, height + PADDING * 2);
     }
 
     private static Color awtColour(RgbColor colour) {

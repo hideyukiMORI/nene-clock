@@ -8,10 +8,8 @@ import io.github.hideyukimori.neneclock.application.SettingsHandler;
 import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
 import io.github.hideyukimori.neneclock.application.SettingsStorePort;
 import io.github.hideyukimori.neneclock.application.TypefaceBinaryPort;
-import io.github.hideyukimori.neneclock.ui.swing.ClockPanel;
+import io.github.hideyukimori.neneclock.ui.swing.ClockScreen;
 import io.github.hideyukimori.neneclock.ui.swing.ClockTicker;
-import io.github.hideyukimori.neneclock.ui.swing.MainFrame;
-import io.github.hideyukimori.neneclock.ui.swing.SettingsPanel;
 import io.github.hideyukimori.neneclock.ui.swing.TypefaceFontLoader;
 import java.awt.HeadlessException;
 import java.lang.reflect.InvocationTargetException;
@@ -57,26 +55,26 @@ public final class NeNeClockApplication {
 
     private static void start() {
         SettingsStorePort settingsStore = PreferencesSettingsAdapter.userScoped();
-        TypefaceBinaryPort typefaces = BundledTypefaceAdapter.bundled();
+        TypefaceBinaryPort typefaceBinaries = BundledTypefaceAdapter.bundled();
         SettingsHandler settings = SettingsHandler.restoredFrom(settingsStore);
         ClockFaceQuery clockFace = new ClockFaceQuery(SystemWallClockAdapter.system());
 
-        ClockPanel clockPanel = new ClockPanel(new TypefaceFontLoader(typefaces));
-        SettingsPanel settingsPanel = new SettingsPanel();
-        MainFrame frame = new MainFrame(clockPanel, settingsPanel);
+        ClockScreen screen = new ClockScreen(new TypefaceFontLoader(typefaceBinaries));
+        ClockTicker ticker = new ClockTicker(() -> screen.renderFace(clockFace.currentFace(settings.current())));
 
-        settingsPanel.onSettingsRequested(requested -> {
+        screen.onSettingsRequested(requested -> {
             SettingsSaveOutcome outcome = settings.apply(requested);
-            frame.renderSettings(settings.current());
-            frame.renderSaveOutcome(outcome);
-            clockPanel.renderFace(clockFace.currentFace(settings.current()));
+            screen.renderSettings(settings.current(), clockFace.currentFace(settings.current()));
+            screen.renderSaveOutcome(outcome);
+        });
+        // 常駐スレッドを残さないのは合成ルートの責務である（FR-030 / ADR 0005）。
+        screen.onQuitRequested(() -> {
+            ticker.stop();
+            screen.close();
         });
 
-        frame.renderSettings(settings.current());
-        clockPanel.renderFace(clockFace.currentFace(settings.current()));
-
-        ClockTicker ticker = new ClockTicker(() -> clockPanel.renderFace(clockFace.currentFace(settings.current())));
+        screen.renderSettings(settings.current(), clockFace.currentFace(settings.current()));
         ticker.start();
-        frame.display();
+        screen.display();
     }
 }
