@@ -7,10 +7,10 @@ import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
 import io.github.hideyukimori.neneclock.application.SettingsStorePort;
 import io.github.hideyukimori.neneclock.domain.ClockFormat;
 import io.github.hideyukimori.neneclock.domain.DateVisibility;
-import io.github.hideyukimori.neneclock.domain.FontColor;
-import io.github.hideyukimori.neneclock.domain.FontColorOutcome;
 import io.github.hideyukimori.neneclock.domain.FontSize;
 import io.github.hideyukimori.neneclock.domain.FontSizeOutcome;
+import io.github.hideyukimori.neneclock.domain.RgbColor;
+import io.github.hideyukimori.neneclock.domain.RgbColorOutcome;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
 import io.github.hideyukimori.neneclock.domain.SettingsSchemaVersion;
 import io.github.hideyukimori.neneclock.domain.Typeface;
@@ -40,9 +40,13 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
     private static final String KEY_FONT_RED = "fontRed";
     private static final String KEY_FONT_GREEN = "fontGreen";
     private static final String KEY_FONT_BLUE = "fontBlue";
+    private static final String KEY_BACKGROUND_RED = "backgroundRed";
+    private static final String KEY_BACKGROUND_GREEN = "backgroundGreen";
+    private static final String KEY_BACKGROUND_BLUE = "backgroundBlue";
 
     private static final int SCHEMA_WITHOUT_APPEARANCE = 1;
     private static final int SCHEMA_WITH_ENVIRONMENT_FONTS = 2;
+    private static final int SCHEMA_WITH_BACKGROUND = 4;
     private static final int SCHEMA_ABSENT = 0;
     private static final int INTEGER_ABSENT = -1;
 
@@ -91,6 +95,9 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         node.putInt(KEY_FONT_RED, settings.fontColor().red());
         node.putInt(KEY_FONT_GREEN, settings.fontColor().green());
         node.putInt(KEY_FONT_BLUE, settings.fontColor().blue());
+        node.putInt(KEY_BACKGROUND_RED, settings.backgroundColor().red());
+        node.putInt(KEY_BACKGROUND_GREEN, settings.backgroundColor().green());
+        node.putInt(KEY_BACKGROUND_BLUE, settings.backgroundColor().blue());
         try {
             node.flush();
         } catch (BackingStoreException failure) {
@@ -104,7 +111,7 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
      *
      * <p>v1 は書体と文字色を持たない。v2 は「実行環境の書体名」を持つが、その名前は同梱書体の
      * 集合とは別物である（ADR 0006）。同じ名前の同梱書体があればそれを引き継ぎ、無ければ既定へ落とす。
-     * 欠けている分は domain の既定値で埋める。推測はしない。
+     * v3 までは背景色を持たない（ADR 0007）。欠けている分は domain の既定値で埋める。推測はしない。
      */
     private SettingsLoadOutcome restore(SettingsSchemaVersion stored) {
         UserSettings carried = readSettingsSharedByEveryVersion();
@@ -114,13 +121,19 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         if (stored.value() == SCHEMA_WITHOUT_APPEARANCE) {
             return new SettingsLoadOutcome.Restored(carried);
         }
-        FontColor color = readFontColor();
+        RgbColor color = readColour(KEY_FONT_RED, KEY_FONT_GREEN, KEY_FONT_BLUE);
         if (color == null) {
             return invalidValue();
         }
         Typeface typeface =
                 stored.value() == SCHEMA_WITH_ENVIRONMENT_FONTS ? carriedTypefaceFromEnvironmentName() : readTypeface();
         if (typeface == null) {
+            return invalidValue();
+        }
+        RgbColor background = stored.value() < SCHEMA_WITH_BACKGROUND
+                ? RgbColor.DEFAULT_BACKGROUND
+                : readColour(KEY_BACKGROUND_RED, KEY_BACKGROUND_GREEN, KEY_BACKGROUND_BLUE);
+        if (background == null) {
             return invalidValue();
         }
         return new SettingsLoadOutcome.Restored(new UserSettings(
@@ -130,7 +143,8 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
                 carried.windowTopmost(),
                 typeface,
                 carried.fontSize(),
-                color));
+                color,
+                background));
     }
 
     /** v1 から変わっていない 5 項目。書体と文字色は既定値のまま返す。 */
@@ -146,7 +160,15 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         if (date == null || topmost == null || fontSize == null) {
             return null;
         }
-        return new UserSettings(clockFormat, seconds, date, topmost, Typeface.DEFAULT, fontSize, FontColor.DEFAULT);
+        return new UserSettings(
+                clockFormat,
+                seconds,
+                date,
+                topmost,
+                Typeface.DEFAULT,
+                fontSize,
+                RgbColor.DEFAULT_FONT,
+                RgbColor.DEFAULT_BACKGROUND);
     }
 
     private static SettingsLoadOutcome invalidValue() {
@@ -181,13 +203,13 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         return Typeface.DEFAULT;
     }
 
-    private @Nullable FontColor readFontColor() {
-        return switch (FontColor.of(
-                node.getInt(KEY_FONT_RED, INTEGER_ABSENT),
-                node.getInt(KEY_FONT_GREEN, INTEGER_ABSENT),
-                node.getInt(KEY_FONT_BLUE, INTEGER_ABSENT))) {
-            case FontColorOutcome.Accepted accepted -> accepted.value();
-            case FontColorOutcome.Rejected outOfRange -> null;
+    private @Nullable RgbColor readColour(String redKey, String greenKey, String blueKey) {
+        return switch (RgbColor.of(
+                node.getInt(redKey, INTEGER_ABSENT),
+                node.getInt(greenKey, INTEGER_ABSENT),
+                node.getInt(blueKey, INTEGER_ABSENT))) {
+            case RgbColorOutcome.Accepted accepted -> accepted.value();
+            case RgbColorOutcome.Rejected outOfRange -> null;
         };
     }
 
