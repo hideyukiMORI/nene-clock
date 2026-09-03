@@ -1,0 +1,23 @@
+# Build output
+build/
+build-logic/build/
+.gradle/
+
+# JDK / tooling caches
+.kotlin/
+
+# IDE state
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Local environment
+local.properties
+*.log
