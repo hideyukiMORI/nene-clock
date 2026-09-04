@@ -6,7 +6,7 @@
 
 <p align="center">
   静かなデスクトップ時計。枠もボタンもトレイアイコンも無く、選んだ書体と色で時刻だけがそこにある。<br>
-  Windows · ポータブル · インストール不要 · <a href="README.md">English</a>
+  Windows（ポータブル zip）· Ubuntu（.deb）· インストール不要・Java 不要 · <a href="README.md">English</a>
 </p>
 
 <p align="center">
@@ -21,6 +21,11 @@
 ---
 
 ## ダウンロード
+
+Release には毎回 2 つのファイルが付く。**Windows 向けのポータブル zip** と **Ubuntu 向けの `.deb`**、それぞれに `.sha256`。
+最新は [v0.2.1](https://github.com/hideyukiMORI/nene-clock/releases/latest)。
+
+### Windows
 
 1. [**Releases ページ**](https://github.com/hideyukiMORI/nene-clock/releases/latest) から
    名前が **`-windows-portable.zip`** で終わるファイルを落とす。
@@ -54,7 +59,7 @@ Get-FileHash (Get-Item '.\NeNe*-windows-portable.zip') -Algorithm SHA256
 同じ Release に Ubuntu（と Debian 系・amd64）向けの `.deb` も付いている。
 
 ```bash
-sudo apt install ./nene-clock_0.2.0_amd64.deb   # /opt/nene-clock に入り、メニューに出る
+sudo apt install ./nene-clock_0.2.1_amd64.deb   # /opt/nene-clock に入り、メニューに出る
 "/opt/nene-clock/bin/NeNe Clock"                  # またはアプリメニューの「NeNe Clock」
 sudo apt remove nene-clock                        # 消すとき
 ```
