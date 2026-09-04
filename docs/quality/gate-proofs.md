@@ -778,7 +778,13 @@ WM_CLASS(STRING) = "io-github-hideyukimori-neneclock-app-NeNeClockApplication", 
 **メインクラスを改名したら `.desktop` の行も変える**（機械では突き合わせていない）。
 同じ `.deb` で 0.2.0 → 0.2.2 の上書きインストールも通った（`Unpacking nene-clock (0.2.2) over (0.2.0)`）。
 
-### 20.7 まだ証明していないこと
+### 20.7 版とシグネチャがフッターに出る（Issue #82・2026-09-05）
+
+`./gradlew run`（作業木・`version=0.2.2`）で設定モーダルを開き、フッター右端に
+`NeNe Clock 0.2.2 · hideyukiMORI` が薄い文字で出ることを目視した。版は `product.properties` 経由で
+`gradle.properties` から来ており、コードには書いていない（`ProductIdentityFileTest` が `${` の残留を拒否する）。
+
+### 20.8 まだ証明していないこと
 
 - MSI のアンインストールと上書きインストール
 - 施主の Ubuntu 実機で、`StartupWMClass` を入れた版のドックのアイコンが製品のものになること

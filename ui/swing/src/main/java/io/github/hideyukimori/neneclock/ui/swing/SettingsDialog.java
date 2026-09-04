@@ -2,11 +2,13 @@ package io.github.hideyukimori.neneclock.ui.swing;
 
 import io.github.hideyukimori.neneclock.application.SettingsSaveFailure;
 import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
+import io.github.hideyukimori.neneclock.domain.ProductIdentity;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.geom.RoundRectangle2D;
+import java.util.Locale;
 import java.util.Objects;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -43,6 +45,8 @@ public final class SettingsDialog {
     private final JPanel footer = new JPanel(new BorderLayout());
     private final JLabel title = TextRendering.label("");
     private final JLabel status = TextRendering.label("");
+    private final JLabel signature = TextRendering.label("");
+    private final ProductIdentity identity;
     private final IconButton back = new IconButton(ChromeIcon.BACK);
     private final IconButton close = new IconButton(ChromeIcon.CLOSE);
 
@@ -55,8 +59,9 @@ public final class SettingsDialog {
     private @Nullable UiTheme theme;
 
     /** 3 つの画面を束ねて 1 つのモーダルにする。 */
-    public SettingsDialog(Frame owner, SettingsPanels panels) {
+    public SettingsDialog(Frame owner, SettingsPanels panels, ProductIdentity identity) {
         this.dialog = new JDialog(Objects.requireNonNull(owner, "owner"));
+        this.identity = Objects.requireNonNull(identity, "identity");
         this.form = panels.form();
         this.typefaces = panels.typefaces();
         this.colours = panels.colours();
@@ -113,6 +118,7 @@ public final class SettingsDialog {
         Palette palette = shownTheme.palette();
         renderTitle(shownTheme);
         renderStatusText(shownTheme);
+        renderSignature(shownTheme);
         dialog.getContentPane().setBackground(palette.surface());
         header.setBackground(palette.surface());
         footer.setBackground(palette.surface());
@@ -127,6 +133,14 @@ public final class SettingsDialog {
                 BorderFactory.createEmptyBorder(0, SIDE, 0, SIDE)));
         back.renderColours(shownTheme);
         close.renderColours(shownTheme);
+    }
+
+    /** 版と作者。フッターの右端に、状態行より薄く出す。 */
+    private void renderSignature(UiTheme shownTheme) {
+        signature.setText(
+                String.format(Locale.ROOT, shownTheme.text(UiText.SIGNATURE), identity.version(), identity.author()));
+        signature.setFont(shownTheme.font(STATUS_POINTS));
+        signature.setForeground(shownTheme.palette().textFaint());
     }
 
     /** 状態行を、いまの言語で書き直す。 */
@@ -186,6 +200,7 @@ public final class SettingsDialog {
         header.add(close.component(), BorderLayout.EAST);
         footer.setPreferredSize(new Dimension(0, FOOTER_HEIGHT));
         footer.add(status, BorderLayout.WEST);
+        footer.add(signature, BorderLayout.EAST);
         body.add(form.component(), "form");
         body.add(typefaces.component(), "typeface");
         body.add(colours.component(), "colour");
