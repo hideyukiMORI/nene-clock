@@ -34,6 +34,9 @@
    It says that only because the app is not code-signed, and it asks only once.
 3. Go through the installer, then start **NeNe Clock** from the Start Menu.
 
+<!-- 🔴 この行を消さないこと。空行だけでは Markdown はリストを終えないので、
+     続く日本語の手順が 4 から始まってしまう（2026-09-05・GitHub の描画で実測）。 -->
+
 1. 落としたファイルをダブルクリックする。
 2. 青い画面で「**Windows によって PC が保護されました**」と出たら、**「詳細情報」→「実行」**を押す。
    コード署名をしていないので出るだけで、聞かれるのは最初の 1 回だけ。
