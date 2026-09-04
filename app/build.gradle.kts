@@ -170,7 +170,8 @@ abstract class PackageInstaller : DefaultTask() {
                 args("--linux-menu-group", "Utility")
                 args("--linux-app-category", "utils")
                 args("--linux-shortcut")
-                // postinst だけ差し替える（app/src/deb/postinst）。最小構成の Linux でメニュー登録が落ちないようにするため。
+                // postinst と .desktop を差し替える（app/src/deb/）。最小構成の Linux でメニュー登録が落ちないようにし、
+                // GNOME が動いている窓とメニュー項目を結びつけられるように StartupWMClass を書くため。
                 args("--resource-dir", debResources.get().asFile.path)
                 args("--dest", out.path)
             }
