@@ -44,7 +44,8 @@
 - **active**: `packageInstaller` が Linux で app-image を作り、起動できる（gate-proofs 第 20 節）
 - **active（2026-09-05・施主の実機）**: Windows ランナーで MSI ができ、施主の Windows 実機に問題なく入った。
   ネイティブの Windows 窓でちらつきが起きないことは zip 版で先に確認済み（gate-proofs 19.3）。
-  MSI は検証済みになったが、**Release に載せるかは別の判断**（いまは zip と .deb だけ・#70）
+  ⇒ 載せない理由が無くなったので、**Release には zip・MSI・.deb の 3 つを並べる**（#86）。
+  入れたい人は MSI、入れたくない人は zip（[ADR 0014](0014-a-portable-zip-sits-beside-the-msi.md)）
 - **署名はしない（施主決定 2026-09-04）。** SmartScreen の警告は出るが、「詳細情報」→「実行」で通る。
   コード署名証明書は認証局から買う（OV で年数万円・鍵はハードウェアかクラウド署名）か、
   Microsoft の Azure Trusted Signing（月額制・法人は設立 3 年以上の条件）か、Certum の OSS 向けかになる。

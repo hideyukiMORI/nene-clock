@@ -22,8 +22,9 @@
 
 ## ダウンロード
 
-Release には毎回 2 つのファイルが付く。**Windows 向けのポータブル zip** と **Ubuntu 向けの `.deb`**、それぞれに `.sha256`。
-最新は [v0.2.3](https://github.com/hideyukiMORI/nene-clock/releases/latest)。
+Release には毎回 3 つのファイルが付く。Windows 向けの**ポータブル zip** と**インストーラ（`.msi`）**、
+Ubuntu 向けの **`.deb`**。それぞれに `.sha256` が付く。
+最新は [v0.2.4](https://github.com/hideyukiMORI/nene-clock/releases/latest)。
 
 ### Windows
 
@@ -35,6 +36,10 @@ Release には毎回 2 つのファイルが付く。**Windows 向けのポー�
 これだけ。インストーラーも管理者権限も要らず、**Java も要らない**。刻んだ実行環境がフォルダの中に入っている。
 フォルダはばらさないこと。`.exe` は隣の `runtime/` と `app/` を使う。
 
+**ちゃんと入れたいなら** `.msi` を落としてダブルクリックする。ユーザー単位で入るので管理者権限は要らない。
+スタートメニューとデスクトップにショートカットが付き、新しい版を入れると上書きになり、
+「設定 → アプリ」から消せる。中身も設定も zip 版と同じで、Windows に管理させるかどうかの違いだけである。
+
 | | |
 | --- | --- |
 | 動く環境 | Windows 10 / 11（64 ビット）。Ubuntu は[下記](#ubuntu) |
@@ -43,7 +48,7 @@ Release には毎回 2 つのファイルが付く。**Windows 向けのポー�
 | 残すもの | 設定だけ。`HKEY_CURRENT_USER\Software\JavaSoft\Prefs\io\github\hideyukimori\neneclock` |
 | 消し方 | フォルダを消す（まっさらにしたければ上のレジストリキーも） |
 
-**初回起動時の SmartScreen。** zip はコード署名していないので、最初の 1 回だけ
+**初回起動時の SmartScreen。** どちらもコード署名していないので、最初の 1 回だけ
 「Windows によって PC が保護されました」と出る。**「詳細情報」→「実行」**で通る。次からは出ない。
 
 **ダウンロードの検証（任意）。** Release には `.sha256` ファイルも付いている。PowerShell で:
@@ -59,7 +64,7 @@ Get-FileHash (Get-Item '.\NeNe*-windows-portable.zip') -Algorithm SHA256
 同じ Release に Ubuntu（と Debian 系・amd64）向けの `.deb` も付いている。
 
 ```bash
-sudo apt install ./nene-clock_0.2.3_amd64.deb   # /opt/nene-clock に入り、メニューに出る
+sudo apt install ./nene-clock_0.2.4_amd64.deb   # /opt/nene-clock に入り、メニューに出る
 "/opt/nene-clock/bin/NeNe Clock"                  # またはアプリメニューの「NeNe Clock」
 sudo apt remove nene-clock                        # 消すとき
 ```
@@ -207,8 +212,7 @@ Windows では `.\gradlew.bat` に同じ task 名を渡す。WSLg なら `DISPLA
 
 1. `jpackage` が **app-image** を作る。起動ファイル・jar・`jdeps` が必要と言ったモジュールだけに刻んだ実行環境。
 2. そのフォルダを zip にしたものが**ポータブル zip**。Release に付くのはこれ。
-3. Windows では同じ app-image から **MSI** も作る。タグを打つたびに作られ workflow の成果物には残るが、
-   検証するまで公開しない。
+3. Windows では同じ app-image から **MSI** も作る。
 4. Linux では同じ app-image から **`.deb`** を作る（[ADR 0015](docs/adr/0015-linux-is-distributed-as-a-deb.md)）。
 
 `jpackage` は動いている OS 向けにしか作れないので、GitHub Actions の *Release* workflow が
