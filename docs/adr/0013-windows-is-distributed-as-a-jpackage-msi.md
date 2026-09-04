@@ -32,7 +32,7 @@
 | 選択肢 | 却下の理由 |
 | --- | --- |
 | Inno Setup / NSIS | 外の道具と別のスクリプト言語が増える。`jpackage` は JDK にあり、方法が 1 つで済む |
-| MSIX / winget / Microsoft Store | 署名が前提。証明書を持ってから別の ADR で問い直す |
+| MSIX / winget / Microsoft Store | 署名が前提。署名しないと決めたので採れない |
 | zip を配って「JDK を入れて `bin/app` を叩け」 | 利用者に JDK を要求する。インストーラーという要件に応えていない |
 | WSL から Windows 向けをクロスビルド | `jpackage` にその機能が無い |
 | ワークフローの中で `jpackage` を直接叩く | 手順が CI 専用のシェルになり、ローカルで再現できない（QLT-005） |
@@ -43,7 +43,11 @@
 
 - **active**: `packageInstaller` が Linux で app-image を作り、起動できる（gate-proofs 第 20 節）
 - **planned**: Windows ランナーで MSI ができ、施主の実機で入る。**ネイティブの Windows 窓でちらつきが起きないか**もそこで見る
-- **planned**: コード署名。無い間は SmartScreen の警告が出る（「詳細情報」→「実行」で通る）
+- **署名はしない（施主決定 2026-09-04）。** SmartScreen の警告は出るが、「詳細情報」→「実行」で通る。
+  コード署名証明書は認証局から買う（OV で年数万円・鍵はハードウェアかクラウド署名）か、
+  Microsoft の Azure Trusted Signing（月額制・法人は設立 3 年以上の条件）か、Certum の OSS 向けかになる。
+  署名しても評判が溜まるまで警告は消えない。いまの配布規模ではその費用と手間に見合わない。
+  再検討するなら、CI から署名できるクラウド方式（Trusted Signing / eSigner / KeyLocker）を前提にする
 
 ## 結果
 
@@ -56,5 +60,5 @@
 失うもの:
 
 - 配布物は 40〜60 MB 程度になる（実行環境を同梱するため）
-- 署名が無い間、初回起動で SmartScreen に止められる
+- 初回起動で SmartScreen に止められる（署名しないと決めた）
 - WSL 側と Windows 側で設定が共有されない

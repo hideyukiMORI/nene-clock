@@ -59,7 +59,7 @@ Both scripts are idempotent. `tools/uninstall-desktop-entry.sh` removes what the
 Windows users do not need WSL or a JDK: download the `.msi` from the
 [Releases page](https://github.com/hideyukiMORI/nene-clock/releases) and double-click it.
 It installs per user (no admin prompt), adds a Start Menu entry and a desktop shortcut, and
-re-installing a newer version upgrades in place. The installer is unsigned for now, so
+re-installing a newer version upgrades in place. The installer is deliberately unsigned, so
 SmartScreen shows "Windows protected your PC" on first launch — choose *More info → Run anyway*.
 
 The installer is built by **one Gradle task** on a Windows runner ([ADR 0013](docs/adr/0013-windows-is-distributed-as-a-jpackage-msi.md)):
