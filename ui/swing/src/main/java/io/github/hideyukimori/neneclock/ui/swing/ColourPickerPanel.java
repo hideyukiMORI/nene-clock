@@ -23,8 +23,11 @@ import javax.swing.JTextField;
 /**
  * 色を選ぶ画面（FR-044 / FR-046 / FR-045）。
  *
- * <p>厳選プリセットと HEX の直接指定を並べる。既製の {@code JColorChooser} を使わないのは、
- * タブと HSB スライダが並ぶ画面が、時計の設定に対して重すぎるためである。
+ * <p>上から順に、見本・厳選プリセット 24 色・掴んで選ぶ面（{@link ColourField}）・HEX の直接指定。
+ * 決め打ちの色から入っても、掴んで探しても、番号で指定しても同じ場所に着く。
+ *
+ * <p>既製の {@code JColorChooser} は採らない（ADR 0008）。既製の見た目が、自分で描いてきた
+ * モーダルの見た目を上書きしてしまうためである。
  *
  * <p>🔑 読めない組み合わせを**拒否しない**。警告して、直す手段を隣に置くだけである（ADR 0007）。
  */
@@ -45,11 +48,13 @@ public final class ColourPickerPanel {
     private static final int BYTE_MASK = 0xFF;
     private static final int SWATCH_ROWS = 3;
     private static final int SWATCH_HEIGHT = 34;
+    private static final int FIELD_HEIGHT = 128;
 
     private final JPanel surface = new JPanel();
     private final ClockPreview preview;
     private final JPanel swatches = new JPanel(new GridLayout(0, SwatchPresets.PER_ROW, GAP, GAP));
     private final List<ColourSwatch> presets = new ArrayList<>();
+    private final ColourField field = new ColourField();
     private final JTextField hex = TextRendering.field(HEX_LENGTH);
     private final JLabel hexPrefix = TextRendering.label("#");
     private final JLabel freeform = TextRendering.label("");
@@ -68,6 +73,7 @@ public final class ColourPickerPanel {
             presets.add(swatch);
             swatches.add(swatch.component());
         }
+        field.onColourChosen(picked -> chosen.accept(picked));
         repair.onPressed(() -> chosen.accept(readableAgainst(editing.counterpart())));
         layOut();
         listen();
@@ -89,6 +95,7 @@ public final class ColourPickerPanel {
         Objects.requireNonNull(shownTheme, "shownTheme");
         UserSettings settings = shown.settings();
         preview.renderSettings(settings, text.time(), text.date());
+        field.renderColour(shown.editing(), shownTheme);
         if (!hex.isFocusOwner()) {
             hex.setText(SettingsFormPanel.hexOf(shown.editing()).substring(1));
         }
@@ -164,6 +171,11 @@ public final class ColourPickerPanel {
         swatches.setMaximumSize(new Dimension(Integer.MAX_VALUE, gridHeight));
         swatches.setPreferredSize(new Dimension(0, gridHeight));
         surface.add(swatches);
+        surface.add(Box.createVerticalStrut(SIDE));
+        JComponent picker = field.component();
+        picker.setAlignmentX(Component.LEFT_ALIGNMENT);
+        picker.setMaximumSize(new Dimension(Integer.MAX_VALUE, FIELD_HEIGHT));
+        surface.add(picker);
         surface.add(Box.createVerticalStrut(SIDE));
         JComponent hexRow = hexRow();
         hexRow.setAlignmentX(Component.LEFT_ALIGNMENT);
