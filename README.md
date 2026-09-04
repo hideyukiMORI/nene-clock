@@ -6,7 +6,7 @@
 
 <p align="center">
   A quiet desktop clock. No frame, no buttons, no tray icon — just the time, in the typeface and colours you choose.<br>
-  Windows · portable · nothing to install · <a href="README.ja.md">日本語</a>
+  Windows (portable zip) · Ubuntu (.deb) · nothing to install, no Java needed · <a href="README.ja.md">日本語</a>
 </p>
 
 <p align="center">
@@ -21,6 +21,11 @@
 ---
 
 ## Download
+
+Every Release carries two files: a **portable zip for Windows** and a **`.deb` for Ubuntu**, each with a
+`.sha256` next to it. Latest: [v0.2.1](https://github.com/hideyukiMORI/nene-clock/releases/latest).
+
+### Windows
 
 1. Open the [**Releases page**](https://github.com/hideyukiMORI/nene-clock/releases/latest) and download
    the file that ends in **`-windows-portable.zip`**.
@@ -54,7 +59,7 @@ Compare the hash with the one in the `.sha256` file.
 The same Release carries a `.deb` for Ubuntu (and other Debian-based distributions, amd64):
 
 ```bash
-sudo apt install ./nene-clock_0.2.0_amd64.deb   # installs to /opt/nene-clock and adds a menu entry
+sudo apt install ./nene-clock_0.2.1_amd64.deb   # installs to /opt/nene-clock and adds a menu entry
 "/opt/nene-clock/bin/NeNe Clock"                  # or launch "NeNe Clock" from your app menu
 sudo apt remove nene-clock                        # to uninstall
 ```
