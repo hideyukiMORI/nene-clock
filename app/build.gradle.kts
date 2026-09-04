@@ -161,6 +161,13 @@ abstract class PackageInstaller : DefaultTask() {
                 args("--win-upgrade-uuid", "ea39da0b-604d-46ab-8ac1-69d155faaec8")
                 args("--dest", out.path)
             }
+            // zip と同じ理由で名前から空白を外す。GitHub は添付名の空白をドットに変える（#72 / #86）。
+            out.listFiles { file -> file.name.endsWith(".msi") && file.name.contains(" ") }!!.forEach { file ->
+                val renamed = File(out, file.name.replace(" ", "-"))
+                if (!file.renameTo(renamed)) {
+                    throw GradleException("could not rename ${file.name} to ${renamed.name}")
+                }
+            }
         }
         // 4. .deb も同じ app-image から作る（Linux だけ・ADR 0015）。/opt/nene-clock に入り、メニューに出て、apt remove で消える。
         //    dpkg-deb と fakeroot が要る。無ければ jpackage が「どの道具か」を言って落ちる。

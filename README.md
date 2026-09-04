@@ -22,8 +22,9 @@
 
 ## Download
 
-Every Release carries two files: a **portable zip for Windows** and a **`.deb` for Ubuntu**, each with a
-`.sha256` next to it. Latest: [v0.2.3](https://github.com/hideyukiMORI/nene-clock/releases/latest).
+Every Release carries three downloads, each with a `.sha256` next to it: a **portable zip** and an
+**installer (`.msi`)** for Windows, and a **`.deb`** for Ubuntu.
+Latest: [v0.2.4](https://github.com/hideyukiMORI/nene-clock/releases/latest).
 
 ### Windows
 
@@ -35,6 +36,10 @@ Every Release carries two files: a **portable zip for Windows** and a **`.deb` f
 That is all. There is no installer, no admin prompt, and **you do not need Java** — a trimmed
 runtime is inside the folder. Keep the folder together: the `.exe` needs `runtime/` and `app/` next to it.
 
+**Prefer a real installer?** Download the `.msi` instead and double-click it. It installs for your user
+only (no admin prompt), adds a Start Menu entry and a desktop shortcut, upgrades in place when you install
+a newer version, and uninstalls from *Settings → Apps*. Same app, same settings — just managed by Windows.
+
 | | |
 | --- | --- |
 | Works on | Windows 10 / 11, 64-bit — Ubuntu users, see [below](#ubuntu) |
@@ -43,7 +48,7 @@ runtime is inside the folder. Keep the folder together: the `.exe` needs `runtim
 | Leaves behind | only its settings, under `HKEY_CURRENT_USER\Software\JavaSoft\Prefs\io\github\hideyukimori\neneclock` |
 | To remove | delete the folder (and that registry key if you want a clean slate) |
 
-**First launch: SmartScreen.** The zip is not code-signed, so Windows shows
+**First launch: SmartScreen.** Neither download is code-signed, so Windows shows
 *"Windows protected your PC"* the first time. Click **More info → Run anyway**. It only asks once.
 
 **Verify the download (optional).** Every Release carries a `.sha256` file. In PowerShell:
@@ -59,7 +64,7 @@ Compare the hash with the one in the `.sha256` file.
 The same Release carries a `.deb` for Ubuntu (and other Debian-based distributions, amd64):
 
 ```bash
-sudo apt install ./nene-clock_0.2.3_amd64.deb   # installs to /opt/nene-clock and adds a menu entry
+sudo apt install ./nene-clock_0.2.4_amd64.deb   # installs to /opt/nene-clock and adds a menu entry
 "/opt/nene-clock/bin/NeNe Clock"                  # or launch "NeNe Clock" from your app menu
 sudo apt remove nene-clock                        # to uninstall
 ```
@@ -213,8 +218,7 @@ desktop with no `DISPLAY` setup; unit tests never need a display.
 1. `jpackage` builds an **app-image** — the launcher, your jars and a runtime trimmed to the modules
    `jdeps` says you need.
 2. That folder is zipped as the **portable zip**. This is what the Release carries.
-3. On Windows the same app-image is also wrapped into an **MSI**. It is built on every tagged run and kept
-   as a workflow artifact, but it is not published until it has been tested.
+3. On Windows the same app-image is also wrapped into an **MSI**.
 4. On Linux the same app-image becomes the **`.deb`**
    ([ADR 0015](docs/adr/0015-linux-is-distributed-as-a-deb.md)).
 
