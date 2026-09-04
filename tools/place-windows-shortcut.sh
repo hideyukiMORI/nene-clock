@@ -6,7 +6,7 @@
 #   ここでやるのは「それをデスクトップへ複製し、アイコンを差し替える」ことだけである。
 #
 # 🔴 WSLg が作るアイコンには**ペンギンが合成される**（Linux アプリの目印）。
-#    製品のアイコンをそのまま出したいので、自前の .ico を作って指し直す。
+#    製品のアイコンをそのまま出したいので、実装から書き出した .ico を指し直す。
 #
 # 🔴 Windows 側のパス操作は PowerShell に閉じる。日本語のフォルダ名（「デスクトップ」など）は、
 #    powershell.exe の出力を bash 側で受けると文字化けするため（実測）。
@@ -29,16 +29,16 @@ if [ ! -d "$PREFIX" ]; then
   exit 1
 fi
 
-echo "==> アイコン（.ico）を作って Windows 側へ置く"
+echo "==> アイコン（.ico）を Windows 側へ置く"
+# .ico は AppIconFiles が実装から書き出したもの（install-desktop-entry.sh が $PREFIX へ置く）。
+# 以前は ImageMagick で PNG から作っていたが、作り方が 2 つあると片方だけ古くなる（#66）。
 LOCAL_APPDATA="$("$POWERSHELL" -NoProfile -Command '$env:LOCALAPPDATA' | tr -d '\r')"
 ICON_DIR="$(wslpath -u "$LOCAL_APPDATA")/NeNeClock"
 mkdir -p "$ICON_DIR"
-if command -v convert > /dev/null; then
-  convert "$PREFIX"/nene-clock-16.png "$PREFIX"/nene-clock-24.png "$PREFIX"/nene-clock-32.png \
-          "$PREFIX"/nene-clock-48.png "$PREFIX"/nene-clock-64.png "$PREFIX"/nene-clock-128.png \
-          "$PREFIX"/nene-clock-256.png "$ICON_DIR/nene-clock.ico"
+if [ -f "$PREFIX/nene-clock.ico" ]; then
+  cp "$PREFIX/nene-clock.ico" "$ICON_DIR/nene-clock.ico"
 else
-  echo "  ImageMagick が無いので、アイコンは WSLg のもの（ペンギンつき）のままにする。" >&2
+  echo "  $PREFIX/nene-clock.ico が無い（古い install）。install-desktop-entry.sh を入れ直すこと。アイコンは WSLg のもの（ペンギンつき）のままにする。" >&2
 fi
 
 echo "==> デスクトップへ置き、アイコンを指し直す"

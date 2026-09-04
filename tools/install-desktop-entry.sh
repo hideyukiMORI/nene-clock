@@ -26,7 +26,7 @@ echo "==> $PREFIX へ置く"
 rm -rf "$PREFIX"
 mkdir -p "$PREFIX"
 cp -r "$REPO/app/build/install/app/." "$PREFIX/"
-cp "$REPO/app/build/icons/"*.png "$PREFIX/"
+cp "$REPO/app/build/icons/"nene-clock* "$PREFIX/"   # PNG と .ico（どちらも AppIcon から書き出したもの）
 chmod -R a+rX "$PREFIX"
 chmod a+x "$PREFIX/bin/app"
 

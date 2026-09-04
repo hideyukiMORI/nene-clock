@@ -4,16 +4,22 @@ import io.github.hideyukimori.neneclock.ui.swing.AppIcon;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.List;
 import javax.imageio.ImageIO;
 
 /**
- * アイコンを PNG として書き出す。**配布物を作るときだけ**使う入口。
+ * アイコンを PNG と ICO として書き出す。**配布物を作るときだけ**使う入口。
  *
  * <p>デスクトップエントリ（{@code .desktop}）はアイコンをファイルで指すので、画像が要る。
  * だからといって画像をリポジトリに置くと、**描いている絵と置いた絵が別々に存在する**ことになり、
  * 片方だけ古くなる。ここで {@link AppIcon} から書き出せば、絵の正本は 1 つのままである。
+ *
+ * <p>PNG は {@code .desktop} が指す。ICO は Windows のインストーラー（{@code jpackage}）と
+ * デスクトップのショートカットが指す。どちらも同じ {@link AppIcon} から出る。
  *
  * <p>アプリの入口ではない。{@code ./gradlew writeAppIcons} からだけ呼ばれる。
  */
@@ -23,7 +29,7 @@ public final class AppIconFiles {
 
     private AppIconFiles() {}
 
-    /** 第 1 引数の場所へ PNG を書き出す。 */
+    /** 第 1 引数の場所へ PNG と ICO を書き出す。 */
     public static void main(String[] arguments) {
         if (arguments.length != 1) {
             System.err.println("usage: AppIconFiles <出力先ディレクトリ>");
@@ -45,12 +51,19 @@ public final class AppIconFiles {
     }
 
     private static void write(File directory) throws IOException {
-        List<Image> images = AppIcon.images();
-        for (Image image : images) {
-            BufferedImage drawn = (BufferedImage) image;
-            File file = new File(directory, "nene-clock-" + drawn.getWidth() + ".png");
-            ImageIO.write(drawn, "png", file);
+        List<BufferedImage> drawn = new ArrayList<>();
+        for (Image image : AppIcon.images()) {
+            drawn.add((BufferedImage) image);
+        }
+        for (BufferedImage image : drawn) {
+            File file = new File(directory, "nene-clock-" + image.getWidth() + ".png");
+            ImageIO.write(image, "png", file);
             System.out.println(file.getPath());
         }
+        File ico = new File(directory, "nene-clock.ico");
+        try (OutputStream out = new FileOutputStream(ico)) {
+            IcoFile.write(drawn, out);
+        }
+        System.out.println(ico.getPath());
     }
 }

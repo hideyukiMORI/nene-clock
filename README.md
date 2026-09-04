@@ -54,6 +54,25 @@ WSLg's own icon has a penguin badge stamped onto it.
 
 Both scripts are idempotent. `tools/uninstall-desktop-entry.sh` removes what they installed.
 
+## Windows installer
+
+Windows users do not need WSL or a JDK: download the `.msi` from the
+[Releases page](https://github.com/hideyukiMORI/nene-clock/releases) and double-click it.
+It installs per user (no admin prompt), adds a Start Menu entry and a desktop shortcut, and
+re-installing a newer version upgrades in place. The installer is unsigned for now, so
+SmartScreen shows "Windows protected your PC" on first launch — choose *More info → Run anyway*.
+
+The installer is built by **one Gradle task** on a Windows runner ([ADR 0013](docs/adr/0013-windows-is-distributed-as-a-jpackage-msi.md)):
+
+```bash
+./gradlew packageInstaller      # Windows: app/build/installer/*.msi (+ .sha256)
+                                # elsewhere: an app-image, to prove the wiring
+```
+
+`jpackage` bundles a trimmed runtime, the module set comes from `jdeps`, and the `.ico`
+is written from `AppIcon` like every other icon. Pushing a `v*` tag attaches the MSI to a
+GitHub Release; running the *Windows installer* workflow by hand keeps it as a run artifact.
+
 ## Project layout
 
 ```text
