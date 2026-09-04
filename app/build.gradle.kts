@@ -68,6 +68,9 @@ abstract class PackageInstaller : DefaultTask() {
     @get:InputFile
     abstract val licenseFile: RegularFileProperty
 
+    @get:InputDirectory
+    abstract val debResources: DirectoryProperty
+
     @get:Input
     abstract val jdkHome: Property<String>
 
@@ -151,6 +154,27 @@ abstract class PackageInstaller : DefaultTask() {
                 args("--dest", out.path)
             }
         }
+        // 4. .deb も同じ app-image から作る（Linux だけ・ADR 0015）。/opt/nene-clock に入り、メニューに出て、apt remove で消える。
+        //    dpkg-deb と fakeroot が要る。無ければ jpackage が「どの道具か」を言って落ちる。
+        if (System.getProperty("os.name").startsWith("Linux")) {
+            execOperations.exec {
+                executable = File(bin, "jpackage").path
+                args("--type", "deb")
+                args("--app-image", image.path)
+                args("--name", "NeNe Clock")
+                args("--app-version", appVersion.get())
+                args("--vendor", "hideyukiMORI")
+                args("--license-file", licenseFile.get().asFile.path)
+                args("--linux-package-name", "nene-clock")
+                args("--linux-deb-maintainer", "info@ayane.co.jp")
+                args("--linux-menu-group", "Utility")
+                args("--linux-app-category", "utils")
+                args("--linux-shortcut")
+                // postinst だけ差し替える（app/src/deb/postinst）。最小構成の Linux でメニュー登録が落ちないようにするため。
+                args("--resource-dir", debResources.get().asFile.path)
+                args("--dest", out.path)
+            }
+        }
         out.listFiles { file -> file.isFile && !file.name.endsWith(".sha256") }!!.forEach { file ->
             val digest = MessageDigest.getInstance("SHA-256").digest(file.readBytes())
             val hex = digest.joinToString("") { byte -> "%02x".format(byte) }
@@ -163,11 +187,12 @@ abstract class PackageInstaller : DefaultTask() {
 
 tasks.register<PackageInstaller>("packageInstaller") {
     group = "distribution"
-    description = "配布物を作る（app-image → ポータブル zip → Windows なら MSI）"
+    description = "配布物を作る（app-image → ポータブル zip → Windows なら MSI、Linux なら .deb）"
     dependsOn(tasks.named("installDist"), tasks.named("writeAppIcons"))
     libDirectory.set(layout.buildDirectory.dir("install/app/lib"))
     iconDirectory.set(layout.buildDirectory.dir("icons"))
     licenseFile.set(rootProject.layout.projectDirectory.file("LICENSE"))
+    debResources.set(layout.projectDirectory.dir("src/deb"))
     jdkHome.set(javaToolchains.launcherFor(java.toolchain).map { it.metadata.installationPath.asFile.absolutePath })
     mainClass.set(application.mainClass)
     mainJarName.set(tasks.named<Jar>("jar").flatMap { it.archiveFileName })

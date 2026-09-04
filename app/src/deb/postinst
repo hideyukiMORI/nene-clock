@@ -1,0 +1,31 @@
+#!/bin/sh
+# postinst script for APPLICATION_PACKAGE
+#
+# jpackage の既定テンプレート（jdk.jpackage/.../template.postinst）に 1 行足したもの。
+# 🔴 xdg-desktop-menu は /usr/share/desktop-directories が無いと「No writable system menu directory」で落ちる。
+#    デスクトップ版の Ubuntu には最初からあるが、WSL のような最小構成には無い（2026-09-05・実測・#74）。
+#    先に作っておけば、どちらでも同じ経路でメニューに登録される。
+# それ以外は既定のまま。プレースホルダ（大文字）は jpackage が埋める。
+
+set -e
+
+package_type=deb
+LAUNCHER_AS_SERVICE_SCRIPTS
+
+case "$1" in
+    configure)
+mkdir -p /usr/share/desktop-directories /usr/share/applications
+DESKTOP_COMMANDS_INSTALL
+LAUNCHER_AS_SERVICE_COMMANDS_INSTALL
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

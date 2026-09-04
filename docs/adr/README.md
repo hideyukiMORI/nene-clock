@@ -29,3 +29,4 @@ ADR は「なぜそう決めたか」「何を却下したか」を書く。
 | [0012](0012-transparency-is-dropped-the-artefact-is-not-ours.md) | 透明度をやめる。ちらつきはアプリの外にあった | 受理 |
 | [0013](0013-windows-is-distributed-as-a-jpackage-msi.md) | Windows へは jpackage の MSI で配る。作るのは CI の Windows ランナー | 受理 |
 | [0014](0014-a-portable-zip-sits-beside-the-msi.md) | MSI の隣にポータブル zip を置く。1 ファイルの exe は作らない | 受理 |
+| [0015](0015-linux-is-distributed-as-a-deb.md) | Linux（Ubuntu）へは .deb で配る。同じ app-image から、同じ task で | 受理 |

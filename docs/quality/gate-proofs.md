@@ -732,9 +732,34 @@ $ unzip -l "NeNe Clock-0.2.0-linux-portable.zip" | grep -E "bin/NeNe Clock$|lib/
 
 zip の中は app-image そのもの（93 ファイル・展開で約 90 MB）。起動できることは 20.1 で示した app-image と同一物である。
 
-### 20.4 まだ証明していないこと
+### 20.4 `.deb` は WSL の Ubuntu 22.04 に入り、起動し、消える（Issue #74 / ADR 0015・2026-09-05）
 
-- Windows ランナーで MSI と zip ができること（PR の workflow で走る）
+```text
+$ ./gradlew packageInstaller                       ← Linux では app-image → zip → .deb
+$ dpkg-deb -f nene-clock_0.2.0_amd64.deb Package Version Architecture Depends
+Package: nene-clock / Version: 0.2.0 / Architecture: amd64
+Depends: libasound2, libfreetype6, libx11-6, libxext6, libxi6, libxrender1, libxtst6, xdg-utils, ...（26 個）
+$ sudo apt install ./nene-clock_0.2.0_amd64.deb
+Setting up nene-clock (0.2.0) ...                  ← Status: install ok installed
+$ ls /usr/share/applications | grep nene
+nene-clock-NeNe_Clock.desktop                      ← メニュー項目
+$ "/opt/nene-clock/bin/NeNe Clock" &               → 窓が出た（Depth 24）
+$ sudo apt remove nene-clock
+Removing nene-clock (0.2.0) ...                    ← /opt/nene-clock もメニュー項目も消えた
+```
+
+🔴 **最初の版は WSL で postinst が落ちた。** `xdg-desktop-menu install` が
+「No writable system menu directory found」（終了コード 3）を返す。
+原因は `/usr/share/desktop-directories` が無いこと（`xdg-desktop-menu` は `.directory` の置き場も要求する）。
+デスクトップ版の Ubuntu には最初からあるが、WSL のような最小構成には無い。
+jpackage の `--resource-dir` で postinst だけ差し替え（`app/src/deb/postinst`）、`mkdir -p` を 1 行足した。
+差し替え後は上のとおり一度で通る。**アプリ本体は postinst が落ちていても起動できていた**——
+落ちていたのはメニュー登録だけで、そこを見ないと「入った」と誤読する種類の壊れ方だった。
+
+### 20.5 まだ証明していないこと
+
+- Windows ランナーで MSI と zip、Ubuntu ランナーで `.deb` ができること（PR の workflow で走る）
+- WSL でない Ubuntu の実機で `.deb` が入ること
 - 施主の Windows 実機で入って起動すること。**ネイティブの窓でちらつきが起きないか**もそこで見る
 - 署名は無い。SmartScreen の警告が出る
 

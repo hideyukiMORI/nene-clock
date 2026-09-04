@@ -32,7 +32,7 @@
 
 | | |
 | --- | --- |
-| 動く環境 | Windows 10 / 11（64 ビット） |
+| 動く環境 | Windows 10 / 11（64 ビット）。Ubuntu は[下記](#ubuntu) |
 | 大きさ | zip で約 31 MB、展開して約 90 MB |
 | 必要なもの | なし。Java も .NET もインターネットも要らない |
 | 残すもの | 設定だけ。`HKEY_CURRENT_USER\Software\JavaSoft\Prefs\io\github\hideyukimori\neneclock` |
@@ -49,8 +49,20 @@ Get-FileHash (Get-Item '.\NeNe*-windows-portable.zip') -Algorithm SHA256
 
 出たハッシュを `.sha256` の中身と見比べる。
 
-Linux と macOS のバイナリは配っていない。同じビルド task でそれぞれの実行イメージは作れる
-（[ソースからビルドする](#ソースからビルドする)）。
+### Ubuntu
+
+同じ Release に Ubuntu（と Debian 系・amd64）向けの `.deb` も付いている。
+
+```bash
+sudo apt install ./nene-clock_0.2.0_amd64.deb   # /opt/nene-clock に入り、メニューに出る
+"/opt/nene-clock/bin/NeNe Clock"                  # またはアプリメニューの「NeNe Clock」
+sudo apt remove nene-clock                        # 消すとき
+```
+
+こちらも Java は要らない。パッケージは一般的な X11 ライブラリに依存するが、Ubuntu のデスクトップには最初から入っている。
+Wayland のセッションでは XWayland を通って動く。WSL にもそのまま入り、WSLg がメニュー項目を Windows のスタートメニューに出す。
+
+macOS のバイナリは配っていない。同じビルド task で実行イメージは作れる（[ソースからビルドする](#ソースからビルドする)）。
 
 ---
 
@@ -188,10 +200,11 @@ Windows では `.\gradlew.bat` に同じ task 名を渡す。WSLg なら `DISPLA
 2. そのフォルダを zip にしたものが**ポータブル zip**。Release に付くのはこれ。
 3. Windows では同じ app-image から **MSI** も作る。タグを打つたびに作られ workflow の成果物には残るが、
    検証するまで公開しない。
+4. Linux では同じ app-image から **`.deb`** を作る（[ADR 0015](docs/adr/0015-linux-is-distributed-as-a-deb.md)）。
 
-`jpackage` は動いている OS 向けにしか作れないので、Windows 用の zip は GitHub Actions の
-*Windows installer* workflow が Windows ランナーで作る。`v*` タグを push すると Release ができる。
-Linux や macOS でも同じ task がその OS 用の app-image と zip を作る。
+`jpackage` は動いている OS 向けにしか作れないので、GitHub Actions の *Release* workflow が
+Windows ランナーと Ubuntu ランナーで同じ task を 1 回ずつ走らせ、`v*` タグのときに両方を 1 つの Release に集める。
+macOS でも同じ task が app-image と zip を作る。
 
 アプリのアイコン（タスクバーの絵・PNG・`.ico`）は**アプリ自身がビルド時に描く**（`./gradlew writeAppIcons`）。
 画像ファイルはリポジトリに置かないので、絵がコードより古くなることがない。
