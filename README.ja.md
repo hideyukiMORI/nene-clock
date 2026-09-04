@@ -23,7 +23,7 @@
 ## ダウンロード
 
 Release には毎回 2 つのファイルが付く。**Windows 向けのポータブル zip** と **Ubuntu 向けの `.deb`**、それぞれに `.sha256`。
-最新は [v0.2.2](https://github.com/hideyukiMORI/nene-clock/releases/latest)。
+最新は [v0.2.3](https://github.com/hideyukiMORI/nene-clock/releases/latest)。
 
 ### Windows
 
@@ -59,7 +59,7 @@ Get-FileHash (Get-Item '.\NeNe*-windows-portable.zip') -Algorithm SHA256
 同じ Release に Ubuntu（と Debian 系・amd64）向けの `.deb` も付いている。
 
 ```bash
-sudo apt install ./nene-clock_0.2.2_amd64.deb   # /opt/nene-clock に入り、メニューに出る
+sudo apt install ./nene-clock_0.2.3_amd64.deb   # /opt/nene-clock に入り、メニューに出る
 "/opt/nene-clock/bin/NeNe Clock"                  # またはアプリメニューの「NeNe Clock」
 sudo apt remove nene-clock                        # 消すとき
 ```

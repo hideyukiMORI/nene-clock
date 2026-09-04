@@ -764,8 +764,8 @@ jpackage の `--resource-dir` で postinst だけ差し替え（`app/src/deb/pos
 ### 20.6 `.deb` は施主の Ubuntu 実機に入った。ドックのアイコンは `StartupWMClass` で結びつける（2026-09-05・#80）
 
 施主が Ubuntu の実機で `sudo apt install ./nene-clock_0.2.1_amd64.deb` を実行し、**入って起動した**。
-ただし**アイコンが既定の絵**だった。jpackage が生成する `.desktop` に `StartupWMClass` が無く、
-GNOME が動いている窓とメニュー項目を結びつけられないため。`--resource-dir` の `NeNe Clock.desktop` で足した。
+ただし**アイコンが既定の絵**だった。このとき原因を `StartupWMClass` の不在だと書いたが、
+🔴 **それは誤診である**（真の原因は 20.8。この節の以下は `StartupWMClass` 自体の記録として残す）。
 
 ```text
 $ grep StartupWMClass /opt/nene-clock/lib/nene-clock-NeNe_Clock.desktop
@@ -784,7 +784,59 @@ WM_CLASS(STRING) = "io-github-hideyukimori-neneclock-app-NeNeClockApplication", 
 `NeNe Clock 0.2.2 · hideyukiMORI` が薄い文字で出ることを目視した。版は `product.properties` 経由で
 `gradle.properties` から来ており、コードには書いていない（`ProductIdentityFileTest` が `${` の残留を拒否する）。
 
-### 20.8 まだ証明していないこと
+## 20.8 🔴 アイコンが既定のままだった本当の理由（Issue #84・2026-09-05）
+
+### 20.8.1 誤診をもう一度した
+
+施主の報告は「アイコンが既定のまま」。私は**アイコンのファイルを一度も見ないまま**、
+「窓とメニュー項目が結びついていないからだ」と決めて `StartupWMClass` を足した（#80・v0.2.2）。
+施主が入れ直し、ログアウトまでしても直らなかった。
+
+2 回目に**見るほうを先にした**。`.desktop` が指す PNG を突き合わせただけで 1 分で決着した。
+
+```text
+$ grep ^Icon= /opt/nene-clock/lib/nene-clock-NeNe_Clock.desktop
+Icon=/opt/nene-clock/lib/NeNe_Clock.png
+$ identify -format '%wx%h' その PNG        →  32x32          ← 我々の絵は 256x256
+$ sha256sum その PNG
+8b2491d0b5cbc67075dcae4d29c8a92b9ab813d9eca05a2f16ee3b3efb970e65
+$ sha256sum <jdk.jpackage.jmod>/resources/JavaApp.png
+8b2491d0b5cbc67075dcae4d29c8a92b9ab813d9eca05a2f16ee3b3efb970e65   ← バイト単位で同一
+```
+
+**表示されていたのは jpackage の既定アイコンそのものだった。**
+`.deb` を `--app-image` から作るとき、jpackage は app-image の中のアイコンを**流用しない**。
+デスクトップ統合用に `--icon` を別途要求し、無ければ自前の既定を黙って使う。
+
+⚠️ ここでも [ADR 0012](../adr/0012-transparency-is-dropped-the-artefact-is-not-ours.md) の教訓が繰り返された。
+**「直して直らなかったら、見立てを疑う番である。」** 直し方（ログアウト・入れ直し）を変える番ではなかった。
+`StartupWMClass` は窓の結びつけには要るので残したが、**症状の原因ではなかった**。
+
+### 20.8.2 直したあと
+
+```text
+$ sha256sum /opt/nene-clock/lib/NeNe_Clock.png      ← .deb v0.2.3 を入れたあと
+4103f880d9ad2b31d501b607f567f5627382af54dc79a869c705e42cb150e635   256x256
+$ sha256sum app/build/icons/nene-clock-256.png
+4103f880d9ad2b31d501b607f567f5627382af54dc79a869c705e42cb150e635   ← AppIcon の出力と一致
+```
+
+### 20.8.3 機械に守らせた（negative proof つき）
+
+「`--icon` を渡し忘れる」を人の記憶に頼らせない。`packageInstaller` は作った `.deb` を `dpkg-deb -x` で開き、
+デスクトップ項目が指すアイコンが `AppIcon` の 256px 出力と**バイト単位で一致**しなければビルドを落とす。
+
+わざと `--icon` を外して、落ちることと**落ちた理由**を確かめた:
+
+```text
+> the .deb desktop entry points at an icon that is not ours: /opt/nene-clock/lib/NeNe_Clock.png
+  (jpackage falls back to its own default when --icon is missing)
+BUILD FAILED
+```
+
+戻すと通る。
+
+### 20.9 まだ証明していないこと
 
 - MSI のアンインストールと上書きインストール
 - 施主の Ubuntu 実機で、`StartupWMClass` を入れた版のドックのアイコンが製品のものになること
