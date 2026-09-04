@@ -64,6 +64,10 @@ sudo apt install ./nene-clock_0.2.1_amd64.deb   # installs to /opt/nene-clock an
 sudo apt remove nene-clock                        # to uninstall
 ```
 
+If `apt` prints *"Download is performed unsandboxed as root as file '…' couldn't be accessed by user '_apt'"*,
+that is a notice, not an error — it appears whenever a local `.deb` sits in a folder only you can read
+(your home or Downloads). Move the file to `/tmp` first if you would rather not see it.
+
 No Java needed here either. The package depends on the usual X11 libraries, which every Ubuntu
 desktop already has; on Wayland sessions the clock runs through XWayland. It also installs cleanly
 under WSL, where WSLg turns the menu entry into a Windows Start Menu shortcut.
