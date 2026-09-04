@@ -6,11 +6,11 @@
 
 <p align="center">
   静かなデスクトップ時計。枠もボタンもトレイアイコンも無く、選んだ書体と色で時刻だけがそこにある。<br>
-  Windows（ポータブル zip）· Ubuntu（.deb）· インストール不要・Java 不要 · <a href="README.md">English</a>
+  Windows（インストーラ / zip）· Ubuntu（.deb）· Java 不要 · <a href="README.md">English</a>
 </p>
 
 <p align="center">
-  <a href="#ダウンロード">ダウンロード</a> ·
+  <a href="#ダウンロードとインストール">ダウンロード</a> ·
   <a href="#使い方">使い方</a> ·
   <a href="#設定">設定</a> ·
   <a href="#ギャラリー">ギャラリー</a> ·
@@ -20,61 +20,62 @@
 
 ---
 
-## ダウンロード
+## ダウンロードとインストール
 
-Release には毎回 3 つのファイルが付く。Windows 向けの**ポータブル zip** と**インストーラ（`.msi`）**、
-Ubuntu 向けの **`.deb`**。それぞれに `.sha256` が付く。
-最新は [v0.2.4](https://github.com/hideyukiMORI/nene-clock/releases/latest)。
+**Java もアカウントもコマンドも要りません。** 落としたものだけで動きます。
 
 ### Windows
 
-1. [**Releases ページ**](https://github.com/hideyukiMORI/nene-clock/releases/latest) から
-   名前が **`-windows-portable.zip`** で終わるファイルを落とす。
-2. 好きな場所に展開する。デスクトップでも、ドキュメントでも、USB メモリでもよい。`NeNe Clock` というフォルダが 1 つできる。
-3. そのフォルダを開いて **`NeNe Clock.exe`** をダブルクリックする。
+### ⬇ [**インストーラを落とす — NeNe-Clock-Setup.msi**](https://github.com/hideyukiMORI/nene-clock/releases/latest/download/NeNe-Clock-Setup.msi)
 
-これだけ。インストーラーも管理者権限も要らず、**Java も要らない**。刻んだ実行環境がフォルダの中に入っている。
-フォルダはばらさないこと。`.exe` は隣の `runtime/` と `app/` を使う。
+1. 落としたファイルをダブルクリックする。
+2. 青い画面で「**Windows によって PC が保護されました**」と出たら、**「詳細情報」→「実行」**を押す。
+   コード署名をしていないので出るだけで、聞かれるのは最初の 1 回だけ。
+3. インストーラを進めて、**スタートメニュー**の「NeNe Clock」から起動する。
 
-**ちゃんと入れたいなら** `.msi` を落としてダブルクリックする。ユーザー単位で入るので管理者権限は要らない。
-スタートメニューとデスクトップにショートカットが付き、新しい版を入れると上書きになり、
-「設定 → アプリ」から消せる。中身も設定も zip 版と同じで、Windows に管理させるかどうかの違いだけである。
+ユーザー単位で入るので管理者権限は要らない。消すときは「**設定 → アプリ**」から。
+
+**入れたくない人は** [**ポータブル zip**](https://github.com/hideyukiMORI/nene-clock/releases/latest/download/NeNe-Clock-windows-portable.zip)
+を落として、どこでもいいので展開し、中の **`NeNe Clock.exe`** をダブルクリックする。
+フォルダはばらさないこと。`.exe` は隣のファイルを使う。
+
+### Ubuntu / Debian
+
+### ⬇ [**パッケージを落とす — nene-clock_amd64.deb**](https://github.com/hideyukiMORI/nene-clock/releases/latest/download/nene-clock_amd64.deb)
+
+落としたら端末を開いて、次を実行する。
+
+```bash
+sudo apt install ~/ダウンロード/nene-clock_amd64.deb
+```
+
+アプリメニューの「**NeNe Clock**」から起動する。消すときは `sudo apt remove nene-clock`。
+
+amd64 のみ。WSL にもそのまま入り、WSLg がメニュー項目を Windows のスタートメニューに出す。
+Wayland のセッションでは XWayland を通って動く。パッケージは一般的な X11 ライブラリに依存するが、
+Ubuntu のデスクトップには最初から入っている。
+
+### 補足
 
 | | |
 | --- | --- |
-| 動く環境 | Windows 10 / 11（64 ビット）。Ubuntu は[下記](#ubuntu) |
-| 大きさ | zip で約 31 MB、展開して約 90 MB |
+| 動く環境 | Windows 10 / 11（64 ビット）、Ubuntu ほか Debian 系（amd64） |
+| 大きさ | ダウンロードは 27〜32 MB、入れて約 90 MB |
 | 必要なもの | なし。Java も .NET もインターネットも要らない |
-| 残すもの | 設定だけ。`HKEY_CURRENT_USER\Software\JavaSoft\Prefs\io\github\hideyukimori\neneclock` |
-| 消し方 | フォルダを消す（まっさらにしたければ上のレジストリキーも） |
+| 残すもの | 設定だけ。Windows は `HKEY_CURRENT_USER\Software\JavaSoft\Prefs\io\github\hideyukimori\neneclock`、Linux は `~/.java/.userPrefs` の同じ木 |
 
-**初回起動時の SmartScreen。** どちらもコード署名していないので、最初の 1 回だけ
-「Windows によって PC が保護されました」と出る。**「詳細情報」→「実行」**で通る。次からは出ない。
-
-**ダウンロードの検証（任意）。** Release には `.sha256` ファイルも付いている。PowerShell で:
+**検証（任意）。** Release には各ファイルの `.sha256` も置いてある。
 
 ```powershell
-Get-FileHash (Get-Item '.\NeNe*-windows-portable.zip') -Algorithm SHA256
+Get-FileHash .\NeNe-Clock-Setup.msi -Algorithm SHA256      # Windows
 ```
-
-出たハッシュを `.sha256` の中身と見比べる。
-
-### Ubuntu
-
-同じ Release に Ubuntu（と Debian 系・amd64）向けの `.deb` も付いている。
 
 ```bash
-sudo apt install ./nene-clock_0.2.4_amd64.deb   # /opt/nene-clock に入り、メニューに出る
-"/opt/nene-clock/bin/NeNe Clock"                  # またはアプリメニューの「NeNe Clock」
-sudo apt remove nene-clock                        # 消すとき
+sha256sum nene-clock_amd64.deb                              # Linux
 ```
 
-`apt` が「ユーザー '_apt' からアクセスできないため、ダウンロードは root でサンドボックスを通さずに行われます」と出すことがあるが、
-これは**警告であって失敗ではない**。ホームやダウンロードフォルダなど、自分しか読めない場所にある `.deb` を指定すると出る。
-気になるなら先に `/tmp` へ移してから入れる。
-
-こちらも Java は要らない。パッケージは一般的な X11 ライブラリに依存するが、Ubuntu のデスクトップには最初から入っている。
-Wayland のセッションでは XWayland を通って動く。WSL にもそのまま入り、WSLg がメニュー項目を Windows のスタートメニューに出す。
+`apt` が「ユーザー '_apt' からアクセスできないため、ダウンロードは root でサンドボックスを通さずに行われます」と
+出すことがあるが、これは**警告であって失敗ではない**。自分しか読めない場所にある `.deb` を指定すると出る。
 
 macOS のバイナリは配っていない。同じビルド task で実行イメージは作れる（[ソースからビルドする](#ソースからビルドする)）。
 

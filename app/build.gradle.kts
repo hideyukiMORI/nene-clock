@@ -94,6 +94,15 @@ abstract class PackageInstaller : DefaultTask() {
     @get:OutputDirectory
     abstract val destination: DirectoryProperty
 
+    /** 出来たばかりの 1 つの配布物を、版を含まない決まった名前へ改める。名前は README が直に指す。 */
+    private fun renameTo(directory: File, suffix: String, wanted: String) {
+        directory.listFiles { file -> file.name.endsWith(suffix) && file.name != wanted }?.forEach { file ->
+            if (!file.renameTo(File(directory, wanted))) {
+                throw GradleException("could not rename ${file.name} to $wanted")
+            }
+        }
+    }
+
     /** フォルダを zip に畳む。entry 名はフォルダ名から始める（展開すると同じ名前のフォルダが 1 つできる）。 */
     private fun zipDirectory(directory: File, target: File) {
         ZipOutputStream(target.outputStream().buffered()).use { zip ->
@@ -145,7 +154,10 @@ abstract class PackageInstaller : DefaultTask() {
         val platform = if (onWindows) "windows" else System.getProperty("os.name").lowercase().replace(" ", "-")
         // 🔴 ファイル名に空白を入れない。GitHub は Release の添付名の空白をドットに変える（v0.2.0 で実測・#72）。
         //    展開後のフォルダ名と exe 名（"NeNe Clock"）は製品名なので、そちらは変えない。
-        zipDirectory(image, File(out, "NeNe-Clock-${appVersion.get()}-$platform-portable.zip"))
+        // 🔴 名前に**版を入れない**。README から releases/latest/download/<名前> で直に指すためで、
+        //    版を入れると新しい版を出すたびに README のリンクが切れる（#88）。
+        //    版は MSI と .deb のメタデータに入り、zip 版も設定モーダルのフッターに出る（#82）。
+        zipDirectory(image, File(out, "NeNe-Clock-$platform-portable.zip"))
         // 3. MSI は同じ app-image から作る（Windows だけ）。結線は 1 と同じものを使う。
         if (onWindows) {
             execOperations.exec {
@@ -161,13 +173,7 @@ abstract class PackageInstaller : DefaultTask() {
                 args("--win-upgrade-uuid", "ea39da0b-604d-46ab-8ac1-69d155faaec8")
                 args("--dest", out.path)
             }
-            // zip と同じ理由で名前から空白を外す。GitHub は添付名の空白をドットに変える（#72 / #86）。
-            out.listFiles { file -> file.name.endsWith(".msi") && file.name.contains(" ") }!!.forEach { file ->
-                val renamed = File(out, file.name.replace(" ", "-"))
-                if (!file.renameTo(renamed)) {
-                    throw GradleException("could not rename ${file.name} to ${renamed.name}")
-                }
-            }
+            renameTo(out, ".msi", "NeNe-Clock-Setup.msi")
         }
         // 4. .deb も同じ app-image から作る（Linux だけ・ADR 0015）。/opt/nene-clock に入り、メニューに出て、apt remove で消える。
         //    dpkg-deb と fakeroot が要る。無ければ jpackage が「どの道具か」を言って落ちる。
@@ -194,6 +200,7 @@ abstract class PackageInstaller : DefaultTask() {
                 args("--resource-dir", debResources.get().asFile.path)
                 args("--dest", out.path)
             }
+            renameTo(out, ".deb", "nene-clock_amd64.deb")
         }
         // 🔑 できた .deb を開いて、デスクトップ項目が指すアイコンが**我々の絵**であることを確かめる。
         //    jpackage は --icon を渡さないと自前の既定（duke）を黙って使う。それに 2 版ぶん気づけなかった（#84）。
