@@ -23,7 +23,7 @@
 ## ダウンロード
 
 1. [**Releases ページ**](https://github.com/hideyukiMORI/nene-clock/releases/latest) から
-   `NeNe Clock-<version>-windows-portable.zip` を落とす。
+   名前が **`-windows-portable.zip`** で終わるファイルを落とす。
 2. 好きな場所に展開する。デスクトップでも、ドキュメントでも、USB メモリでもよい。`NeNe Clock` というフォルダが 1 つできる。
 3. そのフォルダを開いて **`NeNe Clock.exe`** をダブルクリックする。
 
@@ -44,7 +44,7 @@
 **ダウンロードの検証（任意）。** Release には `.sha256` ファイルも付いている。PowerShell で:
 
 ```powershell
-Get-FileHash '.\NeNe Clock-0.2.0-windows-portable.zip' -Algorithm SHA256
+Get-FileHash (Get-Item '.\NeNe*-windows-portable.zip') -Algorithm SHA256
 ```
 
 出たハッシュを `.sha256` の中身と見比べる。

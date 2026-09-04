@@ -23,7 +23,7 @@
 ## Download
 
 1. Open the [**Releases page**](https://github.com/hideyukiMORI/nene-clock/releases/latest) and download
-   `NeNe Clock-<version>-windows-portable.zip`.
+   the file that ends in **`-windows-portable.zip`**.
 2. Unzip it anywhere — your Desktop, Documents, a USB stick. You get one folder named `NeNe Clock`.
 3. Open that folder and double-click **`NeNe Clock.exe`**.
 
@@ -44,7 +44,7 @@ runtime is inside the folder. Keep the folder together: the `.exe` needs `runtim
 **Verify the download (optional).** Every Release carries a `.sha256` file. In PowerShell:
 
 ```powershell
-Get-FileHash '.\NeNe Clock-0.2.0-windows-portable.zip' -Algorithm SHA256
+Get-FileHash (Get-Item '.\NeNe*-windows-portable.zip') -Algorithm SHA256
 ```
 
 Compare the hash with the one in the `.sha256` file.
