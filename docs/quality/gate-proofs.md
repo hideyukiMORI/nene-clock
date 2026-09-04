@@ -716,9 +716,24 @@ $ xwininfo -id 0x800004 | grep Depth
 目次の先頭 6 バイト・各エントリの幅と高さ・各ポインタの先が PNG 署名であることを見る。
 `tools/place-windows-shortcut.sh` は ImageMagick をやめ、この `.ico` を使う。
 
-### 20.3 まだ証明していないこと
+### 20.3 ポータブル zip は同じ app-image から出る（Issue #68 / ADR 0014）
 
-- Windows ランナーで MSI ができること（PR の workflow で初めて走る）
+```text
+$ ./gradlew packageInstaller
+$ ls app/build/installer/
+NeNe Clock-0.2.0-linux-portable.zip          33 MB
+NeNe Clock-0.2.0-linux-portable.zip.sha256
+image/NeNe Clock/                            ← MSI はここから作る（Windows だけ）
+$ unzip -l "NeNe Clock-0.2.0-linux-portable.zip" | grep -E "bin/NeNe Clock$|lib/runtime/release$"
+    21864  NeNe Clock/bin/NeNe Clock
+       94  NeNe Clock/lib/runtime/release
+```
+
+zip の中は app-image そのもの（93 ファイル・展開で約 90 MB）。起動できることは 20.1 で示した app-image と同一物である。
+
+### 20.4 まだ証明していないこと
+
+- Windows ランナーで MSI と zip ができること（PR の workflow で走る）
 - 施主の Windows 実機で入って起動すること。**ネイティブの窓でちらつきが起きないか**もそこで見る
 - 署名は無い。SmartScreen の警告が出る
 

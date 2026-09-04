@@ -28,3 +28,4 @@ ADR は「なぜそう決めたか」「何を却下したか」を書く。
 | [0011](0011-transparency-is-asked-for-not-assumed.md) | 半透明は「頼んで、断られたら諦める」 | 置換（→ 0012） |
 | [0012](0012-transparency-is-dropped-the-artefact-is-not-ours.md) | 透明度をやめる。ちらつきはアプリの外にあった | 受理 |
 | [0013](0013-windows-is-distributed-as-a-jpackage-msi.md) | Windows へは jpackage の MSI で配る。作るのは CI の Windows ランナー | 受理 |
+| [0014](0014-a-portable-zip-sits-beside-the-msi.md) | MSI の隣にポータブル zip を置く。1 ファイルの exe は作らない | 受理 |

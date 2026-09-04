@@ -62,11 +62,16 @@ It installs per user (no admin prompt), adds a Start Menu entry and a desktop sh
 re-installing a newer version upgrades in place. The installer is deliberately unsigned, so
 SmartScreen shows "Windows protected your PC" on first launch — choose *More info → Run anyway*.
 
-The installer is built by **one Gradle task** on a Windows runner ([ADR 0013](docs/adr/0013-windows-is-distributed-as-a-jpackage-msi.md)):
+Prefer not to install anything? The same Release carries a **portable zip**: unpack it
+anywhere and run `NeNe Clock.exe` inside the folder. It writes nothing to the registry or
+Start Menu, and shares its settings with the MSI build
+([ADR 0014](docs/adr/0014-a-portable-zip-sits-beside-the-msi.md)).
+
+Both come from **one Gradle task** on a Windows runner ([ADR 0013](docs/adr/0013-windows-is-distributed-as-a-jpackage-msi.md)):
 
 ```bash
-./gradlew packageInstaller      # Windows: app/build/installer/*.msi (+ .sha256)
-                                # elsewhere: an app-image, to prove the wiring
+./gradlew packageInstaller      # app-image → portable zip → (Windows only) MSI, each with .sha256
+                                # elsewhere the app-image and zip still build, to prove the wiring
 ```
 
 `jpackage` bundles a trimmed runtime, the module set comes from `jdeps`, and the `.ico`
