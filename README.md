@@ -1,98 +1,233 @@
 # NeNe Clock
 
-A small desktop clock written in Java 21 with Swing.
+<p align="center">
+  <img src="docs/images/clock-default.png" width="478" alt="NeNe Clock showing 23:36:52 and the date, in JetBrains Mono on a warm off-white ground">
+</p>
 
-The point of this repository is not the clock. It is the constraint system around it:
-**every meaning has exactly one canonical implementation path, and machines — not memory —
-keep it that way.**
+<p align="center">
+  A quiet desktop clock. No frame, no buttons, no tray icon — just the time, in the typeface and colours you choose.<br>
+  Windows · portable · nothing to install · <a href="README.ja.md">日本語</a>
+</p>
 
-## Status
+<p align="center">
+  <a href="#download">Download</a> ·
+  <a href="#how-to-use">How to use</a> ·
+  <a href="#settings">Settings</a> ·
+  <a href="#gallery">Gallery</a> ·
+  <a href="#build-from-source">Build from source</a> ·
+  <a href="#how-this-repository-is-run">How this repository is run</a>
+</p>
 
-Milestone **M0**: clock display and persisted settings, with the full quality gate active.
-The stopwatch (FR-010), the countdown timer (FR-020) and the remaining tabs (FR-050) are M1
-and are **not implemented yet**.
+---
 
-## Requirements
+## Download
 
-- JDK 21 or later
-- No runtime dependencies beyond the JDK
-- The Gradle Wrapper is committed; no separate Gradle installation is needed
+1. Open the [**Releases page**](https://github.com/hideyukiMORI/nene-clock/releases/latest) and download
+   `NeNe Clock-<version>-windows-portable.zip`.
+2. Unzip it anywhere — your Desktop, Documents, a USB stick. You get one folder named `NeNe Clock`.
+3. Open that folder and double-click **`NeNe Clock.exe`**.
 
-## Build, test, run
+That is all. There is no installer, no admin prompt, and **you do not need Java** — a trimmed
+runtime is inside the folder. Keep the folder together: the `.exe` needs `runtime/` and `app/` next to it.
 
-```bash
-./gradlew check   # the single definition of done — CI runs exactly this
-./gradlew run     # launch the clock
-```
+| | |
+| --- | --- |
+| Works on | Windows 10 / 11, 64-bit |
+| Size | about 31 MB zipped, about 90 MB unpacked |
+| Needs | nothing. No Java, no .NET, no internet |
+| Leaves behind | only its settings, under `HKEY_CURRENT_USER\Software\JavaSoft\Prefs\io\github\hideyukimori\neneclock` |
+| To remove | delete the folder (and that registry key if you want a clean slate) |
 
-On Windows PowerShell:
+**First launch: SmartScreen.** The zip is not code-signed, so Windows shows
+*"Windows protected your PC"* the first time. Click **More info → Run anyway**. It only asks once.
+
+**Verify the download (optional).** Every Release carries a `.sha256` file. In PowerShell:
 
 ```powershell
-.\gradlew.bat check
-.\gradlew.bat run
+Get-FileHash '.\NeNe Clock-0.2.0-windows-portable.zip' -Algorithm SHA256
 ```
 
-Under WSLg the Swing window appears on the Windows desktop with no manual `DISPLAY`
-configuration. Unit tests never need a display server — they run headless.
+Compare the hash with the one in the `.sha256` file.
 
-## Install and launch without Gradle
+Linux and macOS are not shipped as binaries. The same build task produces a runnable image
+there too — see [Build from source](#build-from-source).
+
+---
+
+## How to use
+
+<p align="center">
+  <img src="docs/images/clock-hover.png" width="478" alt="The same clock with the pointer over it: two small icons, a gear and a cross, appear in the top-right corner">
+</p>
+
+The window **is** the clock. There is no title bar and nothing to click until you hover.
+
+| You want to… | Do this |
+| --- | --- |
+| **Move it** | Drag it — anywhere on the window. There is no move handle because you do not need one. |
+| **Open settings** | Hover, then click the **gear** in the top-right corner. |
+| **Quit** | Hover, then click the **×** next to the gear. Nothing keeps running in the background. |
+| **Keep it above other windows** | Settings → *Always on top*. |
+| **Bring it back next time** | Just launch `NeNe Clock.exe` again. Everything you changed is remembered. |
+
+The icons fade in over 140 ms and out over 240 ms, follow your text colour, and never overlap the digits.
+The window sizes itself to the widest possible time in your chosen typeface and size, so `05:14:59`
+is never clipped — you do not resize it by hand.
+
+---
+
+## Settings
+
+<p align="center">
+  <img src="docs/images/settings.png" width="600" alt="The settings modal: a live preview of the clock at the top, then Time format, Show seconds, Show date, Always on top, Language, Typeface, Size, Text colour and Background">
+</p>
+
+Every change applies **immediately** to the clock behind the modal and is saved as you go.
+There is no OK, no Cancel, no Apply.
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| Time format | `24-hour` (`23:36:52`) or `12-hour` (`11:36:52 PM`) | 24-hour |
+| Show seconds | show or hide the seconds | on |
+| Show date | show or hide the `2026-09-04` line | on |
+| Always on top | keep the clock above other windows | off |
+| Language | the settings UI in **Japanese** or **English**. The clock itself is language-neutral | Japanese |
+| Typeface | one of 30 bundled fonts — see below | JetBrains Mono |
+| Size | 24 to 160 pt. The date line scales with it | 64 |
+| Text colour | 24 presets, a colour picker, or a hex code | `#000000` |
+| Background | same controls as text colour | `#F5F2EB` |
+
+The modal follows your clock: a dark background gives you a dark settings window.
+
+<p align="center">
+  <img src="docs/images/settings-dark.png" width="600" alt="The same settings modal in its dark form, for a clock with a near-black background">
+</p>
+
+### Typeface
+
+<p align="center">
+  <img src="docs/images/settings-typeface.png" width="600" alt="The typeface screen: a grid of cards, each showing 12:34 drawn in its own font, filterable by Sans, Serif, Mono, Display, Retro and Hand">
+</p>
+
+Thirty typefaces are **bundled inside the app**, so the clock looks the same on every machine and never
+depends on what fonts Windows happens to have. Each card draws `12:34` in its own face, and the chips
+filter by mood.
+
+| Mood | Typefaces |
+| --- | --- |
+| Sans | Inter · Roboto · Lato · Poppins · DM Sans · Work Sans |
+| Serif | Playfair Display · Lora · EB Garamond · Zilla Slab · Crimson Text |
+| Mono | JetBrains Mono · Roboto Mono · IBM Plex Mono · Space Mono · Fira Mono |
+| Display | Bebas Neue · Anton · Oswald · Righteous · Cinzel · Abril Fatface |
+| Retro | Orbitron · Audiowide · Share Tech Mono · VT323 · Michroma |
+| Hand | Caveat · Pacifico · Dancing Script |
+
+All are Google Fonts under the SIL Open Font License 1.1, shipped unmodified. Provenance and
+licences: [docs/licenses/typefaces.md](docs/licenses/typefaces.md).
+Monospaced faces keep the digits from shifting as the seconds tick; that is why the default is one.
+
+### Colours
+
+<p align="center">
+  <img src="docs/images/settings-colour.png" width="600" alt="The colour screen: a live preview, 24 preset swatches, a saturation/brightness field with a hue bar, a hex field and a contrast readout">
+</p>
+
+Text colour and background use the same screen:
+
+- **24 presets** — eight neutrals from black to white, eight saturated tones, eight pastels.
+- **A picker** — drag in the field for saturation and brightness, drag the bar for hue. The hex field,
+  the preview and the clock follow as you drag; typing a hex code moves the picker.
+- **A contrast readout.** If your two colours become hard to read (below 3 : 1), the number turns amber
+  and a *Make it readable* button appears. It is a suggestion, not a rule — the app never overrides your choice.
+
+There is no transparency setting, on purpose: semi-transparent windows flicker on some Windows setups,
+and a setting that looks broken is worse than no setting
+([ADR 0012](docs/adr/0012-transparency-is-dropped-the-artefact-is-not-ours.md)).
+
+### Language
+
+<p align="center">
+  <img src="docs/images/settings-japanese.png" width="600" alt="The settings modal in Japanese">
+</p>
+
+The UI ships in Japanese and English with its own bundled UI fonts (Zen Kaku Gothic New and Arimo).
+The choice is a setting, not a guess from your Windows locale — it stays what you set it to.
+
+---
+
+## Gallery
+
+Five settings, one app. Each of these is a real screenshot of the running clock.
+
+| | |
+| --- | --- |
+| <img src="docs/images/clock-dark-bebas-neue.png" width="420" alt="Bebas Neue, 120 pt, off-white on near-black"> | **Bebas Neue** · 120 pt · `#EFEAE1` on `#1A1917` |
+| <img src="docs/images/clock-playfair-display.png" width="420" alt="Playfair Display, 96 pt, dark grey on off-white"> | **Playfair Display** · 96 pt · `#2B2B2B` on `#F5F2EB` |
+| <img src="docs/images/clock-orbitron.png" width="420" alt="Orbitron, 88 pt, cyan on midnight blue"> | **Orbitron** · 88 pt · `#5EE7FF` on `#0B1020` |
+| <img src="docs/images/clock-caveat-12h.png" width="420" alt="Caveat, 110 pt, 12-hour format, brown on cream"> | **Caveat** · 110 pt · 12-hour · `#7A3E1D` on `#FFF7E6` |
+
+---
+
+## Build from source
+
+You need a JDK 21. The Gradle Wrapper is committed, so nothing else.
 
 ```bash
-sudo tools/install-desktop-entry.sh   # /opt/nene-clock + a .desktop entry
-tools/place-windows-shortcut.sh       # WSL only: copy the shortcut to the Windows desktop
+./gradlew check              # the single definition of done — CI runs exactly this
+./gradlew run                # launch the clock from source
+./gradlew packageInstaller   # build the distributable (see below)
 ```
 
-`install-desktop-entry.sh` builds the distribution (`installDist`), copies it to
-`/opt/nene-clock`, writes the icon PNGs **from the running implementation** (`AppIcon`,
-via `./gradlew writeAppIcons` — no image files live in the repository), and installs
-`/usr/share/applications/nene-clock.desktop`.
+On Windows use `.\gradlew.bat` with the same task names. Under WSLg the window appears on the Windows
+desktop with no `DISPLAY` setup; unit tests never need a display.
 
-Under WSL that entry is enough: **WSLg turns it into a Windows Start Menu shortcut on
-its own**, which can be pinned to the taskbar. `place-windows-shortcut.sh` copies that
-shortcut to the Windows desktop and points it at an `.ico` built from the same icon —
-WSLg's own icon has a penguin badge stamped onto it.
+### The distributable
 
-Both scripts are idempotent. `tools/uninstall-desktop-entry.sh` removes what they installed.
+`packageInstaller` is the one path that produces what we ship
+([ADR 0013](docs/adr/0013-windows-is-distributed-as-a-jpackage-msi.md),
+[ADR 0014](docs/adr/0014-a-portable-zip-sits-beside-the-msi.md)):
 
-## Windows installer
+1. `jpackage` builds an **app-image** — the launcher, your jars and a runtime trimmed to the modules
+   `jdeps` says you need.
+2. That folder is zipped as the **portable zip**. This is what the Release carries.
+3. On Windows the same app-image is also wrapped into an **MSI**. It is built on every tagged run and kept
+   as a workflow artifact, but it is not published until it has been tested.
 
-Windows users do not need WSL or a JDK: download the `.msi` from the
-[Releases page](https://github.com/hideyukiMORI/nene-clock/releases) and double-click it.
-It installs per user (no admin prompt), adds a Start Menu entry and a desktop shortcut, and
-re-installing a newer version upgrades in place. The installer is deliberately unsigned, so
-SmartScreen shows "Windows protected your PC" on first launch — choose *More info → Run anyway*.
+`jpackage` only builds for the OS it runs on, so the Windows zip is produced by the
+*Windows installer* GitHub Actions workflow on a Windows runner. Pushing a `v*` tag creates the Release.
+On Linux or macOS the same task still builds a runnable app-image and zip for that platform.
 
-Prefer not to install anything? The same Release carries a **portable zip**: unpack it
-anywhere and run `NeNe Clock.exe` inside the folder. It writes nothing to the registry or
-Start Menu, and shares its settings with the MSI build
-([ADR 0014](docs/adr/0014-a-portable-zip-sits-beside-the-msi.md)).
+The app icon — the taskbar glyph, the PNGs, the `.ico` — is **drawn by the app itself** at build time
+(`./gradlew writeAppIcons`). No image files for it live in the repository, so the picture can never go
+stale against the code.
 
-Both come from **one Gradle task** on a Windows runner ([ADR 0013](docs/adr/0013-windows-is-distributed-as-a-jpackage-msi.md)):
+### Installing under WSL (developers)
 
 ```bash
-./gradlew packageInstaller      # app-image → portable zip → (Windows only) MSI, each with .sha256
-                                # elsewhere the app-image and zip still build, to prove the wiring
+sudo tools/install-desktop-entry.sh   # builds, copies to /opt/nene-clock, adds a .desktop entry
+tools/place-windows-shortcut.sh       # copies the WSLg-made shortcut to the Windows desktop
 ```
 
-`jpackage` bundles a trimmed runtime, the module set comes from `jdeps`, and the `.ico`
-is written from `AppIcon` like every other icon. Pushing a `v*` tag attaches the MSI to a
-GitHub Release; running the *Windows installer* workflow by hand keeps it as a run artifact.
+WSLg turns the `.desktop` entry into a Start Menu shortcut on its own. Both scripts are idempotent;
+`tools/uninstall-desktop-entry.sh` removes what they placed.
 
-## Project layout
+---
+
+## How this repository is run
+
+The clock is small. What is unusual is the constraint system around it: **every meaning has exactly one
+canonical implementation path, and machines — not memory — keep it that way.**
 
 ```text
 :app                        composition root
 :ui:swing                   Swing panels and window
 :adapters:system-time       the only module allowed to read the current time
 :adapters:preferences       the only module allowed to touch java.util.prefs
+:adapters:font-catalog      the bundled typefaces and their provenance
 :core:application           ports, formatting, typed outcomes
 :core:domain                values, invariants, closed choices (JDK only)
 :quality:architecture-tests ArchUnit rules — architecture as executable tests
 ```
-
-Dependencies point inward only, and the graph is verified on every build.
-
-## What the build actually enforces
 
 | Layer | Enforces |
 |---|---|
@@ -104,13 +239,10 @@ Dependencies point inward only, and the graph is verified on every build.
 | ArchUnit | **per package**: core knows nothing about Swing or Preferences |
 | `validateConformance` | project-specific rules (naming, suppression waivers, `default`, docs integrity) |
 | JaCoCo | branch coverage floor for the two core modules |
+| font-catalog tests | every bundled font exists, matches its SHA-256, and renders at Regular weight |
 
-The determinism rule is the interesting one: because `forbidden-apis` can name JDK method
-signatures directly, "core may not read the wall clock" is a build failure here rather than a
-review convention. Reading the current time is possible in exactly one module, and that fact is
-visible as a three-line difference in `adapters/system-time/build.gradle.kts`.
-
-## Documentation
+The determinism rule is the interesting one: because `forbidden-apis` can name JDK method signatures
+directly, "core may not read the wall clock" is a build failure here rather than a review convention.
 
 | Document | Contents |
 |---|---|
@@ -118,12 +250,21 @@ visible as a three-line difference in `adapters/system-time/build.gradle.kts`.
 | [docs/ARCHITECTURE_CONSTITUTION.md](docs/ARCHITECTURE_CONSTITUTION.md) | architectural rules (ARC-NNN) |
 | [docs/CODING_RULES.md](docs/CODING_RULES.md) | Java and Swing rules (JAV-NNN, SWG-NNN) |
 | [docs/QUALITY_GATES.md](docs/QUALITY_GATES.md) | which rules are mechanically enforced *today* |
+| [docs/quality/gate-proofs.md](docs/quality/gate-proofs.md) | evidence that each gate really fires, and what was seen on screen |
 | [docs/PROJECT_LAYOUT.md](docs/PROJECT_LAYOUT.md) | modules and allowed dependencies |
 | [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) | how a change moves through the repo |
 | [docs/adr/](docs/adr/) | decisions and what was rejected |
 
 The normative documents are written in Japanese; code, comments and this README are in English.
 
+### Roadmap
+
+Done: the clock, persisted settings, the settings modal, bundled typefaces, colours, Japanese/English,
+the Windows portable build. Not yet: a stopwatch and a countdown timer — they are specified
+(FR-010 / FR-020) and deliberately not started. Where they will live in a window that has no tabs is
+still an open design question.
+
 ## License
 
-See [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Bundled typefaces are SIL OFL 1.1 — see
+[docs/licenses/typefaces.md](docs/licenses/typefaces.md).
