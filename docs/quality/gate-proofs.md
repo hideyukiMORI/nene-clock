@@ -687,7 +687,42 @@ ADR 0012 は「窓は常に不透明。角丸は `setShape` の切り抜きへ�
 ちらつきそのものは `import` では撮れない（窓自身の画素ではなく、合成層の事象。第 17 節）。
 **消えたかどうかは施主の画面でしか確かめられない。** マージ前に見てもらう。
 
-## 20. まだ証明していないもの
+## 20. Windows インストーラーの結線（Issue #66 / ADR 0013）
+
+### 20.1 Linux で app-image を作り、起動した（2026-09-04・WSLg・`DISPLAY=:0`）
+
+`jpackage` は動いている OS 向けしか作れないので、MSI そのものは Windows ランナーでしか作れない。
+その代わり**同じ task**（`packageInstaller`）が Linux では app-image を作る。jar・main クラス・アイコン・
+モジュール集合の結線はここで証明できる。
+
+```text
+$ ./gradlew packageInstaller
+modules: java.base,java.desktop,java.prefs            ← jdeps が求めた集合（手で書いていない）
+installer: NeNe Clock                                  ← app/build/installer/NeNe Clock/
+$ grep MODULES "app/build/installer/NeNe Clock/lib/runtime/release"
+MODULES="java.base java.datatransfer java.xml java.prefs java.desktop"
+$ "app/build/installer/NeNe Clock/bin/NeNe Clock" &
+$ xwininfo -id 0x800004 | grep Depth
+  Depth: 24
+```
+
+窓が出た。同梱書体で描かれ、保存済みの設定（背景 `#1A1917` 系・文字色ピンク）が読めている。
+つまり刻んだ実行環境に `java.desktop` と `java.prefs` が入っており、フォントの読み込みも通っている。
+大きさは 88 MB（Linux・非圧縮。MSI は圧縮される）。
+
+### 20.2 `.ico` は実装から出る
+
+`writeAppIcons` が PNG 8 枚に加えて `nene-clock.ico` を書く。単体テスト（`IcoFileTest`）が
+目次の先頭 6 バイト・各エントリの幅と高さ・各ポインタの先が PNG 署名であることを見る。
+`tools/place-windows-shortcut.sh` は ImageMagick をやめ、この `.ico` を使う。
+
+### 20.3 まだ証明していないこと
+
+- Windows ランナーで MSI ができること（PR の workflow で初めて走る）
+- 施主の Windows 実機で入って起動すること。**ネイティブの窓でちらつきが起きないか**もそこで見る
+- 署名は無い。SmartScreen の警告が出る
+
+## 21. まだ証明していないもの
 
 🔴 **ここに書いていないものは、証明されていない。**
 

@@ -1,0 +1,69 @@
+# QLT-001 / QLT-005: 配布の手順は Gradle task（packageInstaller）に閉じる。
+# ここは Windows ランナーで同じ task を呼び、できたものを置くだけ。品質判断は持たない（ADR 0013）。
+name: Windows installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+  # 配布の結線に触る PR では、マージ前に Windows で MSI ができることを確かめる。
+  pull_request:
+    paths:
+      - ".github/workflows/windows-installer.yml"
+      - "app/build.gradle.kts"
+      - "app/src/main/java/io/github/hideyukimori/neneclock/app/AppIconFiles.java"
+      - "app/src/main/java/io/github/hideyukimori/neneclock/app/IcoFile.java"
+      - "gradle.properties"
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    name: installer
+    runs-on: windows-2025
+    timeout-minutes: 30
+    permissions:
+      # タグのときだけ Release に添付する。それ以外の run では書き込みを使わない。
+      contents: write
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-read-only: true
+          validate-wrappers: true
+
+      - name: Build the installer with the canonical task
+        run: ./gradlew packageInstaller --stacktrace
+
+      - name: Keep the installer as a run artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nene-clock-windows-installer
+          path: |
+            app/build/installer/*.msi
+            app/build/installer/*.sha256
+          if-no-files-found: error
+
+      - name: Attach to the GitHub Release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME"
+          app/build/installer/*.msi app/build/installer/*.sha256
+          --title "NeNe Clock $GITHUB_REF_NAME" --generate-notes
