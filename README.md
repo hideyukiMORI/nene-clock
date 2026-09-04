@@ -23,7 +23,7 @@
 ## Download
 
 Every Release carries two files: a **portable zip for Windows** and a **`.deb` for Ubuntu**, each with a
-`.sha256` next to it. Latest: [v0.2.2](https://github.com/hideyukiMORI/nene-clock/releases/latest).
+`.sha256` next to it. Latest: [v0.2.3](https://github.com/hideyukiMORI/nene-clock/releases/latest).
 
 ### Windows
 
@@ -59,7 +59,7 @@ Compare the hash with the one in the `.sha256` file.
 The same Release carries a `.deb` for Ubuntu (and other Debian-based distributions, amd64):
 
 ```bash
-sudo apt install ./nene-clock_0.2.2_amd64.deb   # installs to /opt/nene-clock and adds a menu entry
+sudo apt install ./nene-clock_0.2.3_amd64.deb   # installs to /opt/nene-clock and adds a menu entry
 "/opt/nene-clock/bin/NeNe Clock"                  # or launch "NeNe Clock" from your app menu
 sudo apt remove nene-clock                        # to uninstall
 ```

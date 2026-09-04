@@ -35,7 +35,12 @@ GitHub で配る Linux のデスクトップアプリの一般形は `.deb`（`s
 - **active**: Linux で `packageInstaller` が `.deb` を作り、WSL の Ubuntu に `dpkg -i` で入って起動し、`apt remove` で消える（gate-proofs 第 20.4 節）
 - **active**: postinst は `app/src/deb/postinst`（jpackage の既定に `mkdir -p /usr/share/desktop-directories` を足したもの）。
   最小構成の Linux で `xdg-desktop-menu` が落ちるのを防ぐ（実測は gate-proofs 20.4）
-- **active（2026-09-05・施主の Ubuntu 実機）**: 入って起動した。ドックのアイコンは `.desktop` の `StartupWMClass`（`app/src/deb/NeNe Clock.desktop`）で結びつける（#80・gate-proofs 20.6）
+- **active（2026-09-05・施主の Ubuntu 実機）**: 入って起動した
+- **active**: デスクトップ項目のアイコンは `--icon` で明示的に渡す。`--app-image` から作るとき jpackage は
+  app-image の中のアイコンを流用せず、**自前の既定を黙って使う**（#84 で 2 版ぶん見逃した）。
+  `packageInstaller` が、できた `.deb` を開いてアイコンが `AppIcon` の出力と一致することを確かめる（gate-proofs 20.8）
+- **active**: `.desktop` の `StartupWMClass` は窓とメニュー項目の結びつけに要る（`app/src/deb/NeNe Clock.desktop`）。
+  ⚠️ ただしアイコンの絵は決めない（#80 でそう書いたのは誤診）
 
 ## 結果
 

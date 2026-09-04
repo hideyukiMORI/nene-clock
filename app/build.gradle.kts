@@ -178,11 +178,35 @@ abstract class PackageInstaller : DefaultTask() {
                 args("--linux-menu-group", "Utility")
                 args("--linux-app-category", "utils")
                 args("--linux-shortcut")
+                // 🔴 --app-image から作るときも --icon を渡す。渡さないと jpackage は app-image の中の
+                //    アイコンを流用せず、**自前の既定（duke）**をデスクトップ項目に使う。
+                //    施主の Ubuntu 実機で「アイコンが既定のまま」になっていた原因がこれだった（#84）。
+                args("--icon", File(iconDirectory.get().asFile, "nene-clock-256.png").path)
                 // postinst と .desktop を差し替える（app/src/deb/）。最小構成の Linux でメニュー登録が落ちないようにし、
                 // GNOME が動いている窓とメニュー項目を結びつけられるように StartupWMClass を書くため。
                 args("--resource-dir", debResources.get().asFile.path)
                 args("--dest", out.path)
             }
+        }
+        // 🔑 できた .deb を開いて、デスクトップ項目が指すアイコンが**我々の絵**であることを確かめる。
+        //    jpackage は --icon を渡さないと自前の既定（duke）を黙って使う。それに 2 版ぶん気づけなかった（#84）。
+        //    「渡したつもり」を人の記憶に頼らせない。
+        File(out, "").listFiles { file -> file.name.endsWith(".deb") }?.forEach { deb ->
+            val opened = File(temporaryDir, "deb-check").also { it.deleteRecursively() }
+            execOperations.exec {
+                executable = "dpkg-deb"
+                args("-x", deb.path, opened.path)
+            }
+            val entry = opened.walkTopDown().first { it.name.endsWith(".desktop") }
+            val iconPath = entry.readLines().first { it.startsWith("Icon=") }.removePrefix("Icon=")
+            val packaged = File(opened, iconPath.removePrefix("/"))
+            val wanted = File(iconDirectory.get().asFile, "nene-clock-256.png")
+            if (!packaged.exists() || !packaged.readBytes().contentEquals(wanted.readBytes())) {
+                throw GradleException(
+                    "the .deb desktop entry points at an icon that is not ours: $iconPath " +
+                        "(jpackage falls back to its own default when --icon is missing)")
+            }
+            opened.deleteRecursively()
         }
         out.listFiles { file -> file.isFile && !file.name.endsWith(".sha256") }!!.forEach { file ->
             val digest = MessageDigest.getInstance("SHA-256").digest(file.readBytes())
