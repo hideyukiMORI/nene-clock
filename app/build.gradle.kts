@@ -1,6 +1,8 @@
 import de.thetaphi.forbiddenapis.gradle.CheckForbiddenApis
 import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 import org.gradle.process.ExecOperations
 
@@ -81,6 +83,18 @@ abstract class PackageInstaller : DefaultTask() {
     @get:OutputDirectory
     abstract val destination: DirectoryProperty
 
+    /** フォルダを zip に畳む。entry 名はフォルダ名から始める（展開すると同じ名前のフォルダが 1 つできる）。 */
+    private fun zipDirectory(directory: File, target: File) {
+        ZipOutputStream(target.outputStream().buffered()).use { zip ->
+            directory.walkTopDown().filter { it.isFile }.sortedBy { it.path }.forEach { file ->
+                val name = directory.name + "/" + file.relativeTo(directory).path.replace(File.separatorChar, '/')
+                zip.putNextEntry(ZipEntry(name))
+                file.inputStream().use { it.copyTo(zip) }
+                zip.closeEntry()
+            }
+        }
+    }
+
     @TaskAction
     fun run() {
         val onWindows = System.getProperty("os.name").startsWith("Windows")
@@ -99,9 +113,11 @@ abstract class PackageInstaller : DefaultTask() {
         out.deleteRecursively()
         out.mkdirs()
         val icon = File(iconDirectory.get().asFile, if (onWindows) "nene-clock.ico" else "nene-clock-256.png")
+        // 1. app-image（exe ＋ 実行環境のフォルダ）。すべての OS で作る。
+        val images = File(out, "image")
         execOperations.exec {
             executable = File(bin, "jpackage").path
-            args("--type", if (onWindows) "msi" else "app-image")
+            args("--type", "app-image")
             args("--name", "NeNe Clock")
             args("--app-version", appVersion.get())
             args("--vendor", "hideyukiMORI")
@@ -111,15 +127,29 @@ abstract class PackageInstaller : DefaultTask() {
             args("--main-class", mainClass.get())
             args("--icon", icon.path)
             args("--add-modules", modules)
-            args("--dest", out.path)
-            if (onWindows) {
+            args("--dest", images.path)
+        }
+        val image = File(images, "NeNe Clock")
+        // 2. ポータブル zip。展開して exe を押すだけで動く。何も入れない（ADR 0014）。
+        val platform = if (onWindows) "windows" else System.getProperty("os.name").lowercase().replace(" ", "-")
+        zipDirectory(image, File(out, "NeNe Clock-${appVersion.get()}-$platform-portable.zip"))
+        // 3. MSI は同じ app-image から作る（Windows だけ）。結線は 1 と同じものを使う。
+        if (onWindows) {
+            execOperations.exec {
+                executable = File(bin, "jpackage").path
+                args("--type", "msi")
+                args("--app-image", image.path)
+                args("--name", "NeNe Clock")
+                args("--app-version", appVersion.get())
+                args("--vendor", "hideyukiMORI")
                 args("--license-file", licenseFile.get().asFile.path)
                 args("--win-menu", "--win-shortcut", "--win-per-user-install")
                 // 入れ直しを「上書き」にする鍵。変えると別製品として並んで入る。
                 args("--win-upgrade-uuid", "ea39da0b-604d-46ab-8ac1-69d155faaec8")
+                args("--dest", out.path)
             }
         }
-        out.listFiles { file -> file.isFile }!!.forEach { file ->
+        out.listFiles { file -> file.isFile && !file.name.endsWith(".sha256") }!!.forEach { file ->
             val digest = MessageDigest.getInstance("SHA-256").digest(file.readBytes())
             val hex = digest.joinToString("") { byte -> "%02x".format(byte) }
             File(out, file.name + ".sha256").writeText("$hex  ${file.name}\n")
@@ -131,7 +161,7 @@ abstract class PackageInstaller : DefaultTask() {
 
 tasks.register<PackageInstaller>("packageInstaller") {
     group = "distribution"
-    description = "インストーラーを作る（Windows は MSI、それ以外は app-image で結線を確かめる）"
+    description = "配布物を作る（app-image → ポータブル zip → Windows なら MSI）"
     dependsOn(tasks.named("installDist"), tasks.named("writeAppIcons"))
     libDirectory.set(layout.buildDirectory.dir("install/app/lib"))
     iconDirectory.set(layout.buildDirectory.dir("icons"))

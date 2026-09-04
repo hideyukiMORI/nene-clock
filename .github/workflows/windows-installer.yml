@@ -55,6 +55,7 @@ jobs:
           name: nene-clock-windows-installer
           path: |
             app/build/installer/*.msi
+            app/build/installer/*.zip
             app/build/installer/*.sha256
           if-no-files-found: error
 
@@ -65,5 +66,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: >
           gh release create "$GITHUB_REF_NAME"
-          app/build/installer/*.msi app/build/installer/*.sha256
+          app/build/installer/*.msi app/build/installer/*.zip app/build/installer/*.sha256
           --title "NeNe Clock $GITHUB_REF_NAME" --generate-notes
