@@ -6,11 +6,11 @@
 
 <p align="center">
   A quiet desktop clock. No frame, no buttons, no tray icon — just the time, in the typeface and colours you choose.<br>
-  Windows (portable zip) · Ubuntu (.deb) · nothing to install, no Java needed · <a href="README.ja.md">日本語</a>
+  Windows (installer or portable zip) · Ubuntu (.deb) · no Java needed · <a href="README.ja.md">日本語</a>
 </p>
 
 <p align="center">
-  <a href="#download">Download</a> ·
+  <a href="#download-and-install--ダウンロードとインストール">Download</a> ·
   <a href="#how-to-use">How to use</a> ·
   <a href="#settings">Settings</a> ·
   <a href="#gallery">Gallery</a> ·
@@ -20,65 +20,81 @@
 
 ---
 
-## Download
+## Download and install / ダウンロードとインストール
 
-Every Release carries three downloads, each with a `.sha256` next to it: a **portable zip** and an
-**installer (`.msi`)** for Windows, and a **`.deb`** for Ubuntu.
-Latest: [v0.2.4](https://github.com/hideyukiMORI/nene-clock/releases/latest).
+**No Java, no account, no command line.** The download already contains everything it needs.
+**Java もアカウントもコマンドも要りません。** 落としたものだけで動きます。
 
 ### Windows
 
-1. Open the [**Releases page**](https://github.com/hideyukiMORI/nene-clock/releases/latest) and download
-   the file that ends in **`-windows-portable.zip`**.
-2. Unzip it anywhere — your Desktop, Documents, a USB stick. You get one folder named `NeNe Clock`.
-3. Open that folder and double-click **`NeNe Clock.exe`**.
+### ⬇ [**Get the installer — NeNe-Clock-Setup.msi**](https://github.com/hideyukiMORI/nene-clock/releases/latest/download/NeNe-Clock-Setup.msi)
 
-That is all. There is no installer, no admin prompt, and **you do not need Java** — a trimmed
-runtime is inside the folder. Keep the folder together: the `.exe` needs `runtime/` and `app/` next to it.
+1. Double-click the file you just downloaded.
+2. Windows may show a blue screen: *"Windows protected your PC"*. Click **More info**, then **Run anyway**.
+   It says that only because the app is not code-signed, and it asks only once.
+3. Go through the installer, then start **NeNe Clock** from the Start Menu.
 
-**Prefer a real installer?** Download the `.msi` instead and double-click it. It installs for your user
-only (no admin prompt), adds a Start Menu entry and a desktop shortcut, upgrades in place when you install
-a newer version, and uninstalls from *Settings → Apps*. Same app, same settings — just managed by Windows.
+1. 落としたファイルをダブルクリックする。
+2. 青い画面で「**Windows によって PC が保護されました**」と出たら、**「詳細情報」→「実行」**を押す。
+   コード署名をしていないので出るだけで、聞かれるのは最初の 1 回だけ。
+3. インストーラを進めて、**スタートメニュー**の「NeNe Clock」から起動する。
+
+It installs for your user only, so there is no administrator prompt, and it uninstalls from
+*Settings → Apps*. — ユーザー単位で入るので管理者権限は要らず、「設定 → アプリ」から消せる。
+
+**Would rather not install anything?** Take the
+[**portable zip**](https://github.com/hideyukiMORI/nene-clock/releases/latest/download/NeNe-Clock-windows-portable.zip)
+instead: unzip it anywhere and double-click **`NeNe Clock.exe`** inside the folder. Keep the folder
+together — the `.exe` needs the files next to it.
+
+**入れたくない人は** [**ポータブル zip**](https://github.com/hideyukiMORI/nene-clock/releases/latest/download/NeNe-Clock-windows-portable.zip)
+を落として、どこでもいいので展開し、中の **`NeNe Clock.exe`** をダブルクリックする。
+フォルダはばらさないこと。`.exe` は隣のファイルを使う。
+
+### Ubuntu / Debian
+
+### ⬇ [**Get the package — nene-clock_amd64.deb**](https://github.com/hideyukiMORI/nene-clock/releases/latest/download/nene-clock_amd64.deb)
+
+Then open a terminal and run it. / 落としたら端末を開いて、次を実行する。
+
+```bash
+sudo apt install ~/Downloads/nene-clock_amd64.deb
+```
+
+Start **NeNe Clock** from your application menu. To uninstall: `sudo apt remove nene-clock`.
+アプリメニューの「**NeNe Clock**」から起動する。消すときは `sudo apt remove nene-clock`。
+
+amd64 only. It also installs under WSL, where WSLg turns the menu entry into a Windows Start Menu
+shortcut. — amd64 のみ。WSL にもそのまま入り、WSLg がメニュー項目を Windows のスタートメニューに出す。
+
+### Good to know / 補足
 
 | | |
 | --- | --- |
-| Works on | Windows 10 / 11, 64-bit — Ubuntu users, see [below](#ubuntu) |
-| Size | about 31 MB zipped, about 90 MB unpacked |
-| Needs | nothing. No Java, no .NET, no internet |
-| Leaves behind | only its settings, under `HKEY_CURRENT_USER\Software\JavaSoft\Prefs\io\github\hideyukimori\neneclock` |
-| To remove | delete the folder (and that registry key if you want a clean slate) |
+| Works on / 動く環境 | Windows 10 / 11 (64-bit), Ubuntu and other Debian-based distributions (amd64) |
+| Size / 大きさ | about 27–32 MB to download, about 90 MB installed |
+| Needs / 必要なもの | nothing. No Java, no .NET, no internet — なし |
+| Leaves behind / 残すもの | only its settings — Windows: `HKEY_CURRENT_USER\Software\JavaSoft\Prefs\io\github\hideyukimori\neneclock`, Linux: the same tree under `~/.java/.userPrefs` |
 
-**First launch: SmartScreen.** Neither download is code-signed, so Windows shows
-*"Windows protected your PC"* the first time. Click **More info → Run anyway**. It only asks once.
-
-**Verify the download (optional).** Every Release carries a `.sha256` file. In PowerShell:
+**Verify a download (optional).** Every Release also carries a `.sha256` file next to each download.
+**検証（任意）。** Release には各ファイルの `.sha256` も置いてある。
 
 ```powershell
-Get-FileHash (Get-Item '.\NeNe*-windows-portable.zip') -Algorithm SHA256
+Get-FileHash .\NeNe-Clock-Setup.msi -Algorithm SHA256      # Windows
 ```
-
-Compare the hash with the one in the `.sha256` file.
-
-### Ubuntu
-
-The same Release carries a `.deb` for Ubuntu (and other Debian-based distributions, amd64):
 
 ```bash
-sudo apt install ./nene-clock_0.2.4_amd64.deb   # installs to /opt/nene-clock and adds a menu entry
-"/opt/nene-clock/bin/NeNe Clock"                  # or launch "NeNe Clock" from your app menu
-sudo apt remove nene-clock                        # to uninstall
+sha256sum nene-clock_amd64.deb                              # Linux
 ```
 
-If `apt` prints *"Download is performed unsandboxed as root as file '…' couldn't be accessed by user '_apt'"*,
-that is a notice, not an error — it appears whenever a local `.deb` sits in a folder only you can read
-(your home or Downloads). Move the file to `/tmp` first if you would rather not see it.
+If `apt` prints *"Download is performed unsandboxed as root as file '…' couldn't be accessed by user
+'_apt'"*, that is a notice, not an error — it appears whenever a local `.deb` sits in a folder only you
+can read. — `apt` が「ユーザー '_apt' からアクセスできない…」と出すのは**警告であって失敗ではない**。
+自分しか読めない場所に置いた `.deb` を指すと出る。
 
-No Java needed here either. The package depends on the usual X11 libraries, which every Ubuntu
-desktop already has; on Wayland sessions the clock runs through XWayland. It also installs cleanly
-under WSL, where WSLg turns the menu entry into a Windows Start Menu shortcut.
-
-macOS is not shipped. The build task produces a runnable image there too — see
-[Build from source](#build-from-source).
+On Wayland sessions the clock runs through XWayland; the package depends on the usual X11 libraries,
+which every Ubuntu desktop already has. macOS is not shipped — the build task produces a runnable image
+there too, see [Build from source](#build-from-source).
 
 ---
 
