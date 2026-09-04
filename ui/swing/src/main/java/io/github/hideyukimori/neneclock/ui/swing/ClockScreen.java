@@ -5,6 +5,7 @@ import io.github.hideyukimori.neneclock.application.DateLine;
 import io.github.hideyukimori.neneclock.application.SettingsIntentSink;
 import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
 import io.github.hideyukimori.neneclock.domain.Language;
+import io.github.hideyukimori.neneclock.domain.ProductIdentity;
 import io.github.hideyukimori.neneclock.domain.RgbColor;
 import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
@@ -37,9 +38,10 @@ public final class ClockScreen {
     private Runnable quit = () -> {};
     private UserSettings shown = UserSettings.defaults();
 
-    /** 同梱書体の読み手だけを受け取り、画面を組み立てる。 */
-    public ClockScreen(TypefaceFontLoader typefaces) {
+    /** 同梱書体の読み手と製品の名乗りを受け取り、画面を組み立てる。 */
+    public ClockScreen(TypefaceFontLoader typefaces, ProductIdentity identity) {
         Objects.requireNonNull(typefaces, "typefaces");
+        Objects.requireNonNull(identity, "identity");
         // 🔑 UI 書体はここで 1 度だけ組み立てる。Font.createFont は重く、deriveFont は軽い。
         for (Language language : Language.values()) {
             interfaceFonts.put(language, typefaces.load(language.typeface(), INTERFACE_POINTS));
@@ -50,7 +52,8 @@ public final class ClockScreen {
         this.form = new SettingsFormPanel(typefaces);
         this.typefacePicker = new TypefacePickerPanel(typefaces);
         this.colourPicker = new ColourPickerPanel(typefaces);
-        this.dialog = new SettingsDialog(window.owner(), new SettingsPanels(form, typefacePicker, colourPicker));
+        this.dialog =
+                new SettingsDialog(window.owner(), new SettingsPanels(form, typefacePicker, colourPicker), identity);
         connect();
     }
 

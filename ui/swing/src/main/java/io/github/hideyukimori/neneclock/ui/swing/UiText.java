@@ -62,7 +62,9 @@ public enum UiText {
     /** 保存できなかったときの状態行。 */
     NOT_SAVED(
             "保存できませんでした。いまは反映されていますが、再起動すると元に戻ります",
-            "Could not save. The change applies now but will be lost on restart");
+            "Could not save. The change applies now but will be lost on restart"),
+    /** フッター右端の名乗り。書式引数は版と作者の 2 つ。 */
+    SIGNATURE("NeNe Clock %s · %s", "NeNe Clock %s · %s");
 
     private final String japanese;
     private final String english;

@@ -59,7 +59,7 @@ public final class NeNeClockApplication {
         SettingsHandler settings = SettingsHandler.restoredFrom(settingsStore);
         ClockFaceQuery clockFace = new ClockFaceQuery(SystemWallClockAdapter.system());
 
-        ClockScreen screen = new ClockScreen(new TypefaceFontLoader(typefaceBinaries));
+        ClockScreen screen = new ClockScreen(new TypefaceFontLoader(typefaceBinaries), ProductIdentityFile.read());
         ClockTicker ticker = new ClockTicker(() -> screen.renderFace(clockFace.currentFace(settings.current())));
 
         screen.onSettingsRequested(requested -> {

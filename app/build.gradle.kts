@@ -39,6 +39,14 @@ tasks.withType<CheckForbiddenApis>().configureEach {
         )
 }
 
+// 🔑 版の正本は gradle.properties の version。product.properties へ埋めて、実行時はそこから読む（#82）。
+//    コードに版を書くと 2 か所になり、片方だけ上がる。
+tasks.named<ProcessResources>("processResources") {
+    filesMatching("**/product.properties") {
+        expand("version" to project.version.toString())
+    }
+}
+
 // 🔑 配布物のアイコンは、実装（AppIcon）から書き出す。画像をリポジトリに置かない。
 //    置くと「描いている絵」と「置いた絵」が別々に存在し、片方だけ古くなる。
 tasks.register<JavaExec>("writeAppIcons") {
