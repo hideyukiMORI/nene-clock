@@ -32,7 +32,7 @@ runtime is inside the folder. Keep the folder together: the `.exe` needs `runtim
 
 | | |
 | --- | --- |
-| Works on | Windows 10 / 11, 64-bit |
+| Works on | Windows 10 / 11, 64-bit — Ubuntu users, see [below](#ubuntu) |
 | Size | about 31 MB zipped, about 90 MB unpacked |
 | Needs | nothing. No Java, no .NET, no internet |
 | Leaves behind | only its settings, under `HKEY_CURRENT_USER\Software\JavaSoft\Prefs\io\github\hideyukimori\neneclock` |
@@ -49,8 +49,22 @@ Get-FileHash (Get-Item '.\NeNe*-windows-portable.zip') -Algorithm SHA256
 
 Compare the hash with the one in the `.sha256` file.
 
-Linux and macOS are not shipped as binaries. The same build task produces a runnable image
-there too — see [Build from source](#build-from-source).
+### Ubuntu
+
+The same Release carries a `.deb` for Ubuntu (and other Debian-based distributions, amd64):
+
+```bash
+sudo apt install ./nene-clock_0.2.0_amd64.deb   # installs to /opt/nene-clock and adds a menu entry
+"/opt/nene-clock/bin/NeNe Clock"                  # or launch "NeNe Clock" from your app menu
+sudo apt remove nene-clock                        # to uninstall
+```
+
+No Java needed here either. The package depends on the usual X11 libraries, which every Ubuntu
+desktop already has; on Wayland sessions the clock runs through XWayland. It also installs cleanly
+under WSL, where WSLg turns the menu entry into a Windows Start Menu shortcut.
+
+macOS is not shipped. The build task produces a runnable image there too — see
+[Build from source](#build-from-source).
 
 ---
 
@@ -192,10 +206,12 @@ desktop with no `DISPLAY` setup; unit tests never need a display.
 2. That folder is zipped as the **portable zip**. This is what the Release carries.
 3. On Windows the same app-image is also wrapped into an **MSI**. It is built on every tagged run and kept
    as a workflow artifact, but it is not published until it has been tested.
+4. On Linux the same app-image becomes the **`.deb`**
+   ([ADR 0015](docs/adr/0015-linux-is-distributed-as-a-deb.md)).
 
-`jpackage` only builds for the OS it runs on, so the Windows zip is produced by the
-*Windows installer* GitHub Actions workflow on a Windows runner. Pushing a `v*` tag creates the Release.
-On Linux or macOS the same task still builds a runnable app-image and zip for that platform.
+`jpackage` only builds for the OS it runs on, so the *Release* GitHub Actions workflow runs the task
+once on a Windows runner and once on an Ubuntu runner, then collects both into one Release when a
+`v*` tag is pushed. On macOS the same task still builds a runnable app-image and zip.
 
 The app icon — the taskbar glyph, the PNGs, the `.ico` — is **drawn by the app itself** at build time
 (`./gradlew writeAppIcons`). No image files for it live in the repository, so the picture can never go
