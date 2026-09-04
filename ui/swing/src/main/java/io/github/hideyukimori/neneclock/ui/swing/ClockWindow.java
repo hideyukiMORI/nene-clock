@@ -1,9 +1,7 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
 import io.github.hideyukimori.neneclock.domain.UserSettings;
-import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.IllegalComponentStateException;
 import java.awt.Point;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -23,11 +21,10 @@ import org.jspecify.annotations.Nullable;
  * <p>OS のタイトルバーを持たないので、移動と終了の手段は自分で持つ。窓のどこを掴んでも動き、
  * ホバーしたときだけ操作用のクローム（{@link WindowChrome}）が現れる。
  *
- * <p>半透明と角丸は環境依存である。可否を読む手段（{@code GraphicsEnvironment}）はこのアプリに
- * 無い（ADR 0006）ので、**試して、断られたら諦める**形にしてある（ADR 0011）。
- *
- * <p>半透明が使えるなら、地も角丸も {@link ClockPanel} が描く（縁が滑らかになる）。
- * 使えないなら、地は不透明で描き、角丸は {@code setShape} の切り抜きで作る。
+ * <p>🔴 窓は**常に不透明**である（ADR 0012）。アルファ付きの背景を窓に頼まない。頼むと色が不透明でも
+ * 合成層（WSLg / Windows）から見てアルファ付きの窓になり、そこで白が混じる（Issue #64・実測は #57）。
+ * 角丸は {@code setShape} の切り抜きで作る。可否を読む手段はこのアプリに無い（ADR 0006）ので、
+ * **試して、断られたら角のまま描く**。
  */
 public final class ClockWindow {
 
@@ -42,8 +39,6 @@ public final class ClockWindow {
     private final ClockPanel clockPanel;
     private final WindowChrome chrome;
 
-    private final boolean translucent;
-
     private @Nullable Point grabbedAt;
 
     /** 窓を組み立てる。表示内容は {@code render*} が決める。 */
@@ -52,7 +47,6 @@ public final class ClockWindow {
         this.chrome = Objects.requireNonNull(chrome, "chrome");
         frame.setUndecorated(true);
         frame.setIconImages(AppIcon.images());
-        this.translucent = askForTranslucency();
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         frame.setContentPane(clockPanel.component());
         frame.setSize(new Dimension(INITIAL_WIDTH, INITIAL_HEIGHT));
@@ -62,20 +56,6 @@ public final class ClockWindow {
         listen();
         layOutChrome();
         roundTheCorners();
-    }
-
-    /**
-     * 画素ごとの半透明を頼んでみる。
-     *
-     * <p>断られたら不透明で描く。可否を先に読む手段は無いので、頼んで返事を見るしかない。
-     */
-    private boolean askForTranslucency() {
-        try {
-            frame.setBackground(new Color(0, 0, 0, 0));
-            return true;
-        } catch (UnsupportedOperationException | IllegalComponentStateException refused) {
-            return false;
-        }
     }
 
     /** 設定を窓へ反映する。UI 状態の反映経路はここ 1 本（CNF-004）。 */
@@ -196,11 +176,8 @@ public final class ClockWindow {
                 .setBounds(frame.getWidth() - size.width - CHROME_MARGIN, CHROME_MARGIN, size.width, size.height);
     }
 
-    /** 角を丸める。半透明が使えるなら {@link ClockPanel} が描くので、切り抜きは要らない。 */
+    /** 角を丸める。切り抜きなので窓は不透明のまま。断られたら角のまま描く（ADR 0006）。 */
     private void roundTheCorners() {
-        if (translucent) {
-            return;
-        }
         try {
             frame.setShape(new RoundRectangle2D.Double(0, 0, frame.getWidth(), frame.getHeight(), CORNER, CORNER));
         } catch (UnsupportedOperationException unsupported) {
