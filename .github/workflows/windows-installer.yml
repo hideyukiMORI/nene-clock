@@ -59,12 +59,14 @@ jobs:
             app/build/installer/*.sha256
           if-no-files-found: error
 
-      - name: Attach to the GitHub Release (tags only)
+      # 配るのはポータブル zip だけ（施主決定 2026-09-04・#70）。MSI は作るが、検証するまで Release に載せない。
+      # run の成果物には残るので、検証したいときはそこから落とす。
+      - name: Attach the portable zip to the GitHub Release (tags only)
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: >
           gh release create "$GITHUB_REF_NAME"
-          app/build/installer/*.msi app/build/installer/*.zip app/build/installer/*.sha256
+          app/build/installer/*.zip app/build/installer/*.zip.sha256
           --title "NeNe Clock $GITHUB_REF_NAME" --generate-notes
