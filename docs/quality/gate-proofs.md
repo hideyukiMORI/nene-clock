@@ -761,10 +761,27 @@ jpackage の `--resource-dir` で postinst だけ差し替え（`app/src/deb/pos
 施主が `NeNe Clock-0.2.0.msi`（PR #63 時点の workflow の成果物）を Windows 実機に入れ、**問題なくインストールできた**と確認した。
 アンインストールと上書きインストールは未確認。Release には引き続き zip と `.deb` だけを載せている（#70）。
 
-### 20.6 まだ証明していないこと
+### 20.6 `.deb` は施主の Ubuntu 実機に入った。ドックのアイコンは `StartupWMClass` で結びつける（2026-09-05・#80）
+
+施主が Ubuntu の実機で `sudo apt install ./nene-clock_0.2.1_amd64.deb` を実行し、**入って起動した**。
+ただし**アイコンが既定の絵**だった。jpackage が生成する `.desktop` に `StartupWMClass` が無く、
+GNOME が動いている窓とメニュー項目を結びつけられないため。`--resource-dir` の `NeNe Clock.desktop` で足した。
+
+```text
+$ grep StartupWMClass /opt/nene-clock/lib/nene-clock-NeNe_Clock.desktop
+StartupWMClass=io-github-hideyukimori-neneclock-app-NeNeClockApplication
+$ xprop -id <窓> WM_CLASS
+WM_CLASS(STRING) = "io-github-hideyukimori-neneclock-app-NeNeClockApplication", "io-github-hideyukimori-neneclock-app-NeNeClockApplication"
+```
+
+一致する。Java（AWT/X11）はメインクラスの完全修飾名の「.」を「-」に替えて `WM_CLASS` にする。
+**メインクラスを改名したら `.desktop` の行も変える**（機械では突き合わせていない）。
+同じ `.deb` で 0.2.0 → 0.2.2 の上書きインストールも通った（`Unpacking nene-clock (0.2.2) over (0.2.0)`）。
+
+### 20.7 まだ証明していないこと
 
 - MSI のアンインストールと上書きインストール
-- WSL でない Ubuntu の実機で `.deb` が入ること
+- 施主の Ubuntu 実機で、`StartupWMClass` を入れた版のドックのアイコンが製品のものになること
 - 施主の Windows 実機で入って起動すること。**ネイティブの窓でちらつきが起きないか**もそこで見る
 - 署名は無い。SmartScreen の警告が出る
 

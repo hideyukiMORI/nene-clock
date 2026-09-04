@@ -35,7 +35,7 @@ GitHub で配る Linux のデスクトップアプリの一般形は `.deb`（`s
 - **active**: Linux で `packageInstaller` が `.deb` を作り、WSL の Ubuntu に `dpkg -i` で入って起動し、`apt remove` で消える（gate-proofs 第 20.4 節）
 - **active**: postinst は `app/src/deb/postinst`（jpackage の既定に `mkdir -p /usr/share/desktop-directories` を足したもの）。
   最小構成の Linux で `xdg-desktop-menu` が落ちるのを防ぐ（実測は gate-proofs 20.4）
-- **planned**: Ubuntu の実機（WSL でない）での確認。X11 のライブラリ（`libx11-6` ほか）は依存欄に入るので、デスクトップ環境なら揃っている
+- **active（2026-09-05・施主の Ubuntu 実機）**: 入って起動した。ドックのアイコンは `.desktop` の `StartupWMClass`（`app/src/deb/NeNe Clock.desktop`）で結びつける（#80・gate-proofs 20.6）
 
 ## 結果
 

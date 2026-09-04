@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=APPLICATION_NAME
+Comment=APPLICATION_DESCRIPTION
+Exec=APPLICATION_LAUNCHER
+Icon=APPLICATION_ICON
+Terminal=false
+Type=Application
+Categories=DEPLOY_BUNDLE_CATEGORY
+DESKTOP_MIMES
+# 🔴 これが無いと GNOME は動いている窓とこの項目を結びつけられず、ドックの起動中アイコンが既定の絵になる
+#    （2026-09-05・施主の Ubuntu 実機で実測・#80）。Java（AWT/X11）は WM_CLASS にメインクラスの完全修飾名を
+#    「.」→「-」にして使う。メインクラスを改名したらここも変える（gate-proofs 20.6 が突き合わせる）。
+StartupWMClass=io-github-hideyukimori-neneclock-app-NeNeClockApplication
