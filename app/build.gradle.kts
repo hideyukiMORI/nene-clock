@@ -132,7 +132,9 @@ abstract class PackageInstaller : DefaultTask() {
         val image = File(images, "NeNe Clock")
         // 2. ポータブル zip。展開して exe を押すだけで動く。何も入れない（ADR 0014）。
         val platform = if (onWindows) "windows" else System.getProperty("os.name").lowercase().replace(" ", "-")
-        zipDirectory(image, File(out, "NeNe Clock-${appVersion.get()}-$platform-portable.zip"))
+        // 🔴 ファイル名に空白を入れない。GitHub は Release の添付名の空白をドットに変える（v0.2.0 で実測・#72）。
+        //    展開後のフォルダ名と exe 名（"NeNe Clock"）は製品名なので、そちらは変えない。
+        zipDirectory(image, File(out, "NeNe-Clock-${appVersion.get()}-$platform-portable.zip"))
         // 3. MSI は同じ app-image から作る（Windows だけ）。結線は 1 と同じものを使う。
         if (onWindows) {
             execOperations.exec {
