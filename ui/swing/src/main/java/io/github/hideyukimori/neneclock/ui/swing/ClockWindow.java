@@ -56,6 +56,9 @@ public final class ClockWindow {
     private @Nullable WindowDrag drag;
     private @Nullable Point lastPointer;
 
+    /** 直前に {@code setLocation} へ渡した値。ピアが置き直したことに気づくために覚える。 */
+    private @Nullable Point lastSetLocation;
+
     /** 窓を組み立てる。表示内容は {@code render*} が決める。 */
     public ClockWindow(ClockPanel clockPanel, WindowChrome chrome) {
         this.clockPanel = Objects.requireNonNull(clockPanel, "clockPanel");
@@ -153,6 +156,7 @@ public final class ClockWindow {
             public void mouseReleased(MouseEvent event) {
                 drag = null;
                 lastPointer = null;
+                lastSetLocation = null;
             }
 
             @Override
@@ -211,7 +215,11 @@ public final class ClockWindow {
      * は掴み点を使わないが、最初のポインタだけはここで覚える。
      */
     private void grabTheWindow() {
-        PointerInfo pointer = MouseInfo.getPointerInfo();
+        grabTheWindowAt(MouseInfo.getPointerInfo());
+    }
+
+    /** いまのポインタと窓の実物で掴み直す。押した瞬間と、ピアが置き直したときに通る。 */
+    private void grabTheWindowAt(@Nullable PointerInfo pointer) {
         GraphicsConfiguration windowScreen = frame.getGraphicsConfiguration();
         if (pointer == null || windowScreen == null) {
             drag = null;
@@ -234,7 +242,7 @@ public final class ClockWindow {
     private ScreenSpace peerSpace(ScreenSpace pointerSpace, GraphicsConfiguration windowScreen) {
         return switch (strategy) {
             case WINDOW, DELTA -> spaceOf(windowScreen);
-            case POINTER -> pointerSpace;
+            case POINTER, VERIFY -> pointerSpace;
         };
     }
 
@@ -256,6 +264,7 @@ public final class ClockWindow {
         switch (strategy) {
             case WINDOW, POINTER -> moveByCompensation(pointer);
             case DELTA -> moveByDelta(pointer.getLocation());
+            case VERIFY -> moveAfterCheckingThePeer(pointer);
         }
     }
 
@@ -272,8 +281,27 @@ public final class ClockWindow {
             return;
         }
         ScreenSpace pointerSpace = spaceOf(pointer.getDevice().getDefaultConfiguration());
-        frame.setLocation(grabbed.locationFor(
-                pointer.getLocation(), pointerSpace, frame.getSize(), peerSpace(pointerSpace, windowScreen)));
+        Point wanted = grabbed.locationFor(
+                pointer.getLocation(), pointerSpace, frame.getSize(), peerSpace(pointerSpace, windowScreen));
+        lastSetLocation = new Point(wanted);
+        frame.setLocation(wanted);
+    }
+
+    /**
+     * ピアが窓を置き直していないか確かめてから動かす（{@link DragStrategy#VERIFY}）。
+     *
+     * <p>前のイベントで渡した値と、いま {@code getLocation()} が返す値が違うなら、
+     * その間にピアが自分の都合で置き直している＝写像が切り替わった瞬間である。
+     * そのイベントでは<b>動かさず、いまの実物で掴み直す</b>。予測を当てにいかない。
+     */
+    private void moveAfterCheckingThePeer(PointerInfo pointer) {
+        Point promised = lastSetLocation;
+        if (promised != null && !promised.equals(frame.getLocation())) {
+            lastSetLocation = null;
+            grabTheWindowAt(pointer);
+            return;
+        }
+        moveByCompensation(pointer);
     }
 
     /**

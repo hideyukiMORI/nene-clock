@@ -19,7 +19,7 @@ package io.github.hideyukimori.neneclock.ui.swing;
  * 返している。** 窓の GC は「大きさの経路で古い」だけでなく、**ピア自身の {@code setLocation}
  * 変換に対しても古い**。事前補償の算術は正しいが、鍵にしている画面が信用できない。
  *
- * <p>選び方: {@code -Dneneclock.dragStrategy=window|pointer|delta}。読めない値は既定に落ちる。
+ * <p>選び方: {@code -Dneneclock.dragStrategy=window|pointer|delta|verify}。読めない値は既定に落ちる。
  */
 enum DragStrategy {
 
@@ -47,7 +47,20 @@ enum DragStrategy {
      * 切り替わった瞬間の見かけの跳びを「移動ではない」と見抜く必要がある（{@link PointerStep}）。
      * 累積するので、取りこぼすとその分だけ掴み点がずれたまま戻らない。
      */
-    DELTA;
+    DELTA,
+
+    /**
+     * ポインタの画面で事前補償し、そのうえで<b>ピアが置き直したことに気づいたら掴み直す</b>。
+     *
+     * <p>実測: {@link #POINTER} は 70 回のドラッグのうち 2 回だけ大きく外れ、すぐ戻る。
+     * 外れるのは<b>窓が境界を越えてピアの写像が切り替わった瞬間</b>である。
+     *
+     * <p>🔑 その瞬間は予測しなくても<b>検出できる</b>。こちらが {@code setLocation} に渡した値と、
+     * 次に {@code getLocation()} が返す値が食い違ったら、ピアが置き直したということである
+     * （診断ビルドで実測: 渡した -290 に対し、次のイベントで 1181 が返った）。
+     * そのイベントでは<b>動かさず掴み直す</b>。予測ではなく、起きたことを見る。
+     */
+    VERIFY;
 
     private static final String PROPERTY = "neneclock.dragStrategy";
 
