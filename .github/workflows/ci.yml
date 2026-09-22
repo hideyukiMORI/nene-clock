@@ -2,10 +2,17 @@
 name: CI
 
 on:
+  # 完了の判定はここ。PR に対して 1 回だけ全件を回す（QLT-001 / QLT-013）。
   pull_request:
+  # merge 後の main。ゲートではなく、次の PR のためにビルドキャッシュを温めるための実行。
+  # PR で検証済みの木と同じ内容を回し直すだけになる変更（文書・ライセンス）では回さない。
   push:
     branches:
       - main
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+      - "docs/**"
   workflow_dispatch:
 
 permissions:

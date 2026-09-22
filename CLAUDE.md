@@ -63,25 +63,38 @@ Claude Code / AI エージェントがこのリポジトリで作業するため
 
 ---
 
-## 3. 検証コマンド
+## 3. 検証コマンド — 差分から選ぶ（QLT-013）
+
+**開発中は、差分から選んだ最小限を回す。**「この変更で何が壊れうるか」を説明できない検査は回さない。
+選び方の表は [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) 第 9 節が正本。
 
 ```bash
-./gradlew check          # 唯一の完了定義（ローカルと CI で同じ）
-./gradlew run            # 起動（WSLg なら Windows のデスクトップに窓が出る）
-./gradlew spotlessApply  # 整形を直す（検査は spotlessCheck が check の中で行う）
+./gradlew :core:domain:test               # その振る舞いを持つモジュールと、直接の呼び出し元
+./gradlew validateConformance             # 文書・規則 ID・waiver・モジュールグラフを触ったとき
+./gradlew :quality:architecture-tests:test # 依存方向・例外区画を触ったとき
+./gradlew :build-logic:test               # 規約検査そのものを触ったとき
+./gradlew run                             # 🔴 UI を触ったら必ず目視する（check は見た目を何も言わない）
+./gradlew spotlessApply                   # 整形を直す（検査は spotlessCheck が check の中で行う）
 ```
-
-開発中は最も狭い検査を使ってよい。
 
 ```bash
-./gradlew :core:domain:test
-./gradlew validateConformance
-./gradlew :quality:architecture-tests:test
+./gradlew check   # 唯一の完了定義。回すのは CI（PR）と、引き渡し前の最大 1 回だけ
 ```
 
-🔴 **`./gradlew check` が通っていないものを「できた」と報告しない。**
-実行していないコマンドの結果を書かない。テストの失敗を隠さない。
-テストが本当の欠陥を見つけたら、期待値ではなく production コードを直す。
+よくある 3 つ:
+
+- **文書・コメントだけ変えた** → Java のテストは回さない。規則 ID・waiver・モジュールグラフの
+  記述に触れたときだけ `validateConformance`
+- **同じ木を押し直した / rebase した / レビューを受けた / merge する** → 回し直さない。
+  同一性はコミット ID ではなく `git rev-parse HEAD^{tree}` で見る
+- **共通基盤（Gradle 設定・`config/`・`build-logic` の規約プラグイン・JDK・依存 lock）を触った**
+  → ここで初めて全件 `check`。対象と理由を 1 行書いてから回す
+
+🔴 **回していない検査の結果を書かない。** 「できた」と言えるのは、その木に対して
+CI の `quality` ジョブ（＝`./gradlew check`）が緑になったときである。テストの失敗を隠さない。
+**再実行で通ったことを合格として扱わない。** テストが本当の欠陥を見つけたら、期待値ではなく
+production コードを直す。差分に起因しない既存の失敗は、根拠とともに別 Issue にして先へ進む
+（そこで全件のやり直しを始めない）。
 
 ---
 
@@ -90,7 +103,7 @@ Claude Code / AI エージェントがこのリポジトリで作業するため
 [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) が正本。要約すると:
 
 Issue → 正典経路の特定 → ブランチ → （設計を変えるなら先に ADR）→ 最小の実装 →
-テスト → `./gradlew check` → 規則 ID ごとの自己レビュー → PR。
+**差分から選んだ検証** → 規則 ID ごとの自己レビュー → PR → **CI の `check` 1 回で完了**。
 
 コミットは Conventional Commits（`type` と `scope` は英語、説明は日本語、末尾に `(#N)`）。
 
@@ -103,7 +116,8 @@ Issue → 正典経路の特定 → ブランチ → （設計を変えるなら
 ```text
 Issue / 規則 ID:
 変更したファイルと振る舞い:
-実行した検証コマンドと結果:
+実行した検証コマンドと結果（＋検証済みの木 `git rev-parse HEAD^{tree}`）:
+回さなかった検査とその理由:
 ドキュメント・スキーマの変更:
 Waivers: none | WVR-NNNN
 残るリスク:
