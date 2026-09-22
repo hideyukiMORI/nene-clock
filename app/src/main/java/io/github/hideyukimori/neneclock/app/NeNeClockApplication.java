@@ -61,10 +61,16 @@ public final class NeNeClockApplication {
 
         ClockScreen screen = new ClockScreen(new TypefaceFontLoader(typefaceBinaries), ProductIdentityFile.read());
         ClockTicker ticker = new ClockTicker(() -> screen.renderFace(clockFace.currentFace(settings.current())));
+        // 窓の大きさは「いまの設定で起こりうる最も大きい面」から決まる（ADR 0017）。
+        // 設定が変わるたびに測り直すので、その 2 つを同じところで取り出す。
+        Runnable renderWholeScreen = () -> screen.renderSettings(
+                settings.current(),
+                clockFace.currentFace(settings.current()),
+                clockFace.widestFace(settings.current()));
 
         screen.onSettingsRequested(requested -> {
             SettingsSaveOutcome outcome = settings.apply(requested);
-            screen.renderSettings(settings.current(), clockFace.currentFace(settings.current()));
+            renderWholeScreen.run();
             screen.renderSaveOutcome(outcome);
         });
         // 常駐スレッドを残さないのは合成ルートの責務である（FR-030 / ADR 0005）。
@@ -73,7 +79,7 @@ public final class NeNeClockApplication {
             screen.close();
         });
 
-        screen.renderSettings(settings.current(), clockFace.currentFace(settings.current()));
+        renderWholeScreen.run();
         ticker.start();
         screen.display();
     }

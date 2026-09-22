@@ -31,3 +31,4 @@ ADR は「なぜそう決めたか」「何を却下したか」を書く。
 | [0014](0014-a-portable-zip-sits-beside-the-msi.md) | MSI の隣にポータブル zip を置く。1 ファイルの exe は作らない | 受理 |
 | [0015](0015-linux-is-distributed-as-a-deb.md) | Linux（Ubuntu）へは .deb で配る。同じ app-image から、同じ task で | 受理 |
 | [0016](0016-verification-is-selected-from-the-diff.md) | 検証は差分から選ぶ。ゲートは 1 つのまま、回す回数を決める | 受理 |
+| [0017](0017-the-window-is-sized-by-padding-not-by-a-window-size.md) | 窓の大きさは「余白」で変える。窓サイズという設定は持たない | 受理 |

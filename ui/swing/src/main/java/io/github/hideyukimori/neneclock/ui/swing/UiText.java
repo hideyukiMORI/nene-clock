@@ -34,6 +34,8 @@ public enum UiText {
     TYPEFACE("書体", "Typeface"),
     /** 設定項目。 */
     SIZE("大きさ", "Size"),
+    /** 設定項目。窓の大きさはこれで変わる（FR-049）。 */
+    PADDING("余白", "Padding"),
     /** 設定項目。 */
     FONT_COLOUR("文字色", "Text colour"),
     /** 設定項目。 */

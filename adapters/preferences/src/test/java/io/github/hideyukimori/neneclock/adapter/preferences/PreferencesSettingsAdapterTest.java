@@ -15,6 +15,8 @@ import io.github.hideyukimori.neneclock.domain.RgbColorOutcome;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
 import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
+import io.github.hideyukimori.neneclock.domain.WindowPadding;
+import io.github.hideyukimori.neneclock.domain.WindowPaddingOutcome;
 import io.github.hideyukimori.neneclock.domain.WindowTopmost;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
@@ -59,7 +61,8 @@ class PreferencesSettingsAdapterTest {
                 FontSize.DEFAULT,
                 color(10, 20, 30),
                 color(40, 50, 60),
-                Language.DEFAULT);
+                Language.DEFAULT,
+                padding(64));
 
         SettingsSaveOutcome saveOutcome = adapter.save(stored);
 
@@ -115,7 +118,8 @@ class PreferencesSettingsAdapterTest {
                 size(96),
                 RgbColor.DEFAULT_FONT,
                 RgbColor.DEFAULT_BACKGROUND,
-                Language.DEFAULT);
+                Language.DEFAULT,
+                WindowPadding.DEFAULT);
     }
 
     @Test
@@ -145,7 +149,8 @@ class PreferencesSettingsAdapterTest {
                         size(96),
                         color(10, 20, 30),
                         RgbColor.DEFAULT_BACKGROUND,
-                        Language.DEFAULT)));
+                        Language.DEFAULT,
+                        WindowPadding.DEFAULT)));
     }
 
     @Test
@@ -174,7 +179,8 @@ class PreferencesSettingsAdapterTest {
                         size(96),
                         color(10, 20, 30),
                         RgbColor.DEFAULT_BACKGROUND,
-                        Language.DEFAULT));
+                        Language.DEFAULT,
+                        WindowPadding.DEFAULT));
     }
 
     @Test
@@ -245,7 +251,8 @@ class PreferencesSettingsAdapterTest {
                 FontSize.DEFAULT,
                 color(1, 2, 3),
                 color(250, 251, 252),
-                Language.DEFAULT);
+                Language.DEFAULT,
+                WindowPadding.DEFAULT);
 
         adapter.save(stored);
         UserSettings restored = ((SettingsLoadOutcome.Restored) adapter.load()).settings();
@@ -275,6 +282,27 @@ class PreferencesSettingsAdapterTest {
     }
 
     @Test
+    void migratesVersionSevenByFillingInThePadding() {
+        // v7 は余白を持たない（ADR 0017）。ほかの 9 項目は 1 つも失わずに読めること。
+        UserSettings beforeThePadding = writeVersionSeven();
+
+        SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
+
+        assertThat(outcome)
+                .isEqualTo(new SettingsLoadOutcome.Restored(beforeThePadding.withWindowPadding(WindowPadding.DEFAULT)));
+    }
+
+    @Test
+    void refusesAPaddingOutsideTheAllowedRange() {
+        PreferencesSettingsAdapter.at(node).save(UserSettings.defaults());
+        node.putInt("windowPadding", WindowPadding.MAXIMUM_PIXELS + 1);
+
+        SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
+
+        assertThat(outcome).isEqualTo(new SettingsLoadOutcome.Defaulted(SettingsLoadFailure.INVALID_VALUE));
+    }
+
+    @Test
     void refusesAFontSizeOutsideTheAllowedRange() {
         PreferencesSettingsAdapter.at(node).save(UserSettings.defaults());
         node.putInt("fontPoints", FontSize.MAXIMUM_POINTS + 1);
@@ -295,6 +323,29 @@ class PreferencesSettingsAdapterTest {
         node.put("dateVisibility", settings.dateVisibility().name());
         node.put("windowTopmost", settings.windowTopmost().name());
         node.putInt("fontPoints", settings.fontSize().points());
+    }
+
+    /**
+     * v7 の保存値を書く。v7 は余白のキーを持たないので、現在の形で保存してから外す。
+     *
+     * @return 余白を除いて保存されていた設定
+     */
+    private UserSettings writeVersionSeven() {
+        UserSettings stored = new UserSettings(
+                ClockFormat.HOUR_12,
+                SecondsVisibility.HIDDEN,
+                DateVisibility.HIDDEN,
+                WindowTopmost.ENABLED,
+                Typeface.ORBITRON,
+                size(96),
+                color(10, 20, 30),
+                color(40, 50, 60),
+                Language.ENGLISH,
+                padding(WindowPadding.MAXIMUM_PIXELS));
+        PreferencesSettingsAdapter.at(node).save(stored);
+        node.putInt("schemaVersion", 7);
+        node.remove("windowPadding");
+        return stored;
     }
 
     /** v3 の保存値を書く。v3 は同梱書体の識別子を持つが、背景色を持たない。 */
@@ -324,5 +375,9 @@ class PreferencesSettingsAdapterTest {
 
     private static FontSize size(int points) {
         return ((FontSizeOutcome.Accepted) FontSize.of(points)).value();
+    }
+
+    private static WindowPadding padding(int pixels) {
+        return ((WindowPaddingOutcome.Accepted) WindowPadding.of(pixels)).value();
     }
 }

@@ -8,6 +8,8 @@ import io.github.hideyukimori.neneclock.domain.FontSizeOutcome;
 import io.github.hideyukimori.neneclock.domain.Language;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
+import io.github.hideyukimori.neneclock.domain.WindowPadding;
+import io.github.hideyukimori.neneclock.domain.WindowPaddingOutcome;
 import io.github.hideyukimori.neneclock.domain.WindowTopmost;
 import java.awt.Component;
 import java.util.List;
@@ -22,7 +24,7 @@ import javax.swing.JPanel;
 import org.jspecify.annotations.Nullable;
 
 /**
- * 設定モーダルの最初の画面。8 項目のうち、その場で決まる 5 つを持ち、
+ * 設定モーダルの最初の画面。10 項目のうち、その場で決まる 7 つを持ち、
  * 選択肢の多い 3 つ（書体・文字色・背景色）は専用の画面へ渡す（FR-045）。
  *
  * <p>この部品は判断をしない。触った結果の {@link UserSettings} を丸ごと送るだけである（ARC-011）。
@@ -48,6 +50,8 @@ public final class SettingsFormPanel {
     private final DetailButton typeface = new DetailButton();
     private final ValueSlider size = new ValueSlider(FontSize.MINIMUM_POINTS, FontSize.MAXIMUM_POINTS);
     private final JLabel sizeValue = TextRendering.label("");
+    private final ValueSlider padding = new ValueSlider(WindowPadding.MINIMUM_PIXELS, WindowPadding.MAXIMUM_PIXELS);
+    private final JLabel paddingValue = TextRendering.label("");
     private final DetailButton fontColour = new DetailButton();
     private final DetailButton background = new DetailButton();
     private final JLabel displaySection = TextRendering.label("");
@@ -71,7 +75,8 @@ public final class SettingsFormPanel {
                 new SettingsRow(UiText.ALWAYS_ON_TOP, topmost.component(), true),
                 new SettingsRow(UiText.LANGUAGE, language.component(), false),
                 new SettingsRow(UiText.TYPEFACE, typeface.component(), true),
-                new SettingsRow(UiText.SIZE, sizePanel(), true),
+                new SettingsRow(UiText.SIZE, sliderPanel(size, sizeValue), true),
+                new SettingsRow(UiText.PADDING, sliderPanel(padding, paddingValue), true),
                 new SettingsRow(UiText.FONT_COLOUR, fontColour.component(), true),
                 new SettingsRow(UiText.BACKGROUND_COLOUR, background.component(), false));
         layOut();
@@ -110,9 +115,9 @@ public final class SettingsFormPanel {
         date.renderState(settings.dateVisibility() == DateVisibility.SHOWN, theme);
         topmost.renderState(settings.windowTopmost() == WindowTopmost.ENABLED, theme);
         size.renderValue(settings.fontSize().points(), theme);
-        sizeValue.setText(String.valueOf(settings.fontSize().points()));
-        sizeValue.setFont(theme.font(STATUS_POINTS));
-        sizeValue.setForeground(theme.palette().text());
+        renderSliderValue(sizeValue, settings.fontSize().points(), theme);
+        padding.renderValue(settings.windowPadding().pixels(), theme);
+        renderSliderValue(paddingValue, settings.windowPadding().pixels(), theme);
         typeface.renderValue(
                 new DetailValue(
                         settings.typeface().displayName(), null, typefaces.load(settings.typeface(), SAMPLE_POINTS)),
@@ -145,13 +150,19 @@ public final class SettingsFormPanel {
         label.setForeground(theme.palette().textFaint());
     }
 
-    private JComponent sizePanel() {
+    private static void renderSliderValue(JLabel label, int value, UiTheme theme) {
+        label.setText(String.valueOf(value));
+        label.setFont(theme.font(STATUS_POINTS));
+        label.setForeground(theme.palette().text());
+    }
+
+    private JComponent sliderPanel(ValueSlider slider, JLabel value) {
         JPanel holder = new JPanel();
         holder.setOpaque(false);
         holder.setLayout(new BoxLayout(holder, BoxLayout.X_AXIS));
-        holder.add(size.component());
+        holder.add(slider.component());
         holder.add(javax.swing.Box.createHorizontalStrut(SIDE / 2));
-        holder.add(sizeValue);
+        holder.add(value);
         return holder;
     }
 
@@ -194,6 +205,7 @@ public final class SettingsFormPanel {
         topmost.onToggled(() -> submit(shown.withWindowTopmost(
                 shown.windowTopmost() == WindowTopmost.ENABLED ? WindowTopmost.DISABLED : WindowTopmost.ENABLED)));
         size.onMoved(points -> submit(sizedBy(points)));
+        padding.onMoved(pixels -> submit(paddedBy(pixels)));
         typeface.onPressed(() -> navigate.accept(SettingsDestination.TYPEFACE));
         fontColour.onPressed(() -> navigate.accept(SettingsDestination.FONT_COLOUR));
         background.onPressed(() -> navigate.accept(SettingsDestination.BACKGROUND_COLOUR));
@@ -204,6 +216,14 @@ public final class SettingsFormPanel {
             case FontSizeOutcome.Accepted accepted -> shown.withFontSize(accepted.value());
             // 帯は FontSize の範囲そのものなので、ここへは来ない。来たら動かさない。
             case FontSizeOutcome.Rejected outOfRange -> shown;
+        };
+    }
+
+    private UserSettings paddedBy(int pixels) {
+        return switch (WindowPadding.of(pixels)) {
+            case WindowPaddingOutcome.Accepted accepted -> shown.withWindowPadding(accepted.value());
+            // 帯は WindowPadding の範囲そのものなので、ここへは来ない。来たら動かさない。
+            case WindowPaddingOutcome.Rejected outOfRange -> shown;
         };
     }
 

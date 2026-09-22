@@ -1,5 +1,6 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
+import io.github.hideyukimori.neneclock.application.ClockFaceExtent;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import java.awt.Dimension;
 import java.awt.Point;
@@ -59,15 +60,16 @@ public final class ClockWindow {
     }
 
     /** 設定を窓へ反映する。UI 状態の反映経路はここ 1 本（CNF-004）。 */
-    public void renderSettings(UserSettings settings) {
+    public void renderSettings(UserSettings settings, ClockFaceExtent extent) {
         Objects.requireNonNull(settings, "settings");
+        Objects.requireNonNull(extent, "extent");
         boolean topmost =
                 switch (settings.windowTopmost()) {
                     case ENABLED -> true;
                     case DISABLED -> false;
                 };
         frame.setAlwaysOnTop(topmost);
-        clockPanel.renderSettings(settings);
+        clockPanel.renderSettings(settings, extent);
         fitToClock();
         chrome.renderColours(
                 AwtColour.of(settings.fontColor()),
@@ -79,7 +81,8 @@ public final class ClockWindow {
      *
      * <p>枠が無いので、利用者が窓の端を掴んで広げることができない。文字を大きくしたときに
      * 「05:14:..」と切れて出るのは、窓が時計そのものであるという前提と噛み合わない（FR-047）。
-     * だから大きさは設定に従う。下限は FR-030 の最小サイズである。
+     * だから大きさは設定に従う。下限は FR-030 の最小サイズである。**下限は広げる向きにしか
+     * 効かない**ので、文字が切れることはない。余白と文字を最小にしたときだけ、窓はこの下限で止まる。
      */
     private void fitToClock() {
         Dimension wanted = frame.getContentPane().getPreferredSize();

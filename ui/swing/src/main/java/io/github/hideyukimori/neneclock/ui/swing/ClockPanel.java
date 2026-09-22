@@ -1,6 +1,8 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
 import io.github.hideyukimori.neneclock.application.ClockFace;
+import io.github.hideyukimori.neneclock.application.ClockFaceExtent;
+import io.github.hideyukimori.neneclock.application.DateExtent;
 import io.github.hideyukimori.neneclock.application.DateLine;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import java.awt.Color;
@@ -9,6 +11,7 @@ import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.util.List;
 import java.util.Objects;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -24,17 +27,6 @@ public final class ClockPanel {
 
     private static final int DATE_FONT_DIVISOR = 4;
     private static final int MINIMUM_DATE_POINTS = 12;
-
-    /**
-     * 幅を決めるための最も広い文字列。
-     *
-     * <p>いま出ている文字列で大きさを決めると、等幅でない書体では毎秒わずかに幅が変わり、
-     * 窓が震える。「起こりうる中で最も広いもの」で決めれば、動かない。
-     */
-    private static final String WIDEST_TIME = "00:00:00 AM";
-
-    private static final String WIDEST_DATE = "0000-00-00";
-    private static final int PADDING = 30;
 
     /** 角丸の半径。窓の切り抜きに使う。 */
     static final int CORNER = 16;
@@ -92,9 +84,15 @@ public final class ClockPanel {
         panel.repaint();
     }
 
-    /** 設定を反映する。 */
-    public void renderSettings(UserSettings settings) {
+    /**
+     * 設定を反映する。
+     *
+     * <p>大きさを測る文字列は自分で作らない。**いまの設定で起こりうる面を知っているのは
+     * application 層である**（ARC-001）。ここは書体の送り幅を測るだけである。
+     */
+    public void renderSettings(UserSettings settings, ClockFaceExtent extent) {
         Objects.requireNonNull(settings, "settings");
+        Objects.requireNonNull(extent, "extent");
         int points = settings.fontSize().points();
         Color foreground = AwtColour.of(settings.fontColor());
         fill = AwtColour.of(settings.backgroundColor());
@@ -102,19 +100,43 @@ public final class ClockPanel {
         time.setForeground(foreground);
         date.setFont(typefaces.load(settings.typeface(), Math.max(MINIMUM_DATE_POINTS, points / DATE_FONT_DIVISOR)));
         date.setForeground(foreground);
-        panel.setPreferredSize(roomForTheWidestFace());
+        panel.setPreferredSize(
+                roomForTheWidestFace(extent, settings.windowPadding().pixels()));
         // 🔴 地の色が変わっても、部品の再描画だけでは面全体が塗り直されない。
         //    透明度を下げたとき、塗り直されなかった帯が不透明のまま残った（実機で踏んだ）。
         panel.repaint();
     }
 
-    /** いまの書体と大きさで、時計が確実に収まる大きさ。 */
-    private Dimension roomForTheWidestFace() {
+    /**
+     * いまの書体・大きさ・表示内容・余白で、時計が確実に収まる大きさ。
+     *
+     * <p>候補のうち最も広いものを取るので、毎秒・毎分で変わらない。日付を隠しているときは
+     * 日付行が高さを取らない（ADR 0017）。
+     */
+    private Dimension roomForTheWidestFace(ClockFaceExtent extent, int padding) {
         FontMetrics timeMetrics = panel.getFontMetrics(time.getFont());
-        FontMetrics dateMetrics = panel.getFontMetrics(date.getFont());
-        int width = Math.max(timeMetrics.stringWidth(WIDEST_TIME), dateMetrics.stringWidth(WIDEST_DATE));
-        int height = timeMetrics.getHeight() + LINE_GAP + dateMetrics.getHeight();
-        return new Dimension(width + PADDING * 2, height + PADDING * 2);
+        int width = widestOf(timeMetrics, extent.timeCandidates());
+        int height = timeMetrics.getHeight();
+        switch (extent.date()) {
+            case DateExtent.Measured measured -> {
+                FontMetrics dateMetrics = panel.getFontMetrics(date.getFont());
+                width = Math.max(width, widestOf(dateMetrics, measured.candidates()));
+                height += LINE_GAP + dateMetrics.getHeight();
+            }
+            case DateExtent.Absent absent -> {
+                // 日付行は出ない。行の高さも行間も取らない。
+            }
+        }
+        return new Dimension(width + padding * 2, height + padding * 2);
+    }
+
+    /** 候補のうち、この書体でいちばん広いものの幅。 */
+    private static int widestOf(FontMetrics metrics, List<String> candidates) {
+        int widest = 0;
+        for (String candidate : candidates) {
+            widest = Math.max(widest, metrics.stringWidth(candidate));
+        }
+        return widest;
     }
 
     /** 地を描く。角丸は窓の切り抜き（{@code setShape}）が作る。 */

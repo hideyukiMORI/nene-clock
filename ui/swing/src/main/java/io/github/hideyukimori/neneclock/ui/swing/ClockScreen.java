@@ -1,6 +1,7 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
 import io.github.hideyukimori.neneclock.application.ClockFace;
+import io.github.hideyukimori.neneclock.application.ClockFaceExtent;
 import io.github.hideyukimori.neneclock.application.DateLine;
 import io.github.hideyukimori.neneclock.application.SettingsIntentSink;
 import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
@@ -67,14 +68,18 @@ public final class ClockScreen {
         this.quit = Objects.requireNonNull(requested, "requested");
     }
 
-    /** 設定を画面全体へ反映する。反映経路はここ 1 本（CNF-004）。 */
-    public void renderSettings(UserSettings settings, ClockFace face) {
+    /**
+     * 設定を画面全体へ反映する。反映経路はここ 1 本（CNF-004）。
+     *
+     * <p>{@code extent} は「いまの設定で起こりうる最も大きい面」である。窓の大きさはそれで決まる。
+     */
+    public void renderSettings(UserSettings settings, ClockFace face, ClockFaceExtent extent) {
         shown = Objects.requireNonNull(settings, "settings");
         UiTheme theme = themeOf(settings);
         ClockPreviewText text = textOf(face);
         // 🔴 先に文字を入れる。空のまま大きさを決めると、窓が最小の大きさで固まる（実機で踏んだ）。
         clockPanel.renderFace(face);
-        window.renderSettings(settings);
+        window.renderSettings(settings, extent);
         dialog.renderTheme(theme);
         form.renderTheme(theme);
         form.renderSettings(settings, text);
