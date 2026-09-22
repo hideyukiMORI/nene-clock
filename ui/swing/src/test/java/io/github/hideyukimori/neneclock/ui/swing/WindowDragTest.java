@@ -8,88 +8,140 @@ import java.awt.Rectangle;
 import org.junit.jupiter.api.Test;
 
 /**
- * ドラッグの座標計算（ADR 0018 / Issue #95・#96）。
+ * 画面をまたぐドラッグの座標計算（ADR 0019 / Issue #100）。
  *
- * <p>🔴 ここで見られるのは算術だけである。「拡大率の違うモニタをまたいでも窓が膨らまない」こと
- * そのものは、per-monitor DPI を持つ実機でしか見られない（QLT-012）。この環境（WSLg）には
- * per-monitor DPI が無い。記録は quality/gate-proofs.md 第 21 節。
+ * <p>画面は施主の実機で測った 4 面をそのまま値にしてある。**ピアの変換も同じ規則で書き下して
+ * いる**ので、「setLocation に渡した値が、変換されたあとに狙った実ピクセルになる」ことを
+ * headless で確かめられる（{@link #wherePeerPutsIt}）。
+ *
+ * <p>🔴 ここで見られるのは算術だけである。実機の per-monitor DPI の挙動そのものは、この環境
+ * （WSLg・画面 1 枚・拡大率 1 倍）では一度も再現できない（QLT-012）。記録は
+ * quality/gate-proofs.md 第 24 節。
  */
 class WindowDragTest {
 
-    /** 実機で測った論理サイズ 765x208 の窓（ADR 0018 の表）。 */
-    private static final Rectangle WINDOW = new Rectangle(100, 50, 765, 208);
+    private static final ScreenSpace PRIMARY = ScreenSpace.of(0, 0, 1.25, 1.25);
+    private static final ScreenSpace LEFT = ScreenSpace.of(-3840, 0, 1.5, 1.5);
+    private static final ScreenSpace RIGHT = ScreenSpace.of(3840, 0, 1.75, 1.75);
+    private static final ScreenSpace TOP_RIGHT = ScreenSpace.of(3818, -1440, 1.5, 1.5);
+    private static final ScreenSpace UNSCALED = ScreenSpace.of(0, 0, 1.0, 1.0);
+
+    /** 実機で測った論理サイズ 765x208 の窓が、主画面の (100,500) に居る。 */
+    private static final Rectangle WINDOW = new Rectangle(100, 500, 765, 208);
+
+    private static final Dimension WINDOW_SIZE = new Dimension(765, 208);
+
+    /** ピアが setLocation に掛ける変換。窓が載っていると Java が思っている画面で写す。 */
+    private static Point wherePeerPutsIt(Point location, ScreenSpace windowScreen) {
+        return windowScreen.toDevice(location);
+    }
 
     @Test
-    void theGrabbedPointStaysUnderThePointer() {
-        WindowDrag drag = WindowDrag.grabbedAt(new Point(150, 80), WINDOW);
+    void theGrabbedPointStaysUnderThePointerWhenItCrossesToTheLeftScreen() {
+        WindowDrag drag = WindowDrag.grabbedAt(new Point(150, 540), PRIMARY, WINDOW, PRIMARY);
+        assertThat(drag.grabbedPoint()).isEqualTo(new Point(63, 50));
 
-        Point location = drag.locationFor(new Point(1500, 900));
+        // ポインタは左画面（150%）に居る。窓は主画面（125%）に居ると Java は思ったままである。
+        Point location = drag.locationFor(new Point(-1284, 1123), LEFT, WINDOW_SIZE, PRIMARY);
 
-        assertThat(new Point(1500 - location.x, 900 - location.y)).isEqualTo(drag.grabbedPoint());
+        assertThat(location).isEqualTo(new Point(-55, 1308));
+        Point placed = wherePeerPutsIt(location, PRIMARY);
+        Point pointerDevice = LEFT.toDevice(new Point(-1284, 1123));
+        assertThat(new Point(pointerDevice.x - placed.x, pointerDevice.y - placed.y))
+                .isEqualTo(drag.grabbedPoint());
+    }
+
+    @Test
+    void theGrabbedPointStaysUnderThePointerOnTheRightAndTopScreensToo() {
+        WindowDrag drag = WindowDrag.grabbedAt(new Point(150, 540), PRIMARY, WINDOW, PRIMARY);
+
+        assertThatTheGrabIsUnderThePointer(drag, new Point(4100, 700), RIGHT);
+        assertThatTheGrabIsUnderThePointer(drag, new Point(4200, -900), TOP_RIGHT);
+    }
+
+    private void assertThatTheGrabIsUnderThePointer(WindowDrag drag, Point pointer, ScreenSpace pointerScreen) {
+        Point placed = wherePeerPutsIt(drag.locationFor(pointer, pointerScreen, WINDOW_SIZE, PRIMARY), PRIMARY);
+        Point pointerDevice = pointerScreen.toDevice(pointer);
+        Point grab = drag.grabbedPointIn(PRIMARY.toDeviceSize(WINDOW_SIZE));
+
+        assertThat(pointerDevice.x - placed.x - grab.x).isBetween(-1, 1);
+        assertThat(pointerDevice.y - placed.y - grab.y).isBetween(-1, 1);
+    }
+
+    @Test
+    void draggingInsideOneUnscaledScreenIsExactlyThePointerMinusTheGrab() {
+        Rectangle window = new Rectangle(100, 50, 765, 208);
+        WindowDrag drag = WindowDrag.grabbedAt(new Point(150, 80), UNSCALED, window, UNSCALED);
+
+        assertThat(drag.grabbedPoint()).isEqualTo(new Point(50, 30));
+        assertThat(drag.locationFor(new Point(1500, 900), UNSCALED, window.getSize(), UNSCALED))
+                .isEqualTo(new Point(1450, 870));
+    }
+
+    @Test
+    void draggingInsideOneScaledScreenKeepsTheGrabUnderThePointer() {
+        WindowDrag drag = WindowDrag.grabbedAt(new Point(150, 540), PRIMARY, WINDOW, PRIMARY);
+
+        assertThatTheGrabIsUnderThePointer(drag, new Point(900, 1000), PRIMARY);
+        assertThatTheGrabIsUnderThePointer(drag, new Point(2400, 300), PRIMARY);
+    }
+
+    @Test
+    void theGrabbedPointIsRemappedAndStaysInsideAWindowWhoseDeviceSizeChanged() {
+        WindowDrag drag = WindowDrag.grabbedAt(new Point(800, 700), PRIMARY, WINDOW, PRIMARY);
+        assertThat(drag.sizeWhenGrabbed()).isEqualTo(new Dimension(956, 260));
+        assertThat(drag.grabbedPoint()).isEqualTo(new Point(875, 250));
+
+        // 実機で見た膨らみ（765x208 → 918x250 論理）を、窓の画面はそのままに与える。
+        Point grown = drag.grabbedPointIn(PRIMARY.toDeviceSize(new Dimension(918, 250)));
+        Point shrunk = drag.grabbedPointIn(PRIMARY.toDeviceSize(new Dimension(500, 120)));
+
+        assertThat(grown).isEqualTo(new Point(1051, 301)); // 875 x 1148/956, 250 x 313/260
+        assertThat(shrunk).isEqualTo(new Point(572, 144)); // 875 x 625/956, 250 x 150/260
+        assertThat(shrunk.x).isLessThan(625);
+        assertThat(shrunk.y).isLessThan(150);
+    }
+
+    @Test
+    void theGrabbedPointNeverLeavesAWindowThatLostAllItsExtent() {
+        WindowDrag drag = WindowDrag.grabbedAt(new Point(800, 700), PRIMARY, WINDOW, PRIMARY);
+
+        assertThat(drag.grabbedPointIn(new Dimension(0, 0))).isEqualTo(new Point(0, 0));
+    }
+
+    @Test
+    void feedingTheSamePointerTwiceGivesTheSameLocation() {
+        WindowDrag drag = WindowDrag.grabbedAt(new Point(150, 540), PRIMARY, WINDOW, PRIMARY);
+        Point pointer = new Point(-1284, 1123);
+
+        Point first = drag.locationFor(pointer, LEFT, WINDOW_SIZE, PRIMARY);
+        Point second = drag.locationFor(pointer, LEFT, WINDOW_SIZE, PRIMARY);
+
+        assertThat(second).isEqualTo(first);
     }
 
     @Test
     void theLocationIsDecidedByThePointerAloneSoErrorCannotAccumulate() {
-        WindowDrag drag = WindowDrag.grabbedAt(new Point(150, 80), WINDOW);
-        Point last = new Point(150, 80);
-
-        for (int step = 1; step <= 500; step++) {
-            last = new Point(150 + step * 13, 80 + step * 7);
-            drag.locationFor(last); // 途中の計算は何も残さない
+        WindowDrag crept = WindowDrag.grabbedAt(new Point(150, 540), PRIMARY, WINDOW, PRIMARY);
+        WindowDrag jumped = WindowDrag.grabbedAt(new Point(150, 540), PRIMARY, WINDOW, PRIMARY);
+        for (int x = 150; x >= -1284; x -= 3) {
+            crept.locationFor(new Point(x, 1123), x >= 0 ? PRIMARY : LEFT, WINDOW_SIZE, PRIMARY);
         }
 
-        assertThat(drag.locationFor(last)).isEqualTo(new Point(last.x - 50, last.y - 30));
-    }
-
-    @Test
-    void theSameJourneyInOneJumpEndsAtTheSamePlace() {
-        WindowDrag crept = WindowDrag.grabbedAt(new Point(150, 80), WINDOW);
-        WindowDrag jumped = WindowDrag.grabbedAt(new Point(150, 80), WINDOW);
-        for (int x = 150; x <= 3000; x += 3) {
-            crept.locationFor(new Point(x, 80));
-        }
-
-        assertThat(crept.locationFor(new Point(3000, 80))).isEqualTo(jumped.locationFor(new Point(3000, 80)));
-    }
-
-    @Test
-    void aSizeChangeDuringTheDragIsNoticed() {
-        WindowDrag drag = WindowDrag.grabbedAt(new Point(150, 80), WINDOW);
-
-        assertThat(drag.stillFits(new Dimension(765, 208))).isTrue();
-        assertThat(drag.stillFits(new Dimension(637, 173))).isFalse(); // 過渡状態の実測値（ADR 0018）
-    }
-
-    @Test
-    void theGrabbedPointComesBackInsideAWindowThatShrank() {
-        WindowDrag wide = WindowDrag.grabbedAt(new Point(800, 240), WINDOW);
-
-        WindowDrag narrow = WindowDrag.grabbedAt(new Point(800, 240), new Rectangle(100, 50, 637, 173));
-
-        assertThat(wide.grabbedPoint()).isEqualTo(new Point(700, 190));
-        assertThat(narrow.grabbedPoint()).isEqualTo(new Point(636, 172));
+        assertThat(crept.locationFor(new Point(-1284, 1123), LEFT, WINDOW_SIZE, PRIMARY))
+                .isEqualTo(jumped.locationFor(new Point(-1284, 1123), LEFT, WINDOW_SIZE, PRIMARY));
     }
 
     @Test
     void aPointerOutsideTheWindowIsPulledBackToTheEdge() {
-        WindowDrag before = WindowDrag.grabbedAt(new Point(50, 20), WINDOW);
+        WindowDrag before = WindowDrag.grabbedAt(new Point(50, 400), PRIMARY, WINDOW, PRIMARY);
 
         assertThat(before.grabbedPoint()).isEqualTo(new Point(0, 0));
     }
 
     @Test
-    void theWindowFollowsThePointerAgainAfterTheGrabIsTakenAnew() {
-        WindowDrag taken = WindowDrag.grabbedAt(new Point(1200, 700), new Rectangle(900, 600, 637, 173));
-
-        Point location = taken.locationFor(new Point(1260, 740));
-
-        assertThat(location).isEqualTo(new Point(960, 640));
-        assertThat(new Point(1260 - location.x, 740 - location.y)).isEqualTo(taken.grabbedPoint());
-    }
-
-    @Test
     void aWindowWithNoExtentStillGivesAGrabPointInside() {
-        WindowDrag drag = WindowDrag.grabbedAt(new Point(100, 50), new Rectangle(100, 50, 0, 0));
+        WindowDrag drag = WindowDrag.grabbedAt(new Point(100, 500), PRIMARY, new Rectangle(100, 500, 0, 0), PRIMARY);
 
         assertThat(drag.grabbedPoint()).isEqualTo(new Point(0, 0));
     }

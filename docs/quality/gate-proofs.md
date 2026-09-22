@@ -845,6 +845,11 @@ BUILD FAILED
 
 ## 21. 画面をまたぐドラッグ（Issue #95 / #96 / ADR 0018・2026-09-22）
 
+> 🔴 **この節の実装は置き換えられた（ADR 0018 → [ADR 0019](../adr/0019-the-desktop-is-not-one-coordinate-space.md)）。**
+> 実機で測ったところ、ここに書いた単体テストは緑のままだったが、**症状は 1 つも直っていなかった**。
+> 何が間違っていたか、いま何を証明しているかは第 24 節にある。この節は「緑のゲートが、直って
+> いないものを直ったと言いうる」ことの記録として残す。
+
 施主の Windows 実機（4 画面・125% / 150% / 175% / 150%）で、拡大率の違うモニタへドラッグすると
 窓が 7.43 倍（956×260 → 5642×1546）まで膨らみ、ポインタから大きく外れた。原因の実測は
 [ADR 0018](../adr/0018-the-window-knows-which-screen-it-is-on.md) にある。
@@ -1006,7 +1011,142 @@ AM ↔ PM の切り替わりそのものは**この時間帯では観測でき�
 | 窓の見た目そのものの機械検査 | **不能**。目視と記録でしか担保できない。だから第 11 節と第 18 節を残す |
 | カラーピッカーのつまみの位置 | **確認済み（2026-09-04）。** 第 18 節に実測を記録した（FR-045 / #62） |
 | WSLg 上でのキーボード入力の自動化 | **不能**。X のフォーカスが Wayland 側にあり、合成キーが届かない（第 18.2 節） |
+| 拡大率の違う画面をまたぐドラッグ（ADR 0019 の実装） | 🔴 **未確認。** 実機の自動ドラッグ試験台が回るまで（第 24 節） |
 | SHA-256 dependency verification | **未導入**（QLT-011 の planned 部分） |
 | `planned` と書いた規則の強制 | 未実装であることを強制マトリクスに明記している。実装したときに状態を書き換える |
+
+---
+
+## 24. 実ピクセルで決めるドラッグ（Issue #100 / ADR 0019・2026-09-22）
+
+第 21 節（ADR 0018）の修正は、**単体テストが緑のまま、実機の症状を 1 つも直さなかった**。
+理由は [ADR 0019](../adr/0019-the-desktop-is-not-one-coordinate-space.md) にある実測のとおりで、
+①窓の `GraphicsConfiguration` は載り換えても差し替わらない（画面の変化を知る手段が無い）
+②Java の仮想デスクトップは**原点が実ピクセル・大きさが論理ピクセル**で単位が混ざっている
+③ポインタの座標源が 2 つあって、境界では 1282px 食い違う。
+
+この節は、**やり直した実装で機械が何を見ているか**と、**それでもまだ見えていないもの**を書く。
+
+### 24.1 単体テストで見たもの（`:ui:swing:test`・`ScreenSpaceTest` 7 件 / `WindowDragTest` 10 件）
+
+変換は副作用の無い 2 つの値型に置いた。画面は**値として渡す**ので、施主の 4 画面（混在尺度）を
+headless で再現できる。`ScreenSpace` が画面 1 枚の読み方、`WindowDrag` がドラッグの算術である。
+
+| テスト | 見ていること |
+| --- | --- |
+| `ScreenSpaceTest.theWindowMeasurementFromTheRealMachineIsReproduced` | 実機の実測 Java -290 → 実 -362（主・125%） |
+| `ScreenSpaceTest.thePointerMeasurementFromTheRealMachineIsReproduced` | 実機の実測 Java -1284 → 実 -6（左・150%・原点 -3840） |
+| `ScreenSpaceTest.theOriginOfAScreenIsTheSamePointInBothUnits` | 原点は両方の単位で同じ点（右・右上） |
+| `ScreenSpaceTest.aNegativeOriginDoesNotBreakTheRoundTrip` | 右上（3818,-1440）で往復して元の値に戻る |
+| `ScreenSpaceTest.theExtentOfAScreenIsLogicalSoItScalesWithoutTheOrigin` | 765×208 → 1148×312（150%）／1339×364（175%）／956×260（125%） |
+| `ScreenSpaceTest.aScreenWithoutScalingIsTheIdentity` | 尺度 1 の画面では恒等 |
+| `ScreenSpaceTest.aScaleThatCannotBeInvertedIsRefused` | 尺度 0・NaN を作らせない（逆変換が定義できない） |
+| `WindowDragTest.theGrabbedPointStaysUnderThePointerWhenItCrossesToTheLeftScreen` | **本体**。ポインタが左（150%）、窓は主（125%）に居ると Java が思ったまま → `setLocation` に渡す値は (-55,1308)。ピアの変換を掛け直すと掴み点が**ぴったり**ポインタの下（誤差 0） |
+| `WindowDragTest.theGrabbedPointStaysUnderThePointerOnTheRightAndTopScreensToo` | 右（175%）・右上（150%・原点 -1440）でも誤差 1px 以内 |
+| `WindowDragTest.draggingInsideOneUnscaledScreenIsExactlyThePointerMinusTheGrab` | 尺度 1 の画面では「ポインタ − 掴み点」そのもの（＝従来の挙動） |
+| `WindowDragTest.draggingInsideOneScaledScreenKeepsTheGrabUnderThePointer` | 同一画面（125%）内でも誤差 1px 以内 |
+| `WindowDragTest.theGrabbedPointIsRemappedAndStaysInsideAWindowWhoseDeviceSizeChanged` | 窓の実寸が変わったら掴み点を同じ相対位置へ写し、窓の中に収める（875 → 1051 / 572） |
+| `WindowDragTest.theGrabbedPointNeverLeavesAWindowThatLostAllItsExtent` | 大きさ 0 でも掴み点が負にならない |
+| `WindowDragTest.feedingTheSamePointerTwiceGivesTheSameLocation` | 同じ入力に同じ答え（累積しない） |
+| `WindowDragTest.theLocationIsDecidedByThePointerAloneSoErrorCannotAccumulate` | 478 歩で這わせても 1 跳びでも同じ位置 |
+| `WindowDragTest.aPointerOutsideTheWindowIsPulledBackToTheEdge` | 窓の外で掴んでも掴み点は縁に留まる |
+| `WindowDragTest.aWindowWithNoExtentStillGivesAGrabPointInside` | 幅・高さ 0 の窓でも掴み点が窓の中 |
+
+🔑 **ピアの変換をテストの中に書き下した**のが第 21 節との違いである。
+`setLocation` に渡した値へ**窓の画面の尺度**を掛け直し、その結果と実ピクセルのポインタを比べる。
+「渡した値」ではなく「**届く値**」を見ているので、事前補償が正しいかを機械が言える。
+
+**negative proof**（QLT-007・落ちることと、**落ちた理由**まで見た）:
+
+```text
+① 事前補償を壊す（逆変換を「窓の画面」ではなく「ポインタの画面」で行う）
+   WindowDragTest.theGrabbedPointStaysUnderThePointerWhenItCrossesToTheLeftScreen  FAILED
+     expected: java.awt.Point[x=-55,y=1308]
+      but was: java.awt.Point[x=-1326,y=1090]        ← 手計算と一致（1271px ずれる）
+   WindowDragTest.theGrabbedPointStaysUnderThePointerOnTheRightAndTopScreensToo    FAILED
+     Expecting actual: -848  to be between: [-1, 1]  ← 掴み点が 848px ポインタから外れる
+   94 tests completed, 2 failed
+
+② 掴み点の写し直しの比を逆にする（now/was → was/now）
+   WindowDragTest.theGrabbedPointIsRemappedAndStaysInsideAWindowWhoseDeviceSizeChanged  FAILED
+   94 tests completed, 1 failed
+
+③ 写し直しそのものを消す（offset をそのまま返す）
+   → テストまで届かない。**コンパイルが落ちる**:
+     [UnusedVariable] The parameter 'now' is never read. / error: warnings found and -Werror specified
+```
+
+どれも戻すと `:ui:swing:test` は緑（94 件）に戻る。
+
+### 24.2 WSLg で目で見たもの（2026-09-22・`DISPLAY=:0 ./gradlew run`）
+
+ドラッグは `java.awt.Robot` の別プロセスで実際のポインタを動かして行った（掴み点 (200,120)・
+5px×3px を 40 歩）。窓の矩形は `xwininfo` で読んだ。
+
+```text
+before  +5520+2400  388x250
+out     +5720+2520  388x250     ← ポインタと同じ +200,+120
+back    +5520+2400  388x250
+out     +5720+2520  388x250
+back    +5520+2400  388x250
+out     +5720+2520  388x250
+back    +5520+2400  388x250
+```
+
+- **窓はポインタと同じ量だけ動く**。掴み点は外れない
+- **大きさは 7 回とも 388×250 のまま**。往復してもぴったり同じ位置に戻る（累積が無い）
+- `import -window` で撮って確認。角丸・右上のクローム・文字の位置は変わっていない
+
+⚠️ **この環境の画面はこう見えている**（使い捨ての probe で読んだ・`GraphicsEnvironment` は
+repo の外の 1 ファイルで、production は使っていない）:
+
+```text
+:0.0 bounds=(3840,1440 3840x2160) scale=1.0x1.0
+:0.1 bounds=(7658,0    2560x1440) scale=1.0x1.0
+:0.2 bounds=(0,1440    3840x2160) scale=1.0x1.0
+:0.3 bounds=(7680,1440 3840x2160) scale=1.0x1.0
+```
+
+🔑 **画面は 4 枚あるが、尺度はすべて 1.0 で、原点は Java の大きさと矛盾していない。**
+だから WSLg で通ったのは `ScreenSpace` が**恒等になる経路**である。混ざった単位も、穴も、
+尺度の食い違いも、ここには存在しない。
+
+それでも 1 つだけ実機に近いことができた。**画面の境界（x=3840）をまたぐドラッグ**である。
+
+```text
+before   +5520+2400  388x250   ← :0.0 の上
+crossed  +2800+2400  388x250   ← ポインタを -2720 動かし、窓も -2720。:0.2 へ入った
+back     +5520+2400  388x250
+```
+
+- またいでも**窓は 1px もずれず、大きさも変わらない**
+- すなわち「ポインタの画面 ≠ 窓の画面」になりうる経路（`MouseInfo#getPointerInfo()` と
+  `PointerInfo#getDevice()`）が**実際に走って、壊れていない**。ただし尺度が同じなので、
+  **この試験は事前補償の正しさについては何も言っていない**
+
+### 24.3 🔴 まだ証明していないこと（QLT-012）
+
+| 主張 | 状態 |
+| --- | --- |
+| 変換の算術（4 画面・混在尺度・事前補償） | **確認済み**（24.1・単体テスト＋ negative proof 3 種） |
+| 単一画面のドラッグが壊れていない | **確認済み**（24.2・WSLg・Robot による実測） |
+| 画面の境界をまたいでも窓がずれない（**尺度が同じ場合**） | **確認済み**（24.2） |
+| 拡大率の違う画面をまたいでも掴み点がポインタの下に留まる | 🔴 **未確認。** WSLg に per-monitor DPI が無い |
+| 窓が ×1.2 ずつ膨らまない（`componentResized` での復元が効く） | 🔴 **未確認。** 膨らみの原因（DPI の載り換え）がこの環境では起きない |
+| 戻ってきたときに窓の大きさが元どおりになる | 🔴 **未確認。** 同上 |
+
+🔴 **検証の手段は 1 つしかない: 施主の実機の自動ドラッグ試験台（`SendInput` で合成したドラッグ＋
+DPI 対応の測定プロセス）を、このビルドに対して回すことである。** 合格条件を先に数値で書いておく。
+
+| 測るもの | 合格 |
+| --- | --- |
+| 主（125%）→ 左（150%）へ 80px 刻みで這わせる間の「掴み点とポインタの実ピクセル距離」 | **どの標本でも 2px 以内**（1500px 飛ばない） |
+| 同じ区間での窓の論理サイズ | **どの標本でも `pref` と同じ**（582 → 698 → 838 …と育たない） |
+| 左（150%）に着いたときの窓の実ピクセル幅 | **どちらでもよいが、どちらかに決まること**。ADR 0019 の「代償」は `pref × 1.5` と書いているが、**窓の GC が更新されない以上、復元した論理サイズに掛かるのは古い 1.25 のままのはず**で、実ピクセルは `pref × 1.25` に落ち着くと予想する。⇒ 150% の画面では**相対的に小さく見える**。合格条件は「安定していること・育たないこと」であり、どちらの値が出たかは ADR 0019 の代償の記述を直すための観測である |
+| 復元と Windows の綱引き | **起きないこと**。`componentResized` が止まらず窓が震える（毎秒 setSize が往復する）なら、復元の場所を見直す |
+| 主へ戻したときの窓の論理サイズ | **出発時と同じ値に戻る**（可逆） |
+
+**この数字が出るまで、この修正は「直ったと信じている」であって「直った」ではない。**
+**測る側の DPI 認識を宣言していない測定値は、ここに書かない。**
 
 ---
