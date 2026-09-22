@@ -1,12 +1,14 @@
 # 品質ゲート — NeNe Clock
 
-> Status: normative（規範）/ 2026-09-03 初版
+> Status: normative（規範）/ 2026-09-03 初版 / 2026-09-22 QLT-013 を追加
 > 本書は「いま何が機械で守られているか」の**正本**である。
 > 規範の本文は [ARCHITECTURE_CONSTITUTION.md](ARCHITECTURE_CONSTITUTION.md) と
 > [CODING_RULES.md](CODING_RULES.md)、機械側の実体はこの文書に対応する。
 
 `./gradlew check` がローカルと CI の**唯一の完了定義**である。
 個別の道具は診断のために単独で回してよいが、その成功は完了の代わりにならない。
+**いつ・何回それを回すかは別の問題**であり、QLT-013 と
+[DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md) 第 9 節が決める。開発中の検証は差分から選ぶ。
 
 ---
 
@@ -16,6 +18,10 @@
 
 ローカルの検証と CI は**同じ 1 つのタスク**（`./gradlew check`）を呼ぶ。
 CI のワークフローに品質判断のシェルロジックを書かない。第 2 の完了定義を文書化しない。
+
+⚠️ 「ゲートが 1 つ」は「**どの場面でも全件を回す**」という意味ではない。
+場面ごとの回数は QLT-013 が決める。狭い検査を選ぶことは第 2 の完了定義を作ることではない
+（完了と名乗れるのは `check` だけである)。
 
 - 機械強制: **active**（`.github/workflows/ci.yml` は `./gradlew check` を呼ぶだけ）
 - 機械強制: **active**（`config/` の設定が実際に読み込まれていることは CNF-011 が見る）
@@ -104,6 +110,30 @@ lock ファイルのドリフトはビルドを落とす。
 [quality/gate-proofs.md](quality/gate-proofs.md) に環境と手順を書いて別に記録する。
 
 - 機械強制: **active**（テストは `java.awt.headless=true` で実行する）
+
+### QLT-013 — 検証は差分から選び、成功は再利用する
+
+開発中に回す検査は、**変更した振る舞いと、それが直接影響する依存先・呼び出し元の退行を
+検出できる最小限**を選ぶ。「この変更で何が壊れうるか」を説明できない検査は回さない。
+
+同じ木（`git rev-parse HEAD^{tree}`）に対する成功した検証は再利用する。担当の交代・工程の移動・
+文書の追記・コミット ID の変更だけを理由に回し直さない。回し直すのは、その検査の入力が変わったか、
+前回落ちたか、具体的な未確認事項が残っているときだけである。
+
+全件は既定ではない。共通基盤の変更のように**限定した検査では影響を確認できない具体的な理由**が
+あるときだけ、対象と理由を 1 行書いてから回す。「念のため」「以前からの習慣」
+「フックが自動で回すから」は理由にならない。
+
+差分に起因しない既存の失敗で現在の作業を止めない（根拠とともに別 Issue にする）。
+再実行して通ったことを合格として扱わない。
+
+選び方の表と自動実行の分担は [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md) 第 9 節、
+判断の理由は [ADR 0016](adr/0016-verification-is-selected-from-the-diff.md)。
+
+- 機械強制: **不能**（対象は「何を確かめるか」という判断そのもの。QLT-010 と同じ扱い。
+  PR 本文の検証欄＝回したコマンド・結果・検証済みの木のハッシュで担保する）
+- 補助（規則の強制ではない）: Gradle の up-to-date 検査とビルドキャッシュが、
+  入力の変わっていないタスクの再実行を実時間で無効化する
 
 ---
 
@@ -278,6 +308,11 @@ waiver ファイルの命名・必須項目（Rule / Scope / Issue / Expires）�
 
 `main` への直接 push・force push・ブランチ削除は禁止する。
 
-🔴 **リポジトリ設定（ruleset）はまだ適用していない。** GitHub へ push した時点で設定し、
-その事実を [quality/gate-proofs.md](quality/gate-proofs.md) に記録する。**設定していないものを
-「必須になっている」と書かない。**
+⚠️ **merge の直前に同じ検査を手で回し直さない**（QLT-013）。CI の `quality` ジョブが
+検証した木と同じ木を merge するなら、結果は同じである。
+
+✅ **リポジトリ設定（ruleset）は適用済みである。** `main-protection`（enforcement: active）が
+PR 必須・squash のみ・レビュー指摘の解決必須・必須ステータスチェック **`quality`**・
+直接 push / force push / 削除の禁止を課している。記録は
+[quality/gate-proofs.md](quality/gate-proofs.md) 第 6 節（P12 / P13）。
+**必須のステータスチェックは `quality` ただ 1 つ**であり、それが `./gradlew check` を 1 回回す。
