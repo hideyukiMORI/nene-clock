@@ -16,6 +16,8 @@ import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
 import io.github.hideyukimori.neneclock.domain.SettingsSchemaVersion;
 import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
+import io.github.hideyukimori.neneclock.domain.WindowPadding;
+import io.github.hideyukimori.neneclock.domain.WindowPaddingOutcome;
 import io.github.hideyukimori.neneclock.domain.WindowTopmost;
 import java.util.Objects;
 import java.util.prefs.BackingStoreException;
@@ -45,11 +47,13 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
     private static final String KEY_BACKGROUND_GREEN = "backgroundGreen";
     private static final String KEY_BACKGROUND_BLUE = "backgroundBlue";
     private static final String KEY_LANGUAGE = "language";
+    private static final String KEY_PADDING = "windowPadding";
 
     private static final int SCHEMA_WITHOUT_APPEARANCE = 1;
     private static final int SCHEMA_WITH_ENVIRONMENT_FONTS = 2;
     private static final int SCHEMA_WITH_BACKGROUND = 4;
     private static final int SCHEMA_WITH_LANGUAGE = 5;
+    private static final int SCHEMA_WITH_PADDING = 8;
     private static final int SCHEMA_ABSENT = 0;
     private static final int INTEGER_ABSENT = -1;
 
@@ -102,6 +106,7 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         node.putInt(KEY_BACKGROUND_GREEN, settings.backgroundColor().green());
         node.putInt(KEY_BACKGROUND_BLUE, settings.backgroundColor().blue());
         node.put(KEY_LANGUAGE, settings.language().name());
+        node.putInt(KEY_PADDING, settings.windowPadding().pixels());
         try {
             node.flush();
         } catch (BackingStoreException failure) {
@@ -117,6 +122,7 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
      * 集合とは別物である（ADR 0006）。同じ名前の同梱書体があればそれを引き継ぎ、無ければ既定へ落とす。
      * v3 までは背景色を持たず、v4 までは言語を持たない。
      * v6 は透明度を持っていたが、v7 で**捨てた**（ADR 0012）。読むときは無視する。
+     * v7 までは余白を持たない（ADR 0017）。
      * 欠けている分は domain の既定値で埋める。推測はしない。
      */
     private SettingsLoadOutcome restore(SettingsSchemaVersion stored) {
@@ -141,7 +147,11 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         Language language = stored.value() < SCHEMA_WITH_LANGUAGE
                 ? Language.DEFAULT
                 : lookup(Language.values(), node.get(KEY_LANGUAGE, null));
-        if (color == null || background == null || typeface == null || language == null) {
+        WindowPadding padding = stored.value() < SCHEMA_WITH_PADDING ? WindowPadding.DEFAULT : readPadding();
+        if (color == null || background == null || typeface == null) {
+            return invalidValue();
+        }
+        if (language == null || padding == null) {
             return invalidValue();
         }
         return new SettingsLoadOutcome.Restored(new UserSettings(
@@ -153,7 +163,8 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
                 carried.fontSize(),
                 color,
                 background,
-                language));
+                language,
+                padding));
     }
 
     /** v1 から変わっていない 5 項目。書体と文字色は既定値のまま返す。 */
@@ -178,7 +189,8 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
                 fontSize,
                 RgbColor.DEFAULT_FONT,
                 RgbColor.DEFAULT_BACKGROUND,
-                Language.DEFAULT);
+                Language.DEFAULT,
+                WindowPadding.DEFAULT);
     }
 
     private static SettingsLoadOutcome invalidValue() {
@@ -189,6 +201,13 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         return switch (FontSize.of(node.getInt(KEY_FONT_POINTS, INTEGER_ABSENT))) {
             case FontSizeOutcome.Accepted accepted -> accepted.value();
             case FontSizeOutcome.Rejected outOfRange -> null;
+        };
+    }
+
+    private @Nullable WindowPadding readPadding() {
+        return switch (WindowPadding.of(node.getInt(KEY_PADDING, INTEGER_ABSENT))) {
+            case WindowPaddingOutcome.Accepted accepted -> accepted.value();
+            case WindowPaddingOutcome.Rejected outOfRange -> null;
         };
     }
 

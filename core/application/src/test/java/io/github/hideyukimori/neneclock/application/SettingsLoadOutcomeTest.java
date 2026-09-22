@@ -10,6 +10,7 @@ import io.github.hideyukimori.neneclock.domain.RgbColor;
 import io.github.hideyukimori.neneclock.domain.SecondsVisibility;
 import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
+import io.github.hideyukimori.neneclock.domain.WindowPadding;
 import io.github.hideyukimori.neneclock.domain.WindowTopmost;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +27,8 @@ class SettingsLoadOutcomeTest {
                 FontSize.DEFAULT,
                 RgbColor.DEFAULT_FONT,
                 RgbColor.DEFAULT_BACKGROUND,
-                Language.DEFAULT);
+                Language.DEFAULT,
+                WindowPadding.DEFAULT);
 
         SettingsLoadOutcome outcome = new SettingsLoadOutcome.Restored(stored);
 

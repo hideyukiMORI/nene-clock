@@ -18,6 +18,19 @@ class UserSettingsTest {
         assertThat(settings.fontSize()).isEqualTo(FontSize.DEFAULT);
         assertThat(settings.fontColor()).isEqualTo(RgbColor.DEFAULT_FONT);
         assertThat(settings.backgroundColor()).isEqualTo(RgbColor.DEFAULT_BACKGROUND);
+        assertThat(settings.language()).isEqualTo(Language.DEFAULT);
+        assertThat(settings.windowPadding()).isEqualTo(WindowPadding.DEFAULT);
+    }
+
+    @Test
+    void replacingThePaddingKeepsEverythingElse() {
+        WindowPadding wide = ((WindowPaddingOutcome.Accepted) WindowPadding.of(WindowPadding.MAXIMUM_PIXELS)).value();
+
+        UserSettings settings = UserSettings.defaults().withWindowPadding(wide);
+
+        assertThat(settings.windowPadding()).isEqualTo(wide);
+        assertThat(settings).isEqualTo(UserSettings.defaults().withWindowPadding(wide));
+        assertThat(settings.withWindowPadding(WindowPadding.DEFAULT)).isEqualTo(UserSettings.defaults());
     }
 
     // 「成分が null の UserSettings を作れない」ことは NullAway が

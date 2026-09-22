@@ -6,7 +6,7 @@ import java.util.Objects;
  * 利用者設定。すべて不変で、部分的に組み立てられない（JAV-003 / JAV-007）。
  *
  * <p>表示に関する事実の唯一の所有者はこの型である（ARC-004）。同じ事実を 2 か所に持たない。
- * 成分が 9 つあるのは、それらが「表示設定」という 1 つの概念だからであり、
+ * 成分が 10 個あるのは、それらが「表示設定」という 1 つの概念だからであり、
  * 名前付きの型にまとめたものが JAV-012 の言う「引数を減らす手段」そのものである。
  *
  * <p>🔑 文字色と背景色は同じ {@link RgbColor} 型である。どちらであるかを語るのは成分名であり、
@@ -21,7 +21,8 @@ public record UserSettings(
         FontSize fontSize,
         RgbColor fontColor,
         RgbColor backgroundColor,
-        Language language) {
+        Language language,
+        WindowPadding windowPadding) {
 
     public UserSettings {
         Objects.requireNonNull(clockFormat, "clockFormat");
@@ -33,6 +34,7 @@ public record UserSettings(
         Objects.requireNonNull(fontColor, "fontColor");
         Objects.requireNonNull(backgroundColor, "backgroundColor");
         Objects.requireNonNull(language, "language");
+        Objects.requireNonNull(windowPadding, "windowPadding");
     }
 
     /** 既定値。仕様 FR-040 と一致する。 */
@@ -46,7 +48,8 @@ public record UserSettings(
                 FontSize.DEFAULT,
                 RgbColor.DEFAULT_FONT,
                 RgbColor.DEFAULT_BACKGROUND,
-                Language.DEFAULT);
+                Language.DEFAULT,
+                WindowPadding.DEFAULT);
     }
 
     /** 時刻表記だけを差し替える。 */
@@ -60,7 +63,8 @@ public record UserSettings(
                 fontSize,
                 fontColor,
                 backgroundColor,
-                language);
+                language,
+                windowPadding);
     }
 
     /** 秒の表示だけを差し替える。 */
@@ -74,7 +78,8 @@ public record UserSettings(
                 fontSize,
                 fontColor,
                 backgroundColor,
-                language);
+                language,
+                windowPadding);
     }
 
     /** 日付の表示だけを差し替える。 */
@@ -88,7 +93,8 @@ public record UserSettings(
                 fontSize,
                 fontColor,
                 backgroundColor,
-                language);
+                language,
+                windowPadding);
     }
 
     /** 最前面だけを差し替える。 */
@@ -102,7 +108,8 @@ public record UserSettings(
                 fontSize,
                 fontColor,
                 backgroundColor,
-                language);
+                language,
+                windowPadding);
     }
 
     /** 書体だけを差し替える。 */
@@ -116,7 +123,8 @@ public record UserSettings(
                 fontSize,
                 fontColor,
                 backgroundColor,
-                language);
+                language,
+                windowPadding);
     }
 
     /** 大きさだけを差し替える。 */
@@ -130,7 +138,8 @@ public record UserSettings(
                 replacement,
                 fontColor,
                 backgroundColor,
-                language);
+                language,
+                windowPadding);
     }
 
     /** 文字色だけを差し替える。 */
@@ -144,7 +153,8 @@ public record UserSettings(
                 fontSize,
                 replacement,
                 backgroundColor,
-                language);
+                language,
+                windowPadding);
     }
 
     /** 背景色だけを差し替える。 */
@@ -158,7 +168,8 @@ public record UserSettings(
                 fontSize,
                 fontColor,
                 replacement,
-                language);
+                language,
+                windowPadding);
     }
 
     /** 言語だけを差し替える。 */
@@ -172,6 +183,22 @@ public record UserSettings(
                 fontSize,
                 fontColor,
                 backgroundColor,
+                replacement,
+                windowPadding);
+    }
+
+    /** 余白だけを差し替える。 */
+    public UserSettings withWindowPadding(WindowPadding replacement) {
+        return new UserSettings(
+                clockFormat,
+                secondsVisibility,
+                dateVisibility,
+                windowTopmost,
+                typeface,
+                fontSize,
+                fontColor,
+                backgroundColor,
+                language,
                 replacement);
     }
 }
