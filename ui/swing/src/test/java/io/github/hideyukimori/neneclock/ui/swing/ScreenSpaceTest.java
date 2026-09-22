@@ -71,6 +71,22 @@ class ScreenSpaceTest {
         assertThat(plain.toDeviceSize(new Dimension(765, 208))).isEqualTo(new Dimension(765, 208));
     }
 
+    /**
+     * 実機が測った跳びは、2 つの写像の差そのものである（Issue #100・harness の step50）。
+     *
+     * <p>狙った実ピクセルは -600 だった。窓の GC（主）で逆変換して -480 を渡したところ、窓は
+     * 実ピクセル +1200 に着いた。+1200 は<b>左画面の写像を -480 に掛けた値</b>である。
+     * ⇒ ピアは既に左画面の写像を使っていて、{@code getGraphicsConfiguration()} だけが古かった。
+     */
+    @Test
+    void theJumpTheHarnessMeasuredIsExactlyTheDifferenceBetweenTwoMappings() {
+        assertThat(PRIMARY.toJava(new Point(-600, 0)).x).isEqualTo(-480);
+        assertThat(LEFT.toDevice(new Point(-480, 0)).x).isEqualTo(1200);
+
+        assertThat(LEFT.toJava(new Point(-600, 0)).x).isEqualTo(-1680);
+        assertThat(LEFT.toDevice(new Point(-1680, 0)).x).isEqualTo(-600);
+    }
+
     @Test
     void aScaleThatCannotBeInvertedIsRefused() {
         assertThatIllegalArgumentException().isThrownBy(() -> ScreenSpace.of(0, 0, 0.0, 1.5));

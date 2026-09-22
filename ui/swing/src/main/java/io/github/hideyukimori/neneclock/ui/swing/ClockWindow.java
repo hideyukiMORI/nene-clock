@@ -50,7 +50,11 @@ public final class ClockWindow {
     private final ClockPanel clockPanel;
     private final WindowChrome chrome;
 
+    /** 動かし方は起動時に 1 度だけ決まる（Issue #100・測定で選ぶための一時的な分岐）。 */
+    private final DragStrategy strategy = DragStrategy.chosen();
+
     private @Nullable WindowDrag drag;
+    private @Nullable Point lastPointer;
 
     /** 窓を組み立てる。表示内容は {@code render*} が決める。 */
     public ClockWindow(ClockPanel clockPanel, WindowChrome chrome) {
@@ -148,6 +152,7 @@ public final class ClockWindow {
             @Override
             public void mouseReleased(MouseEvent event) {
                 drag = null;
+                lastPointer = null;
             }
 
             @Override
@@ -201,19 +206,36 @@ public final class ClockWindow {
      *
      * <p>ポインタを読めないことがある（{@link MouseInfo#getPointerInfo()} は null を返しうる）。
      * そのときは掴まない。掴んでいなければ動かさないので、窓は静かに留まる。
+     *
+     * <p>{@link DragStrategy#POINTER} では窓の側もポインタの画面で読む。{@link DragStrategy#DELTA}
+     * は掴み点を使わないが、最初のポインタだけはここで覚える。
      */
     private void grabTheWindow() {
         PointerInfo pointer = MouseInfo.getPointerInfo();
         GraphicsConfiguration windowScreen = frame.getGraphicsConfiguration();
         if (pointer == null || windowScreen == null) {
             drag = null;
+            lastPointer = null;
             return;
         }
+        ScreenSpace pointerSpace = spaceOf(pointer.getDevice().getDefaultConfiguration());
+        lastPointer = new Point(pointer.getLocation());
         drag = WindowDrag.grabbedAt(
-                pointer.getLocation(),
-                spaceOf(pointer.getDevice().getDefaultConfiguration()),
-                frame.getBounds(),
-                spaceOf(windowScreen));
+                pointer.getLocation(), pointerSpace, frame.getBounds(), peerSpace(pointerSpace, windowScreen));
+    }
+
+    /**
+     * ピアが {@code setLocation} に掛けると思われる変換。ここが測定で選ぶ 1 点である。
+     *
+     * <p>実測では、窓の GC がまだ主画面を返している瞬間に、ピアは既に左画面の変換を掛けていた
+     * （Issue #100 の step50・{@link DragStrategy}）。どちらを信じるかは機械では決められないので、
+     * 起動時のプロパティで選べるようにしてある。
+     */
+    private ScreenSpace peerSpace(ScreenSpace pointerSpace, GraphicsConfiguration windowScreen) {
+        return switch (strategy) {
+            case WINDOW, DELTA -> spaceOf(windowScreen);
+            case POINTER -> pointerSpace;
+        };
     }
 
     /**
@@ -224,21 +246,53 @@ public final class ClockWindow {
      * 嘘になる（実測 1282px の食い違い）。{@code getPointerInfo()} は<b>ポインタ自身の画面</b>の
      * 尺度で返し、その画面も一緒に答える。
      *
-     * <p>渡すのは窓の<b>大きさ</b>だけで、現在位置は渡さない。位置を足し込まないので誤差が
-     * 累積しない。読めないイベントは黙って飛ばす。
+     * <p>読めないイベントは黙って飛ばす。
      */
     private void dragTheWindow() {
-        WindowDrag grabbed = drag;
         PointerInfo pointer = MouseInfo.getPointerInfo();
-        GraphicsConfiguration windowScreen = frame.getGraphicsConfiguration();
-        if (grabbed == null || pointer == null || windowScreen == null) {
+        if (pointer == null) {
             return;
         }
+        switch (strategy) {
+            case WINDOW, POINTER -> moveByCompensation(pointer);
+            case DELTA -> moveByDelta(pointer.getLocation());
+        }
+    }
+
+    /**
+     * 狙った実ピクセルを、ピアの変換を見越して打ち消した Java 座標へ直して渡す。
+     *
+     * <p>渡すのは窓の<b>大きさ</b>だけで、現在位置は渡さない。位置を足し込まないので誤差が
+     * 累積しない。
+     */
+    private void moveByCompensation(PointerInfo pointer) {
+        WindowDrag grabbed = drag;
+        GraphicsConfiguration windowScreen = frame.getGraphicsConfiguration();
+        if (grabbed == null || windowScreen == null) {
+            return;
+        }
+        ScreenSpace pointerSpace = spaceOf(pointer.getDevice().getDefaultConfiguration());
         frame.setLocation(grabbed.locationFor(
-                pointer.getLocation(),
-                spaceOf(pointer.getDevice().getDefaultConfiguration()),
-                frame.getSize(),
-                spaceOf(windowScreen)));
+                pointer.getLocation(), pointerSpace, frame.getSize(), peerSpace(pointerSpace, windowScreen)));
+    }
+
+    /**
+     * ポインタの移動量だけ窓を動かす（{@link DragStrategy#DELTA}）。
+     *
+     * <p>どの画面の変換も推定しない代わりに、写像が切り替わった瞬間の見かけの跳びを捨てる
+     * （{@link PointerStep#isPlausible()}）。捨てたイベントでは<b>窓を動かさず、覚えている
+     * ポインタだけを更新する</b>。次のイベントからは新しい写像の上で続きを歩ける。
+     */
+    private void moveByDelta(Point now) {
+        Point previous = lastPointer;
+        lastPointer = new Point(now);
+        if (previous == null) {
+            return;
+        }
+        PointerStep step = PointerStep.between(previous, now);
+        if (step.isPlausible()) {
+            frame.setLocation(step.appliedTo(frame.getLocation()));
+        }
     }
 
     /**

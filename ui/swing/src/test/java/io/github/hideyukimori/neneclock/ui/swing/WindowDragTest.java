@@ -51,6 +51,41 @@ class WindowDragTest {
                 .isEqualTo(drag.grabbedPoint());
     }
 
+    /**
+     * 実機の step50（Issue #100 の harness）をそのまま再現する。
+     *
+     * <p>掴んだあと、ポインタが左画面（150%）に入り、窓は主画面（125%）に居ると Java が思ったまま。
+     * 窓の GC を鍵にすると -480 を渡すことになり、ピアは<b>左画面の変換</b>を掛けて +1200 に置く
+     * （実機の実測値）。ポインタの画面を鍵にすると -1689 を渡し、同じピアの変換が狙いどおり
+     * -613 に戻す。**同じ算術で、鍵にする画面だけが違う。**
+     */
+    @Test
+    void theHarnessStepFiftyIsReproducedByBothKeyings() {
+        WindowDrag drag = WindowDrag.grabbedAt(new Point(150, 540), PRIMARY, WINDOW, PRIMARY);
+        Point pointer = new Point(-1638, 1123);
+
+        Point keyedOnTheWindow = drag.locationFor(pointer, LEFT, WINDOW_SIZE, PRIMARY);
+        Point keyedOnThePointer = drag.locationFor(pointer, LEFT, WINDOW_SIZE, LEFT);
+
+        assertThat(keyedOnTheWindow.x).isEqualTo(-480);
+        assertThat(LEFT.toDevice(keyedOnTheWindow).x).isEqualTo(1200);
+        assertThat(keyedOnThePointer.x).isEqualTo(-1689);
+        assertThat(LEFT.toDevice(keyedOnThePointer).x).isEqualTo(-613);
+    }
+
+    @Test
+    void keyingOnThePointerPutsTheGrabUnderThePointerWhenThePeerUsesThePointersScreen() {
+        WindowDrag drag = WindowDrag.grabbedAt(new Point(150, 540), PRIMARY, WINDOW, PRIMARY);
+        Point pointer = new Point(-1638, 1123);
+
+        Point placed = wherePeerPutsIt(drag.locationFor(pointer, LEFT, WINDOW_SIZE, LEFT), LEFT);
+
+        Point pointerDevice = LEFT.toDevice(pointer);
+        Point grab = drag.grabbedPointIn(LEFT.toDeviceSize(WINDOW_SIZE));
+        assertThat(new Point(pointerDevice.x - placed.x, pointerDevice.y - placed.y))
+                .isEqualTo(grab);
+    }
+
     @Test
     void theGrabbedPointStaysUnderThePointerOnTheRightAndTopScreensToo() {
         WindowDrag drag = WindowDrag.grabbedAt(new Point(150, 540), PRIMARY, WINDOW, PRIMARY);
