@@ -1,6 +1,6 @@
 # ゲート発火の証明
 
-> Status: 記録 / 最終実測 2026-09-04
+> Status: 記録 / 最終実測 2026-09-22
 > 根拠となる規則: QLT-007（カスタムゲートには negative proof が要る）
 
 **検査は「落ちること」を見るまで信用しない。** 各ゲートについて、最小の違反を仕込んだ状態で
@@ -843,7 +843,97 @@ BUILD FAILED
 - 施主の Windows 実機で入って起動すること。**ネイティブの窓でちらつきが起きないか**もそこで見る
 - 署名は無い。SmartScreen の警告が出る
 
-## 21. まだ証明していないもの
+## 21. 画面をまたぐドラッグ（Issue #95 / #96 / ADR 0018・2026-09-22）
+
+施主の Windows 実機（4 画面・125% / 150% / 175% / 150%）で、拡大率の違うモニタへドラッグすると
+窓が 7.43 倍（956×260 → 5642×1546）まで膨らみ、ポインタから大きく外れた。原因の実測は
+[ADR 0018](../adr/0018-the-window-knows-which-screen-it-is-on.md) にある。
+
+### 21.1 単体テストで見たもの（`:ui:swing:test` / `WindowDragTest`・8 件）
+
+ドラッグの座標計算を副作用の無い `WindowDrag` に切り出した。**機械が見られるのはここだけである。**
+
+| テスト | 見ていること |
+| --- | --- |
+| `theGrabbedPointStaysUnderThePointer` | 掴んだ点がポインタの下に留まる |
+| `theLocationIsDecidedByThePointerAloneSoErrorCannotAccumulate` | 500 回の中間計算が結果に残らない |
+| `theSameJourneyInOneJumpEndsAtTheSamePlace` | 951 歩で這わせても 1 跳びでも同じ位置に着く |
+| `aSizeChangeDuringTheDragIsNoticed` | 765×208 → 637×173（ADR 0018 の過渡状態の実測値）を「変わった」と判定する |
+| `theGrabbedPointComesBackInsideAWindowThatShrank` | 窓が縮んだら掴み点を窓の中へ収め直す（700,190 → 636,172） |
+| `aPointerOutsideTheWindowIsPulledBackToTheEdge` | 窓の外で掴み直しても掴み点は縁に留まる |
+| `theWindowFollowsThePointerAgainAfterTheGrabIsTakenAnew` | 掴み直したあとも窓はポインタに追従する |
+| `aWindowWithNoExtentStillGivesAGrabPointInside` | 幅・高さ 0 の窓でも掴み点が負にならない |
+
+**negative proof**（QLT-007・落ちることと、**落ちた理由**まで見た）:
+
+```text
+① 掴み点の切り詰めを外す（inside(...) が素の offset を返す）
+   theGrabbedPointComesBackInsideAWindowThatShrank  FAILED  (WindowDragTest.java:70)
+   aPointerOutsideTheWindowIsPulledBackToTheEdge    FAILED  (WindowDragTest.java:77)
+
+② locationFor に 1px のずれを入れる
+   theGrabbedPointStaysUnderThePointer                            FAILED  (WindowDragTest.java:28)
+   theWindowFollowsThePointerAgainAfterTheGrabIsTakenAnew         FAILED  (WindowDragTest.java:86)
+   theLocationIsDecidedByThePointerAloneSoErrorCannotAccumulate   FAILED  (WindowDragTest.java:41)
+```
+
+どちらも戻すと `:ui:swing:test` は緑に戻る。
+
+⚠️ 「誤差が累積しない」は**構造の性質**である。`locationFor` は掴み点以外の状態を読まないので、
+累積しようがない。上の 2 件のテストはその性質を**目撃**しているのであって、累積する実装との
+差を見張っているわけではない。**そこは型と可視性（`final` な値型・掴み点は不変）が担保している。**
+
+### 21.2 WSLg で目で見たもの（2026-09-22・`DISPLAY=:0 ./gradlew run`）
+
+ドラッグは `java.awt.Robot` の別プロセスで実際のポインタを動かして行った（**合成キーは WSLg に
+届かないが、マウスは届く**——第 18.2 節で届かなかったのはキーボードである）。
+
+```text
+$ xwininfo -root -tree | grep "NeNe Clock"
+  0x600004 "NeNe Clock": ... 527x250+32+32  +5520+2400
+
+# 掴み点 (200,120)、5px×3px を 40 歩 ＝ ポインタを (+200,+120) 動かす
+$ java DragProbe.java 5720 2520
+$ xwininfo -id 0x600004
+  Absolute upper-left X:  5720   Y:  2520   Width: 527   Height: 250
+```
+
+往復を 3 回:
+
+```text
+戻り  +5520+2400  527x250
+行き  +5720+2520  527x250
+戻り  +5520+2400  527x250
+行き  +5720+2520  527x250
+戻り  +5520+2400  527x250
+行き  +5720+2520  527x250
+```
+
+- **窓はポインタと同じ量だけ動いた**（+200,+120）。掴み点は外れない
+- **大きさは 6 回とも 527×250 のまま**。往復しても元の位置にぴったり戻る（累積が無い）
+- 画面写真（`import -window`）を前後で見比べた。**時刻以外は同一**——角丸も、右上のクロームの
+  位置も、文字の位置も変わっていない
+
+### 21.3 🔴 まだ証明していないこと（QLT-012）
+
+**この修正が直そうとしている症状そのものは、この環境では一度も再現していないし、確認もできない。**
+
+| 主張 | 状態 |
+| --- | --- |
+| 単一画面でのドラッグが壊れていない | **確認済み**（21.2・WSLg・Robot による実測） |
+| 座標計算が累積しない・掴み点が窓の外へ出ない | **確認済み**（21.1・単体テスト＋ negative proof） |
+| 拡大率の違うモニタへまたいでも窓が膨らまない | 🔴 **未確認。** WSLg に per-monitor DPI が無い |
+| またいだ直後に窓がポインタから外れない | 🔴 **未確認。** 同上 |
+| `componentMoved` が画面の載り換えで発火すること | 🔴 **未確認。** 画面が 1 つしか無いので、載り換えが起きない |
+
+🔴 **検証の手段は 1 つしかない: MSI を作り直して施主の Windows 実機に入れ、ADR 0018 と同じ測定
+（per-monitor 対応を宣言した測定プロセスで矩形を読む）をやり直す。** その数字が出るまで、
+この修正は「直ったと信じている」であって「直った」ではない。
+**測る側の DPI 認識を宣言していない測定値は、ここに書かない。**
+
+---
+
+## 22. まだ証明していないもの
 
 🔴 **ここに書いていないものは、証明されていない。**
 

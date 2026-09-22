@@ -3,6 +3,7 @@ package io.github.hideyukimori.neneclock.ui.swing;
 import io.github.hideyukimori.neneclock.application.ClockFaceExtent;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import java.awt.Dimension;
+import java.awt.GraphicsConfiguration;
 import java.awt.Point;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -40,7 +41,8 @@ public final class ClockWindow {
     private final ClockPanel clockPanel;
     private final WindowChrome chrome;
 
-    private @Nullable Point grabbedAt;
+    private @Nullable WindowDrag drag;
+    private @Nullable GraphicsConfiguration screen;
 
     /** 窓を組み立てる。表示内容は {@code render*} が決める。 */
     public ClockWindow(ClockPanel clockPanel, WindowChrome chrome) {
@@ -54,7 +56,7 @@ public final class ClockWindow {
         frame.setMinimumSize(new Dimension(MINIMUM_WIDTH, MINIMUM_HEIGHT));
         frame.setLocationRelativeTo(null);
         frame.getLayeredPane().add(chrome.component(), JLayeredPane.PALETTE_LAYER);
-        listen();
+        listenToThePointer();
         layOutChrome();
         roundTheCorners();
     }
@@ -94,6 +96,7 @@ public final class ClockWindow {
     /** 窓を表示する。EDT から呼ぶこと（SWG-001）。 */
     public void display() {
         frame.setVisible(true);
+        screen = frame.getGraphicsConfiguration();
     }
 
     /** 窓を閉じる。常駐スレッドを残さないのは合成ルートの仕事（FR-030）。 */
@@ -106,16 +109,16 @@ public final class ClockWindow {
         return frame;
     }
 
-    private void listen() {
+    private void listenToThePointer() {
         MouseAdapter pointer = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent event) {
-                grabbedAt = event.getPoint();
+                drag = WindowDrag.grabbedAt(pointerOf(event), frame.getBounds());
             }
 
             @Override
             public void mouseReleased(MouseEvent event) {
-                grabbedAt = null;
+                drag = null;
             }
 
             @Override
@@ -143,28 +146,81 @@ public final class ClockWindow {
         };
         frame.getContentPane().addMouseListener(pointer);
         frame.getContentPane().addMouseMotionListener(pointer);
+        listenToTheFrame();
+    }
+
+    /** 窓そのものの動きを聞く。大きさは寸法が変わったとき、画面は載り換えたときに見る（ADR 0018）。 */
+    private void listenToTheFrame() {
         frame.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent event) {
                 layOutChrome();
                 roundTheCorners();
             }
+
+            @Override
+            public void componentMoved(ComponentEvent event) {
+                followTheScreen();
+            }
         });
+    }
+
+    /**
+     * 載っている画面が変わったことに気づき、そのとき大きさを設定から決め直す（ADR 0018）。
+     *
+     * <p>ADR 0008 は「窓の大きさは設定に従う」と決めたが、その約束は設定を変えた瞬間にしか
+     * 守られていなかった。画面の拡大率が変わるのも、窓の寸法が設定から外れる瞬間である。
+     *
+     * <p>読むのは {@code frame.getGraphicsConfiguration()}、すなわち<b>この窓がいまどこに居るか</b>
+     * である。画面の一覧は尋ねない（{@code GraphicsEnvironment} の禁止は維持する・ARC-007）。
+     */
+    private void followTheScreen() {
+        GraphicsConfiguration moved = frame.getGraphicsConfiguration();
+        if (moved == null || moved.equals(screen)) {
+            return;
+        }
+        screen = moved;
+        fitToClock();
     }
 
     /**
      * 掴んだ点を保ったまま窓を動かす。
      *
-     * <p>掴んだ点は「押した瞬間の、窓の中での座標」である。動かすたびに窓の位置を足すのは、
-     * ドラッグ中のイベント座標が動いた後の窓を基準にしているためである。
+     * <p>位置は「ポインタの画面座標 − 掴み点」で<b>毎回決め直す</b>。窓の現在位置を読んで足し込む
+     * 形にすると、拡大率の違う画面をまたぐ数百ミリ秒のあいだに尺度の違う数を足し、その誤差が
+     * 累積して戻らなくなる（ADR 0018）。
+     *
+     * <p>画面が変わった直後と、窓の大きさが掴んだときから変わったときは<b>動かさない</b>。
+     * 掴み点を取り直して、次のイベントから続ける。
      */
     private void dragTo(MouseEvent event) {
-        Point origin = grabbedAt;
-        if (origin == null) {
+        WindowDrag grabbed = drag;
+        if (grabbed == null) {
             return;
         }
-        Point where = frame.getLocation();
-        frame.setLocation(where.x + event.getX() - origin.x, where.y + event.getY() - origin.y);
+        Point pointer = pointerOf(event);
+        if (onADifferentScreen() || !grabbed.stillFits(frame.getSize())) {
+            drag = WindowDrag.grabbedAt(pointer, frame.getBounds());
+            return;
+        }
+        frame.setLocation(grabbed.locationFor(pointer));
+    }
+
+    /** まだ {@link #followTheScreen()} が拾っていない画面の変化が起きていないか。 */
+    private boolean onADifferentScreen() {
+        GraphicsConfiguration now = frame.getGraphicsConfiguration();
+        return now != null && !now.equals(screen);
+    }
+
+    /**
+     * ポインタの画面座標。
+     *
+     * <p>🔴 {@code event.getX()} は窓の中の座標であり、<b>その窓の寸法と同じ尺度</b>を持つ。
+     * 画面が変わった直後の窓は古い寸法のままなので、新しい尺度の値と混ぜられない。画面座標は
+     * どちらの尺度にも属さない唯一の共通の物差しである。
+     */
+    private static Point pointerOf(MouseEvent event) {
+        return new Point(event.getXOnScreen(), event.getYOnScreen());
     }
 
     /** 子部品へ入ったときも exit が飛ぶので、本当に窓の外へ出たのかを見る。 */
