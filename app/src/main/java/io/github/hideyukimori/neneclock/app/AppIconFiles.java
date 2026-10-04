@@ -30,9 +30,21 @@ public final class AppIconFiles {
 
     private static final int EXIT_FAILED = 1;
 
-    /** MSIX のマニフェストが必ず求める 3 枚。名前はマニフェストの属性名と同じ。 */
+    /** MSIX のマニフェストが求める 3 つのロゴと、100% 表示での一辺。名前はマニフェストの属性名と同じ。 */
     private static final Map<String, Integer> MSIX_LOGOS =
             Map.of("StoreLogo", 50, "Square44x44Logo", 44, "Square150x150Logo", 150);
+
+    /** Windows が持つ表示倍率（%）。倍率ごとに 1 枚ずつ描く。縮めた絵を使い回さない。 */
+    private static final List<Integer> MSIX_SCALES = List.of(100, 125, 150, 200, 400);
+
+    /** タスクバーとスタートメニューの一覧が、倍率ではなく画素の大きさで選ぶ寸法。 */
+    private static final List<Integer> MSIX_TARGET_SIZES = List.of(16, 24, 32, 48, 256);
+
+    private static final String MSIX_LIST_LOGO = "Square44x44Logo";
+    private static final int PERCENT = 100;
+
+    /** Store の掲載ページに出すアイコンの一辺。パッケージには入れない。 */
+    private static final int STORE_LISTING_SIZE = 300;
 
     private AppIconFiles() {}
 
@@ -76,10 +88,35 @@ public final class AppIconFiles {
         if (!msix.isDirectory() && !msix.mkdirs()) {
             throw new IOException("出力先を作れない: " + msix);
         }
+        clear(msix);
         for (Map.Entry<String, Integer> logo : MSIX_LOGOS.entrySet()) {
-            File file = new File(msix, logo.getKey() + ".png");
-            ImageIO.write(AppIcon.at(logo.getValue()), "png", file);
-            System.out.println(file.getPath());
+            for (int scale : MSIX_SCALES) {
+                int side = Math.round(logo.getValue() * scale / (float) PERCENT);
+                writePng(side, new File(msix, logo.getKey() + ".scale-" + scale + ".png"));
+            }
+        }
+        for (int side : MSIX_TARGET_SIZES) {
+            writePng(side, new File(msix, MSIX_LIST_LOGO + ".targetsize-" + side + ".png"));
+            writePng(side, new File(msix, MSIX_LIST_LOGO + ".targetsize-" + side + "_altform-unplated.png"));
+        }
+        writePng(STORE_LISTING_SIZE, new File(directory, "store-listing-" + STORE_LISTING_SIZE + ".png"));
+    }
+
+    private static void writePng(int side, File file) throws IOException {
+        ImageIO.write(AppIcon.at(side), "png", file);
+        System.out.println(file.getPath());
+    }
+
+    /** 前に書いた名前のロゴを残さない。残すと、古い名前の絵がパッケージに混ざる。 */
+    private static void clear(File directory) throws IOException {
+        File[] stale = directory.listFiles();
+        if (stale == null) {
+            throw new IOException("出力先を読めない: " + directory);
+        }
+        for (File file : stale) {
+            if (!file.delete()) {
+                throw new IOException("古いロゴを消せない: " + file);
+            }
         }
     }
 }

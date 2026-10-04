@@ -53,7 +53,9 @@ Clock に固有の未確認は 3 点あり、2026-10-04 に実測した（報告
   一致する側は実測した。**食い違わせて落ちるところは実測していない**
 - **planned**: 先頭が 0 の版では `NeNe-Clock-store-NOT-SUBMITTABLE.msix` という名前になり、警告が出る。
   1.0.0 以上で `NeNe-Clock-store.msix` になる側は、版を上げたとき（#119）に初めて実測される
-- **planned**: 倍率別のロゴと `resources.pri`（#117）。いまは必須の 3 枚だけを `AppIcon` から書き出している
+- **active（2026-10-04・#117）**: ロゴは `AppIcon` から 25 枚（3 つのロゴ × 倍率 5 つ ＋ 一覧用の targetsize 5 つ × 地あり・地なし）を描き、
+  `packageMsix` が `makepri` で `resources.pri` を作る。task は枚数（25）と、索引に 3 つのロゴの名前が載っていることを確かめる。
+  CI が作った MSIX を開いて、25 枚の寸法と索引の中身を確かめた（gate-proofs 26.5）。**入れた状態での見え方は見ていない**
 - **不能**: Store の認定に通ること。申請しないと分からない。Windows App Certification Kit は申請の前に通すが、ゲートには入れない
   （管理者権限でアプリを何度も起動する検査で、CI では回せない）
 
