@@ -396,6 +396,6 @@ tasks.register<PackageMsix>("packageMsix") {
     logoDirectory.set(layout.buildDirectory.dir("icons/msix"))
     identityFile.set(layout.projectDirectory.file("src/msix/store-identity.properties"))
     appVersion.set(project.version.toString())
-    sdkBinDirectory.set("""C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64""")
+    sdkBinDirectory.set("""C:\Program Files (x86)\Windows Kits\10\bin\10.0.99999.0\x64""")
     destination.set(layout.buildDirectory.dir("msix"))
 }
