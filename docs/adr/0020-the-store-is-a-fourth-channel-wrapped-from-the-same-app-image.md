@@ -23,7 +23,7 @@ Clock に固有の未確認は 3 点あり、2026-10-04 に実測した（報告
 
 | 点 | 結果 |
 | --- | --- |
-| jpackage の app-image を MSIX に包めるか | **包めた。** 配布済みの v0.2.6 の app-image（148 ファイル）をそのまま `makeappx` に渡して 32 MB の MSIX になった。パッケージの身元を持って起動した。製品コードは変えていない |
+| jpackage の app-image を MSIX に包めるか | **包めた。** 配布済みの v0.2.6 の app-image（148 ファイル）をそのまま `makeappx` に渡して 32 MB の MSIX になった。読み取り専用の `C:\Program Files\WindowsApps\` に入れた状態で、パッケージの身元を持って起動し、同梱書体で描かれた。製品コードは変えていない |
 | `java.util.prefs`（HKCU）の行き先 | **読むときは本物のレジストリが見える。書くときはパッケージ専用の場所へ行き、本物は変わらない。** MSI 版の設定は引き継がれるが、書き戻されない |
 | CI の Windows ランナーで作れるか | **作れた。** `windows-2025` のランナーに Windows SDK 10.0.26100.0 の `makeappx` / `makepri` があり、`packageInstaller` が作った app-image をそのまま包めた。PATH には無いので、場所は task が決める |
 
