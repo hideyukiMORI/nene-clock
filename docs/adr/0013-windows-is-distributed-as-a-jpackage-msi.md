@@ -35,7 +35,7 @@
 | 選択肢 | 却下の理由 |
 | --- | --- |
 | Inno Setup / NSIS | 外の道具と別のスクリプト言語が増える。`jpackage` は JDK にあり、方法が 1 つで済む |
-| MSIX / winget / Microsoft Store | 署名が前提。署名しないと決めたので採れない |
+| MSIX / winget / Microsoft Store | 署名が前提。署名しないと決めたので採れない。**⚠️ この理由は Store 配布については誤りだった**（Store に MSIX で出すと Store が署名する）。Store は [ADR 0020](0020-the-store-is-a-fourth-channel-wrapped-from-the-same-app-image.md) で 4 つ目の経路として足した |
 | zip を配って「JDK を入れて `bin/app` を叩け」 | 利用者に JDK を要求する。インストーラーという要件に応えていない |
 | WSL から Windows 向けをクロスビルド | `jpackage` にその機能が無い |
 | ワークフローの中で `jpackage` を直接叩く | 手順が CI 専用のシェルになり、ローカルで再現できない（QLT-005） |
