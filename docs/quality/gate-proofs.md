@@ -1284,3 +1284,58 @@ delta   同上（すべて同じ値）
 | `pointer` は左へのドラッグを直すか | `worstPointerGap` が 30px 台まで落ちるか。**落ちない場合も、per-step の形を見る**（1〜2 標本だけ跳ねて戻るなら「ピアの切り替わりとポインタの画面の切り替わりが数フレームずれている」、+1200 に居座るなら「鍵が間違っている」） |
 | `delta` は左へのドラッグを直すか | 跳びを捨てた直後に**ずれが残り続けないか**。`delta` は自己修正しないので、1 度ずれたら最後までずれたままになる |
 | `delta` で窓が遅れないか | 試験台の 1 歩（実測 30px 前後）は閾値 300 の内側なので捨てられないはず。捨てられた歩数を数えられるとなお良い |
+
+---
+
+## 26. Store 用の MSIX を CI で作る（Issue #116 / ADR 0020・2026-10-04）
+
+`packageMsix` は `packageInstaller` の app-image をそのまま `makeappx` で包む。Windows 以外では作らずに飛ばす。
+
+### 26.1 Windows ランナーで実際にできた
+
+run [37192676885](https://github.com/hideyukiMORI/nene-clock/actions/runs/37192676885)（`windows-2025`・木 `70b56712`）。
+
+```text
+msix: version 0.2.6 starts with 0. It installs locally, but Microsoft Store rejects it.
+msix: NeNe-Clock-store-NOT-SUBMITTABLE.msix (144 app-image files verified, version 0.2.6.0)
+```
+
+できた MSIX を run の成果物から落として開いた（32,273,391 バイト・添付の `.sha256` と一致）。
+
+| 見たこと | 結果 |
+| --- | --- |
+| `Identity/Name` | `HideyukiMori.NeNeClock` |
+| `Identity/Publisher` | `CN=C37230AA-B52D-403B-9BFD-E7980F088422` |
+| `PublisherDisplayName` | `Hideyuki Mori` |
+| `Version` | `0.2.6.0` |
+| 中身 | 150 ファイル = app-image 144 ＋ ロゴ 3 ＋ マニフェスト ＋ makeappx が足す 2（`[Content_Types].xml`・`AppxBlockMap.xml`） |
+
+身元の 3 つは、施主が Partner Center の「製品 ID」から貼った値と同じである。
+
+### 26.2 SDK の版の名指しが外れたら落ちる
+
+名指しを `10.0.99999.0` に変えた一時的なコミットで測り、戻した。run
+[37192961966](https://github.com/hideyukiMORI/nene-clock/actions/runs/37192961966)。
+
+```text
+Execution failed for task ':app:packageMsix'
+> makeappx.exe is not where it is pinned: C:\Program Files (x86)\Windows Kits\10\bin\10.0.99999.0\x64\makeappx.exe
+```
+
+**落ちた理由は名指しの検査そのものである**（別の理由で落ちたのではない）。
+
+### 26.3 Linux では飛ばす
+
+```text
+> Task :app:packageMsix
+msix: skipped (makeappx is a Windows SDK tool; the MSIX is built on Windows only)
+```
+
+### 26.4 🔴 まだ証明していないこと
+
+- **できた MSIX を実機に入れていない。** Store の身元で作ったものは署名が無く、手元には入らない。
+  2026-10-04 に実機に入れたのは、検証用の身元で手で包んだもの（同じ app-image・同じマニフェストの形）である
+- app-image と食い違う MSIX を作らせて、突き合わせが落ちるところ
+- 版が 1.0.0 以上のときに `NeNe-Clock-store.msix` という名前になる側
+- ロゴの見え方（スタートメニュー・タスクバー）。倍率別の画像と `resources.pri` は #117
+

@@ -215,7 +215,7 @@ PR 本文の「検証」欄には、**回したコマンド・結果・検証済
 | --- | --- | --- |
 | CI `quality`（`pull_request`） | `./gradlew check` | 🔴 **これが完了の判定**。1 PR につきこれが正本 |
 | CI `quality`（`push: main`） | 同じ `./gradlew check`。ただし `paths-ignore` で `**/*.md` / `docs/**` / `LICENSE` だけの merge では回さない | **ゲートではない**。merge 後の `main` を緑に保ち、次の PR のためにビルドキャッシュを温める（実測: キャッシュが効いた CI は 39〜101s、冷えると 217〜258s）。だから消さず、**内容が同じになる merge でだけ止める**。⚠️ これを理由に手元で全件を回さない |
-| CI `Release` | `packageInstaller` のみ | 配布物を作るだけ。`check` を再実行しない |
+| CI `Release` | `packageInstaller`（Windows では続けて `packageMsix`） | 配布物を作るだけ。`check` を再実行しない |
 | 手元（人・エージェント） | 第 9.2 節で選んだ検査 | 全件は引き渡し前に**最大 1 回**、必要なときだけ |
 
 🔴 **保存やコミットのたびに全件を自動起動するフックを置かない。** 選ばれていない検査は、
