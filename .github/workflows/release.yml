@@ -41,41 +41,6 @@ jobs:
           validate-wrappers: true
       - name: Build the distributables with the canonical task
         run: ./gradlew packageInstaller --stacktrace
-      # 一時的な探針（#107）。ランナーで app-image を MSIX に包めるかを測る。測ったら消す。
-      - name: PROBE (temporary, #107) wrap the app-image into an MSIX
-        shell: pwsh
-        run: |
-          $kits = 'C:\Program Files (x86)\Windows Kits\10\bin'
-          Get-ChildItem $kits -Directory | Where-Object Name -like '10.*' | ForEach-Object {
-            "$($_.Name) makeappx=$(Test-Path "$($_.FullName)\x64\makeappx.exe") makepri=$(Test-Path "$($_.FullName)\x64\makepri.exe") signtool=$(Test-Path "$($_.FullName)\x64\signtool.exe")"
-          }
-          "on PATH: makeappx=$([bool](Get-Command makeappx.exe -ErrorAction SilentlyContinue)) makepri=$([bool](Get-Command makepri.exe -ErrorAction SilentlyContinue))"
-          "ImageOS=$env:ImageOS ImageVersion=$env:ImageVersion"
-          $sdk = Get-ChildItem $kits -Directory | Where-Object { Test-Path "$($_.FullName)\x64\makeappx.exe" } | Sort-Object { [version]$_.Name } | Select-Object -Last 1
-          "using $($sdk.FullName)"
-          $layout = 'app\build\msix-probe\layout'
-          New-Item -ItemType Directory -Force (Split-Path $layout) | Out-Null
-          Copy-Item 'app\build\installer\image\NeNe Clock' $layout -Recurse
-          New-Item -ItemType Directory "$layout\Assets" | Out-Null
-          foreach ($name in 'StoreLogo','Square150x150Logo','Square44x44Logo') { Copy-Item 'app\build\icons\nene-clock-256.png' "$layout\Assets\$name.png" }
-          $manifest = @'
-          <?xml version="1.0" encoding="utf-8"?>
-          <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" IgnorableNamespaces="uap rescap">
-            <Identity Name="NeNeClock.CiProbe" Publisher="CN=NeNe Clock CI Probe" Version="0.2.6.0" ProcessorArchitecture="x64" />
-            <Properties><DisplayName>NeNe Clock probe</DisplayName><PublisherDisplayName>probe</PublisherDisplayName><Logo>Assets\StoreLogo.png</Logo></Properties>
-            <Dependencies><TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" /></Dependencies>
-            <Resources><Resource Language="en-us" /></Resources>
-            <Applications><Application Id="NeNeClock" Executable="NeNe Clock.exe" EntryPoint="Windows.FullTrustApplication"><uap:VisualElements DisplayName="NeNe Clock probe" Description="probe" BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png" Square44x44Logo="Assets\Square44x44Logo.png" /></Application></Applications>
-            <Capabilities><rescap:Capability Name="runFullTrust" /></Capabilities>
-          </Package>
-          '@ -replace '(?m)^\s+', ''
-          [IO.File]::WriteAllText("$PWD\$layout\AppxManifest.xml", $manifest, [Text.UTF8Encoding]::new($false))
-          & "$($sdk.FullName)\x64\makepri.exe" createconfig /cf app\build\msix-probe\priconfig.xml /dq en-US /pv 10.0.0 /o | Select-Object -Last 2
-          "makepri createconfig exit=$LASTEXITCODE"
-          & "$($sdk.FullName)\x64\makeappx.exe" pack /o /d $layout /p app\build\msix-probe\probe.msix | Select-Object -Last 3
-          "makeappx exit=$LASTEXITCODE"
-          if ($LASTEXITCODE -ne 0) { throw 'makeappx failed' }
-          "msix bytes: $((Get-Item app\build\msix-probe\probe.msix).Length)"
       - name: Keep them as a run artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
