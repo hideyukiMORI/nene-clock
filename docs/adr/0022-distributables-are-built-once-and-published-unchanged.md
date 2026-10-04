@@ -33,7 +33,8 @@ NeNe Loupe は、提出のときに作った ZIP を控えておき、認定の�
 ## 強制
 
 - **active**: `release` ジョブの検査（決定 3）。満たさなければ公開の前に落ちる
-- **active（実測）**: gate-proofs 第 28 節に、試し実行の結果を書く
+- **active（実測・2026-10-04）**: 試し実行で、通る側と、main に載っていない実行で落ちる側を測った（gate-proofs 第 28 節）。
+  本当の公開は、Store の認定が出るまで試していない
 - **不能**: 「Store に出した MSIX が、渡した実行のものであること」。Partner Center に何を上げたかはワークフローから見えない。
   提出のときに、実行の ID と MSIX の SHA-256 を `docs/release/store-listing.md` に控えることで人が担保する
 

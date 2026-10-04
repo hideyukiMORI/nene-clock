@@ -1391,3 +1391,46 @@ WSLg（`DISPLAY=:0`）で `installDist` した時計を起動し、`xwininfo -na
 - Windows の実機。WSLg だけで測った。複数モニタでの大きさの戻し（ADR 0019 の決定 5）は同じ `wantedSize` を通るが、実機では試していない
 - 最小の窓を掴んで動かせるか（面積が小さい）
 
+---
+
+## 28. 作り直さずに公開する経路（Issue #132 / ADR 0022・2026-10-04）
+
+main `3b2d13e`（版 1.0.0）で測った。**タグも Release も作っていない**（試し実行だけ）。測ったあとの最新のタグは `v0.2.6` のまま。
+
+### 28.1 配布物を作る実行
+
+入力なしの手動の起動。run [37199220858](https://github.com/hideyukiMORI/nene-clock/actions/runs/37199220858): `windows`・`linux` が成功、`release` は飛ばされた。
+
+### 28.2 その実行を渡した試し実行（通る側）
+
+`publish_from_run=37199220858`・`dry_run=true`。run [37199407038](https://github.com/hideyukiMORI/nene-clock/actions/runs/37199407038):
+`release` だけが動き、`windows`・`linux` は飛ばされた（**何も作っていない**）。
+
+```text
+run 37199220858: .github/workflows/release.yml / success / 3b2d13ee827715950ba506f05f30de08de4b9c12
+NeNe-Clock-Setup.msi: OK
+NeNe-Clock-windows-portable.zip: OK
+NeNe-Clock-linux-portable.zip: OK
+nene-clock_amd64.deb: OK
+NeNe-Clock-store.msix: OK
+would publish v1.0.0 at 3b2d13ee827715950ba506f05f30de08de4b9c12:
+dry run: nothing was tagged or published
+```
+
+### 28.3 main に載っていない実行を渡す（落ちる側）
+
+PR の枝で作った実行（`37199039955`）を渡した。run [37199437403](https://github.com/hideyukiMORI/nene-clock/actions/runs/37199437403) は失敗した。
+
+```text
+run 37199039955: .github/workflows/release.yml / success / f0184f0f64aa4d95d9659fce06d358e567c04427
+commit f0184f0f64aa4d95d9659fce06d358e567c04427 is not on main (compare status: diverged)
+```
+
+**落ちた理由は「main に載っていない」の検査そのものである。**
+
+### 28.4 🔴 まだ証明していないこと
+
+- **本当の公開（`dry_run: false`）。** タグが打たれ、Release に 6 つのファイルが添付されるところは、Store の認定が出るまで試さない
+- 落ちる側のうち、実測したのは「main に載っていない」だけ。「成功していない実行」「別のワークフローの実行」「`.sha256` と中身が違う」
+  「提出できる MSIX が無い」「同じタグの Release がもうある」は、検査は書いてあるが落としていない
+
