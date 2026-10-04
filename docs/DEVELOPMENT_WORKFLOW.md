@@ -229,14 +229,15 @@ PR 本文の「検証」欄には、**回したコマンド・結果・検証済
 認定の前に GitHub Release を出すと、Store と GitHub で同じ版の中身がずれうる（審査で修正を求められたら、版を上げてやり直すため）。
 
 1. 版を上げる PR を統合する（版の入力は `gradle.properties` の `version` 1 か所）。**ここではタグを打たない**
-2. その commit で `Release` ワークフローを手動で起動する（`workflow_dispatch`）。Windows ジョブの成果物 `nene-clock-store-msix` に
-   `NeNe-Clock-store.msix` ができる。版の先頭が 0 のあいだは `…-NOT-SUBMITTABLE.msix` という名前になり、提出できない
+2. その commit で `Release` ワークフローを手動で起動する（`workflow_dispatch`・入力は空のまま）。Windows ジョブの成果物 `nene-clock-store-msix` に
+   `NeNe-Clock-store.msix` ができる。版の先頭が 0 のあいだは `…-NOT-SUBMITTABLE.msix` という名前になり、提出できない。
+   **この実行の ID と、MSIX の SHA-256 を [release/store-listing.md](release/store-listing.md) に控える**
 3. Windows App Certification Kit を通す（#121）。提出用の MSIX は未署名で手元に入らないので、同じ app-image を検証用の身元で包んだものを入れて回す。
    信頼ストアを書き換える操作は施主が実行する
-4. 施主が Partner Center で申請する。文面の正本は [release/store-listing.md](release/store-listing.md)
-5. **認定が出てから**、提出したのと同じ commit に `v<version>` のタグを打つ。タグで `Release` ワークフローが MSI・zip・`.deb` を GitHub Release に出す
+4. 施主が Partner Center で申請する。上げるのは 2 の実行の MSIX。文面の正本は [release/store-listing.md](release/store-listing.md)
+5. **認定が出てから**、`Release` ワークフローをもう一度手動で起動し、`publish_from_run` に 2 の実行の ID を入れる（[ADR 0022](adr/0022-distributables-are-built-once-and-published-unchanged.md)）。
+   まず `dry_run` を true のまま回して確かめ、次に false で回す。ワークフローが、その実行の commit に `v<version>` のタグを打ち、
+   **2 で作った** MSI・zip・`.deb` をそのまま GitHub Release に添付する。**作り直さない。タグを手で打たない**（打っても何も起きない）
 6. README に Store 版の入れ方を足す（#122）
 
-🔴 **分かっている食い違い:** 5 のタグで出る MSI・zip は、同じ commit から**作り直したもの**であり、Store に出した MSIX の中身とバイト単位で同じとは限らない
-（Loupe は提出のときに控えた ZIP をそのまま公開して、作り直していない）。ビルドがバイト単位で再現するかは確かめていない。
-揃えるなら、タグのときに作り直さず、提出した実行の成果物を添付する形にワークフローを変える必要がある。**まだ決めていない。**
+審査で製品の修正を求められたら、版を上げて 1 からやり直す。成果物の保存期間（90 日）を過ぎた実行は出せないので、そのときも 2 からやり直す。

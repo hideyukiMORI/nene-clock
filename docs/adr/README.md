@@ -36,3 +36,4 @@ ADR は「なぜそう決めたか」「何を却下したか」を書く。
 | [0019](0019-the-desktop-is-not-one-coordinate-space.md) | デスクトップは 1 つの座標空間ではない。ドラッグは実ピクセルで計算する | 受理 |
 | [0020](0020-the-store-is-a-fourth-channel-wrapped-from-the-same-app-image.md) | Microsoft Store を 4 つ目の配布経路にする。同じ app-image を MSIX に包む | 受理 |
 | [0021](0021-the-window-is-never-wider-than-its-chrome-requires.md) | 窓の下限は「クロームが収まる大きさ」だけにする。固定の 320×160 をやめる | 受理 |
+| [0022](0022-distributables-are-built-once-and-published-unchanged.md) | 配布物は 1 回だけ作る。GitHub Release は作り直さず、Store に出した実行の成果物をそのまま出す | 受理 |
