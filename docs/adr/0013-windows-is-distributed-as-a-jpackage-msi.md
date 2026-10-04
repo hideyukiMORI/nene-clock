@@ -23,7 +23,8 @@
 4. **モジュール集合は `jdeps` から機械的に求める。** 手で書くと、足りないモジュールは実行時まで分からない
 5. **`.ico` は実装（`AppIcon`）から書き出す**（#46 と同じ原則）。ImageMagick への依存は消す
 6. **MSI の upgrade UUID を固定する。** 入れ直しが上書きになる。変えると別製品として並んで入る
-7. **配布は GitHub Release に MSI と SHA-256 を添付する。** `v*` タグを打つと自動で添付される。
+7. **配布は GitHub Release に MSI と SHA-256 を添付する。** `v*` タグを打つと自動で添付される
+   （⚠️ 2026-10-04 に [ADR 0022](0022-distributables-are-built-once-and-published-unchanged.md) で変えた: タグでは起動せず、作った実行の成果物をそのまま出す）。
    手動起動（workflow_dispatch）では run の成果物として落とせる（施主の実機確認用）
 8. 版は `gradle.properties` の `version` 1 か所。MSI は数字 3 つの形しか受けない
 9. **配布物のファイル名に版を入れない**（#88）。README から `releases/latest/download/<名前>` で直に指すためで、
