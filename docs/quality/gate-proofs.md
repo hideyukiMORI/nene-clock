@@ -1336,7 +1336,8 @@ msix: skipped (makeappx is a Windows SDK tool; the MSIX is built on Windows only
 - **できた MSIX を実機に入れていない。** Store の身元で作ったものは署名が無く、手元には入らない。
   2026-10-04 に実機に入れたのは、検証用の身元で手で包んだもの（同じ app-image・同じマニフェストの形）である
 - app-image と食い違う MSIX を作らせて、突き合わせが落ちるところ
-- 版が 1.0.0 以上のときに `NeNe-Clock-store.msix` という名前になる側
+- ~~版が 1.0.0 以上のときに `NeNe-Clock-store.msix` という名前になる側~~ ⇒ 版を上げた PR で実測した（#119・run [37194975128](https://github.com/hideyukiMORI/nene-clock/actions/runs/37194975128)）:
+  `msix: NeNe-Clock-store.msix (144 app-image files verified, 25 logos indexed by resources.pri, version 1.0.0.0)`
 - ロゴの見え方（スタートメニュー・タスクバー）。倍率別の画像と `resources.pri` は 26.5 で入れたが、入れた状態では見ていない
 
 ### 26.5 倍率別のロゴと `resources.pri`（Issue #117）
