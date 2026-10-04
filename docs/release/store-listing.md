@@ -75,7 +75,7 @@ time
 
 | 画像 | Caption |
 | --- | --- |
-| `docs/images/store/store-1-clocks.png` | `The window is the clock. No frame, no buttons until you hover.` |
+| `docs/images/store/store-1-clocks.png` | `Your clock, your way: 30 typefaces, any colours, any size.` |
 | `docs/images/store/store-2-typefaces-en.png` | `Thirty bundled typefaces.` |
 | `docs/images/store/store-3-colours-en.png` | `Pick the text and background colours.` |
 | `docs/images/store/store-4-settings-en.png` | `Settings apply as you change them.` |
@@ -147,7 +147,7 @@ NeNe Clock は、Windows 用の静かなデスクトップ時計です。窓そ�
 
 | 画像 | 説明 |
 | --- | --- |
-| `docs/images/store/store-1-clocks.png` | `窓そのものが時計です。ポインタを載せるまで、枠もボタンもありません。` |
+| `docs/images/store/store-1-clocks.png` | `書体・色・大きさ・余白を選んで、自分の時計に。` |
 | `docs/images/store/store-2-typefaces-ja.png` | `30 種類の同梱書体。` |
 | `docs/images/store/store-3-colours-ja.png` | `文字色と背景色を選べます。` |
 | `docs/images/store/store-4-settings-ja.png` | `設定は変えたその場で反映されます。` |
@@ -159,10 +159,25 @@ Store は 1 枚以上を求め、4 枚以上・1366×768 以上の PNG を推奨
 
 | ファイル | 中身 | 言語 |
 | --- | --- | --- |
-| `store-1-clocks.png` | 時計 3 つ（JetBrains Mono 160pt／Bebas Neue 160pt・暗い配色・秒なし／Playfair Display 120pt・12 時間表記） | 共通（時計に言語は無い） |
+| `store-1-clocks.png` | 時計 10 個。書体・文字色・背景色・文字の大きさ・余白・表記をそれぞれ変えてある（下の表） | 共通（時計に言語は無い） |
 | `store-2-typefaces-{en,ja}.png` | 書体の画面 | 英／日 |
 | `store-3-colours-{en,ja}.png` | 文字色の画面 | 英／日 |
 | `store-4-settings-{en,ja}.png` | 時計（JetBrains Mono 96pt）と設定モーダル | 英／日 |
+
+1 枚目は「選べる幅」を見せる（施主の指示・2026-10-04）。10 個とも実際の設定で起動して撮った窓で、大きさの違いは設定の違いそのものである。
+
+| 書体 | 大きさ | 余白 | 文字色 / 背景色 | 表記 |
+| --- | --- | --- | --- | --- |
+| JetBrains Mono | 110 | 32 | `#000000` / `#F5F2EB` | 24 時間・秒・日付 |
+| Bebas Neue | 150 | 24 | `#F5F2EB` / `#1A1917` | 24 時間・日付 |
+| Playfair Display | 96 | 40 | `#3C281E` / `#EDE2D0` | 12 時間・日付 |
+| Pacifico | 72 | 48 | `#FFFFFF` / `#C4476B` | 24 時間 |
+| Caveat | 110 | 28 | `#2E4A7A` / `#F3E9C8` | 12 時間 |
+| Cinzel | 72 | 24 | `#D9C28A` / `#23302B` | 24 時間・日付 |
+| Inter | 40 | 60 | `#333333` / `#FFFFFF` | 24 時間・日付 |
+| Orbitron | 64 | 20 | `#7CF0C0` / `#0E1A1F` | 24 時間・秒 |
+| VT323 | 96 | 16 | `#FFB000` / `#1B1200` | 24 時間・秒 |
+| Anton | 56 | 8 | `#000000` / `#5D1732` | 24 時間・秒・日付（施主の常用） |
 
 撮り方（README の画像と同じ経路・PR #71）: WSLg（`DISPLAY=:0`）で main `e745b77`（版 1.0.0）の `installDist` を起動し、
 Linux 側の保存を書き換えて設定を与え、`import -window` で窓を撮った。モーダルは XTest でポインタを載せ、歯車と行を押して開いた。
