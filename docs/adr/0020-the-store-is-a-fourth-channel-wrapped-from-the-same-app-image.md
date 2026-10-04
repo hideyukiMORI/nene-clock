@@ -51,8 +51,8 @@ Clock に固有の未確認は 3 点あり、2026-10-04 に実測した（報告
   `makeappx.exe is not where it is pinned` で落ちることを CI で実測した
 - **active（一部）**: 包んだ MSIX を開き直し、app-image の**全ファイル**（144）の SHA-256 が元と同じであることを task が確かめる。
   一致する側は実測した。**食い違わせて落ちるところは実測していない**
-- **planned**: 先頭が 0 の版では `NeNe-Clock-store-NOT-SUBMITTABLE.msix` という名前になり、警告が出る。
-  1.0.0 以上で `NeNe-Clock-store.msix` になる側は、版を上げたとき（#119）に初めて実測される
+- **active（2026-10-04・#119）**: 先頭が 0 の版では `NeNe-Clock-store-NOT-SUBMITTABLE.msix` という名前になり、警告が出る。
+  1.0.0 では `NeNe-Clock-store.msix`（版 `1.0.0.0`）になる。両方の側を CI で実測した
 - **active（2026-10-04・#117）**: ロゴは `AppIcon` から 25 枚（3 つのロゴ × 倍率 5 つ ＋ 一覧用の targetsize 5 つ × 地あり・地なし）を描き、
   `packageMsix` が `makepri` で `resources.pri` を作る。task は枚数（25）と、索引に 3 つのロゴの名前が載っていることを確かめる。
   CI が作った MSIX を開いて、25 枚の寸法と索引の中身を確かめた（gate-proofs 26.5）。**入れた状態での見え方は見ていない**

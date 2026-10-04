@@ -42,7 +42,10 @@ tasks.withType<CheckForbiddenApis>().configureEach {
 
 // 🔑 版の正本は gradle.properties の version。product.properties へ埋めて、実行時はそこから読む（#82）。
 //    コードに版を書くと 2 か所になり、片方だけ上がる。
+//    🔴 埋める値は task の入力として宣言する。宣言しないと、版だけを変えたときに task が UP-TO-DATE のままになり、
+//    古い版が jar に残る（実測: 版が 1.0.0 の木で 0.2.5 と表示された）。
 tasks.named<ProcessResources>("processResources") {
+    inputs.property("version", project.version.toString())
     filesMatching("**/product.properties") {
         expand("version" to project.version.toString())
     }
