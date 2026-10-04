@@ -54,5 +54,5 @@ M1 という節目は無くなった。中身だったストップウォッチ�
 - [x] 版を 1.0.0 へ（**タグは Store の認定が出てから**。DEVELOPMENT_WORKFLOW 第 10 節）— #119
 - [x] 掲載文とスクリーンショット（日英）— #120
 - [x] GitHub Release は作り直さず、提出した実行の成果物を出す（ADR 0022）— #132
-- [ ] WACK — #121
+- [x] WACK（総合 WARNING。gate-proofs 第 29 節）— #121
 - [ ] README に Store 版の入れ方と設定の場所 — #122

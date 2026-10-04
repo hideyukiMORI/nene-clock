@@ -223,7 +223,8 @@ UI を変えたら撮り直す必要がある（画像はコードから生成�
 | マニフェスト | `HideyukiMori.NeNeClock` / `CN=C37230AA-B52D-403B-9BFD-E7980F088422` / `Hideyuki Mori` / 版 `1.0.0.0` |
 | 同じ実行の MSI の SHA-256 | `0d5375c031638af125746f87abc0e73b9185a553df84e9fb130b432ef45a7b84` |
 | 同じ実行の zip の SHA-256 | `22dc9c9f47eebb0f6de805ee6739e9f2ba97bf54175a2ca7f0bf65b96f249ce5` |
-| 状態 | **まだ提出していない。** WACK（#121）も通していない |
+| WACK | 2026-10-04 に通した: PASS 22・WARNING 1（高 DPI）・任意の検査の FAIL 1（ブロック済みの実行可能ファイル）。`docs/quality/gate-proofs.md` 第 29 節 |
+| 状態 | **まだ提出していない** |
 
 成果物の保存期間は 90 日（2027-01-02 ごろまで）。
 
