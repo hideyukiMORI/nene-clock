@@ -34,4 +34,4 @@ ADR は「なぜそう決めたか」「何を却下したか」を書く。
 | [0017](0017-the-window-is-sized-by-padding-not-by-a-window-size.md) | 窓の大きさは「余白」で変える。窓サイズという設定は持たない | 受理 |
 | [0018](0018-the-window-knows-which-screen-it-is-on.md) | 窓は自分が載っている画面の変化を知る。ドラッグは画面座標で決める | 置換（→ 0019） |
 | [0019](0019-the-desktop-is-not-one-coordinate-space.md) | デスクトップは 1 つの座標空間ではない。ドラッグは実ピクセルで計算する | 受理 |
-| [0020](0020-the-store-is-a-fourth-channel-wrapped-from-the-same-app-image.md) | Microsoft Store を 4 つ目の配布経路にする。同じ app-image を MSIX に包む | 提案 |
+| [0020](0020-the-store-is-a-fourth-channel-wrapped-from-the-same-app-image.md) | Microsoft Store を 4 つ目の配布経路にする。同じ app-image を MSIX に包む | 受理 |
