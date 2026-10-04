@@ -1337,7 +1337,26 @@ msix: skipped (makeappx is a Windows SDK tool; the MSIX is built on Windows only
   2026-10-04 に実機に入れたのは、検証用の身元で手で包んだもの（同じ app-image・同じマニフェストの形）である
 - app-image と食い違う MSIX を作らせて、突き合わせが落ちるところ
 - 版が 1.0.0 以上のときに `NeNe-Clock-store.msix` という名前になる側
-- ロゴの見え方（スタートメニュー・タスクバー）。倍率別の画像と `resources.pri` は #117
+- ロゴの見え方（スタートメニュー・タスクバー）。倍率別の画像と `resources.pri` は 26.5 で入れたが、入れた状態では見ていない
+
+### 26.5 倍率別のロゴと `resources.pri`（Issue #117）
+
+run [37193989365](https://github.com/hideyukiMORI/nene-clock/actions/runs/37193989365)（木 `846a24e4`）。
+
+```text
+msix: NeNe-Clock-store-NOT-SUBMITTABLE.msix (144 app-image files verified, 25 logos indexed by resources.pri, version 0.2.6.0)
+```
+
+成果物の MSIX を落として開いた。173 ファイル = app-image 144 ＋ ロゴ 25 ＋ マニフェスト ＋ `resources.pri` ＋ makeappx が足す 2。
+
+| 見たこと | 結果 |
+| --- | --- |
+| ロゴの寸法 | 25 枚とも名前どおり。`Square44x44Logo.scale-125` は 55、`StoreLogo.scale-125` は 63、`Square150x150Logo.scale-400` は 600、`targetsize-16`〜`256` は 16〜256 |
+| `resources.pri`（17,464 バイト）の中の文字列 | `Square44x44Logo.png`・`Square150x150Logo.png`・`StoreLogo.png` の 3 つの名前と、`Assets\…scale-…`・`…targetsize-…_altform-unplated` の 25 の候補が載っている |
+| マニフェスト | `Assets\StoreLogo.png` のように倍率の付かない名前で指している。その名前のファイルはパッケージに無く、索引が候補を選ぶ |
+
+**まだ証明していないこと:** Windows が実際にどの候補を選ぶか。スタートメニュー・タスクバー・Store のページでの見え方。
+索引が欠けたとき（ロゴの名前が載っていないとき）に task が落ちる側。
 
 ---
 
