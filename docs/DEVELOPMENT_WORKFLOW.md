@@ -220,3 +220,23 @@ PR 本文の「検証」欄には、**回したコマンド・結果・検証済
 
 🔴 **保存やコミットのたびに全件を自動起動するフックを置かない。** 選ばれていない検査は、
 誰が起動しても同じだけ時間を使う。
+
+---
+
+## 10. Store に出す版の順番（ADR 0020）
+
+**タグは、Store の認定が出てから打つ。** 版を上げることと、タグを打つことは別の手順である（施主の決定・2026-10-04。NeNe Loupe と同じ順）。
+認定の前に GitHub Release を出すと、Store と GitHub で同じ版の中身がずれうる（審査で修正を求められたら、版を上げてやり直すため）。
+
+1. 版を上げる PR を統合する（版の入力は `gradle.properties` の `version` 1 か所）。**ここではタグを打たない**
+2. その commit で `Release` ワークフローを手動で起動する（`workflow_dispatch`）。Windows ジョブの成果物 `nene-clock-store-msix` に
+   `NeNe-Clock-store.msix` ができる。版の先頭が 0 のあいだは `…-NOT-SUBMITTABLE.msix` という名前になり、提出できない
+3. Windows App Certification Kit を通す（#121）。提出用の MSIX は未署名で手元に入らないので、同じ app-image を検証用の身元で包んだものを入れて回す。
+   信頼ストアを書き換える操作は施主が実行する
+4. 施主が Partner Center で申請する。文面の正本は [release/store-listing.md](release/store-listing.md)
+5. **認定が出てから**、提出したのと同じ commit に `v<version>` のタグを打つ。タグで `Release` ワークフローが MSI・zip・`.deb` を GitHub Release に出す
+6. README に Store 版の入れ方を足す（#122）
+
+🔴 **分かっている食い違い:** 5 のタグで出る MSI・zip は、同じ commit から**作り直したもの**であり、Store に出した MSIX の中身とバイト単位で同じとは限らない
+（Loupe は提出のときに控えた ZIP をそのまま公開して、作り直していない）。ビルドがバイト単位で再現するかは確かめていない。
+揃えるなら、タグのときに作り直さず、提出した実行の成果物を添付する形にワークフローを変える必要がある。**まだ決めていない。**
