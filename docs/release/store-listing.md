@@ -210,6 +210,23 @@ Linux 側の保存を書き換えて設定を与え、`import -window` で窓を
 確かめていないこと: Windows での見た目との差（WSLg で撮った。書体は同梱なので同じはずだが、比べていない）。
 UI を変えたら撮り直す必要がある（画像はコードから生成できない）。
 
+## 提出の控え
+
+提出する MSIX は、次の実行の成果物である。**認定のあと、GitHub Release にはこの実行の MSI・zip・`.deb` をそのまま出す**（ADR 0022）。
+提出の前に main が進んで作り直したら、この表を書き換える。
+
+| 項目 | 値 |
+| --- | --- |
+| 実行 | [37199220858](https://github.com/hideyukiMORI/nene-clock/actions/runs/37199220858)（2026-10-04・main `3b2d13e`・版 1.0.0） |
+| 成果物 | `nene-clock-store-msix` の中の `NeNe-Clock-store.msix`（32 MB） |
+| MSIX の SHA-256 | `3f14bf8e0f8e1b5c17cd5283a32e428a71616abff29fd6150ccbe8731bfe4a2a` |
+| マニフェスト | `HideyukiMori.NeNeClock` / `CN=C37230AA-B52D-403B-9BFD-E7980F088422` / `Hideyuki Mori` / 版 `1.0.0.0` |
+| 同じ実行の MSI の SHA-256 | `0d5375c031638af125746f87abc0e73b9185a553df84e9fb130b432ef45a7b84` |
+| 同じ実行の zip の SHA-256 | `22dc9c9f47eebb0f6de805ee6739e9f2ba97bf54175a2ca7f0bf65b96f249ce5` |
+| 状態 | **まだ提出していない。** WACK（#121）も通していない |
+
+成果物の保存期間は 90 日（2027-01-02 ごろまで）。
+
 ## そのほかの入力
 
 | 項目 | 入れる内容 | 根拠 |
