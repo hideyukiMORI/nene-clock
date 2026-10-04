@@ -236,11 +236,11 @@ UI が受け取るのは `ClockFace` のような**すでに決まった値**だ
 リスナやイベントハンドラの中に `setEnabled(...)` を散らさない。
 
 ```java
-private void renderState(StopwatchView view) {   // ✅ 反映は 1 か所
-    start.setEnabled(view.canStart());
+private void renderState(FormView view) {   // ✅ 反映は 1 か所
+    apply.setEnabled(view.canApply());
 }
 
-start.addActionListener(event -> pause.setEnabled(true));  // ❌ 反映が散る
+field.addActionListener(event -> apply.setEnabled(true));  // ❌ 反映が散る
 ```
 
 - 機械強制: **active**（CNF-004）
@@ -273,8 +273,9 @@ Swing の文字描画ヒントは**デスクトップ環境から渡される**�
 ### SWG-005 — タイマーの刻みは時刻の正本ではない
 
 `javax.swing.Timer` の刻みは**再描画のきっかけ**であって、時刻の源ではない。
-表示する値は毎回 application 層から取り直す。残り時間を「毎回 1 減らす」形で持たない
+表示する値は毎回 application 層から取り直す。刻みの回数を数えて値を作らない
 （UI スレッドが遅れた分だけ静かにずれるため）。
 
 - 機械強制: **active**（現在時刻を UI で読めないこと＝ARC-007 の forbidden-apis が担保）
-- 機械強制: **planned**（カウンタ減算そのものの検出。M1 でタイマーを実装するときに再評価する）
+- 機械強制: **不採用**（刻みを数えるカウンタそのものの検出。数えて持つ値が製品に無く、検出する対象が無い。
+  経過や残りを持つ機能が要件に入ったら、この行から起こし直す）

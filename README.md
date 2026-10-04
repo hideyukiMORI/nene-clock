@@ -308,9 +308,7 @@ The normative documents are written in Japanese; code, comments and this README 
 ### Roadmap
 
 Done: the clock, persisted settings, the settings modal, bundled typefaces, colours, Japanese/English,
-the Windows portable build. Not yet: a stopwatch and a countdown timer — they are specified
-(FR-010 / FR-020) and deliberately not started. Where they will live in a window that has no tabs is
-still an open design question.
+the Windows portable build.
 
 ## License
 
