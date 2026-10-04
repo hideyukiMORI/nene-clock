@@ -274,14 +274,19 @@ abstract class PackageMsix : DefaultTask() {
     @get:OutputDirectory
     abstract val destination: DirectoryProperty
 
+    private companion object {
+        /** 3 つのロゴ × 倍率 5 つ ＋ 一覧用の targetsize 5 つ × 2（地あり・地なし）。AppIconFiles と同じ数。 */
+        const val EXPECTED_LOGOS = 25
+    }
+
     private fun escape(text: String): String =
         text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
 
     private fun sha256(file: File): String =
         MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { byte -> "%02x".format(byte) }
 
-    /** makeappx は 1 ファイルごとに 1 行を出す。成功したら黙らせ、失敗したら全部見せる。 */
-    private fun makeappx(tool: File, vararg arguments: String) {
+    /** SDK の道具は 1 ファイルごとに 1 行を出す。成功したら黙らせ、失敗したら全部見せる。 */
+    private fun sdkTool(tool: File, vararg arguments: String) {
         val captured = ByteArrayOutputStream()
         val result =
             execOperations.exec {
@@ -292,7 +297,7 @@ abstract class PackageMsix : DefaultTask() {
                 isIgnoreExitValue = true
             }
         if (result.exitValue != 0) {
-            throw GradleException("makeappx ${arguments.first()} failed (${result.exitValue}):\n$captured")
+            throw GradleException("${tool.name} ${arguments.first()} failed (${result.exitValue}):\n$captured")
         }
     }
 
@@ -307,9 +312,9 @@ abstract class PackageMsix : DefaultTask() {
         }
         // 🔴 道具は SDK の版のフォルダを名指しする。ランナーでは PATH に無い（2026-10-04 実測）。
         //    SDK が変わったら黙って別の版を使わず、ここで落ちる。
-        val tool = File(sdkBinDirectory.get(), "makeappx.exe")
-        if (!tool.isFile) {
-            throw GradleException("makeappx.exe is not where it is pinned: ${tool.path}")
+        val makeappx = File(sdkBinDirectory.get(), "makeappx.exe")
+        if (!makeappx.isFile) {
+            throw GradleException("makeappx.exe is not where it is pinned: ${makeappx.path}")
         }
         val version = appVersion.get()
         if (!Regex("""\d+\.\d+\.\d+""").matches(version)) {
@@ -321,9 +326,13 @@ abstract class PackageMsix : DefaultTask() {
         if (!image.copyRecursively(layout)) {
             throw GradleException("could not copy the app-image to ${layout.path}")
         }
+        // ロゴは AppIcon から書き出した倍率別・targetsize 別の一式（writeAppIcons）。数が違えば、書き出しと噛み合っていない。
         val assets = File(layout, "Assets").also { it.mkdirs() }
-        val logos = listOf("StoreLogo", "Square44x44Logo", "Square150x150Logo")
-        logos.forEach { name -> File(logoDirectory.get().asFile, "$name.png").copyTo(File(assets, "$name.png")) }
+        val logos = logoDirectory.get().asFile.listFiles { file -> file.name.endsWith(".png") }!!.sorted()
+        if (logos.size != EXPECTED_LOGOS) {
+            throw GradleException("expected $EXPECTED_LOGOS MSIX logo files in ${logoDirectory.get().asFile.path}; found ${logos.size}")
+        }
+        logos.forEach { logo -> logo.copyTo(File(assets, logo.name)) }
         // Store は 4 番目を自分で使うので 0 にする。先頭は 0 にできない（Store が拒否する）。
         File(layout, "AppxManifest.xml").writeText(
             """
@@ -364,14 +373,38 @@ abstract class PackageMsix : DefaultTask() {
             """.trimIndent() + "\n",
             Charsets.UTF_8,
         )
+        // 🔑 マニフェストは Assets\StoreLogo.png のように倍率を付けない名前で指す。その名前のファイルは無い。
+        //    どの倍率の絵を使うかは資源の索引（resources.pri）が決めるので、索引が無いとロゴが 1 枚も見つからない。
+        val makepri = File(sdkBinDirectory.get(), "makepri.exe")
+        if (!makepri.isFile) {
+            throw GradleException("makepri.exe is not where it is pinned: ${makepri.path}")
+        }
+        val priConfig = File(temporaryDir, "priconfig.xml")
+        sdkTool(makepri, "createconfig", "/cf", priConfig.path, "/dq", "en-US", "/pv", "10.0.0", "/o")
+        // 既定の設定は言語・倍率ごとに別の資源パッケージへ分ける。1 つのパッケージに 1 つの索引を入れるので、その指定を外す。
+        priConfig.writeText(priConfig.readText().replace(Regex("(?s)\\s*<packaging>.*?</packaging>"), ""))
+        val pri = File(layout, "resources.pri")
+        sdkTool(makepri, "new", "/pr", layout.path, "/cf", priConfig.path, "/mn", File(layout, "AppxManifest.xml").path, "/of", pri.path, "/o")
+        // 索引を開いて、3 つのロゴの名前が実際に載っていることを確かめる。「作ったつもり」を人の記憶に頼らせない。
+        val dump = File(temporaryDir, "resources.pri.xml")
+        sdkTool(makepri, "dump", "/if", pri.path, "/of", dump.path, "/o")
+        val indexed = dump.readText()
+        listOf("StoreLogo.png", "Square44x44Logo.png", "Square150x150Logo.png").forEach { name ->
+            if (!indexed.contains(name)) {
+                throw GradleException("resources.pri does not index $name")
+            }
+        }
         // 🔴 先頭が 0 の版は Store に出せない。作れはするので（手元で入れて確かめられる）、名前で分かるようにする。
         val submittable = !version.startsWith("0.")
         val msix = File(out, if (submittable) "NeNe-Clock-store.msix" else "NeNe-Clock-store-NOT-SUBMITTABLE.msix")
-        makeappx(tool, "pack", "/o", "/d", layout.path, "/p", msix.path)
+        sdkTool(makeappx, "pack", "/o", "/d", layout.path, "/p", msix.path)
         // 🔑 包んだものを開き直して、app-image の全ファイルが同じ中身で入っていることを確かめる。
         //    「同じ app-image から出る」を人の記憶に頼らせない。
         val opened = File(temporaryDir, "verify").also { it.deleteRecursively() }
-        makeappx(tool, "unpack", "/o", "/p", msix.path, "/d", opened.path)
+        sdkTool(makeappx, "unpack", "/o", "/p", msix.path, "/d", opened.path)
+        if (!File(opened, "resources.pri").isFile) {
+            throw GradleException("the MSIX does not carry resources.pri")
+        }
         val shipped = image.walkTopDown().filter { it.isFile }.toList()
         shipped.forEach { file ->
             val packaged = File(opened, file.relativeTo(image).path)
@@ -384,7 +417,13 @@ abstract class PackageMsix : DefaultTask() {
         if (!submittable) {
             logger.warn("msix: version $version starts with 0. It installs locally, but Microsoft Store rejects it.")
         }
-        logger.lifecycle("msix: {} ({} app-image files verified, version {}.0)", msix.name, shipped.size, version)
+        logger.lifecycle(
+            "msix: {} ({} app-image files verified, {} logos indexed by resources.pri, version {}.0)",
+            msix.name,
+            shipped.size,
+            logos.size,
+            version,
+        )
     }
 }
 
