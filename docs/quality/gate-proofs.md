@@ -1434,3 +1434,57 @@ commit f0184f0f64aa4d95d9659fce06d358e567c04427 is not on main (compare status: 
 - 落ちる側のうち、実測したのは「main に載っていない」だけ。「成功していない実行」「別のワークフローの実行」「`.sha256` と中身が違う」
   「提出できる MSIX が無い」「同じタグの Release がもうある」は、検査は書いてあるが落としていない
 
+---
+
+## 29. Windows App Certification Kit（Issue #121・2026-10-04）
+
+提出用の MSIX（run 37199220858・SHA-256 `3f14bf8e…4a2a`）は未署名で手元に入らない。そこで、その MSIX を開き、
+身元だけを検証用（`NeNeClock.LocalTest` / `CN=NeNe Clock MSIX Local Test`）に書き換え、`resources.pri` を作り直して包み直したものを検査した。
+**中身の 169 ファイル（app-image 144 ＋ ロゴ 25）は、提出用とすべて同じ SHA-256 である**（包み直したあとに突き合わせた）。
+
+環境: Windows 11 Pro 10.0.26200、キット 10.0.26100.7705、`APP_TYPE: Centennial`。施主がスクリプトを実行し、UAC を 1 回通した。
+自己署名の証明書は、キットが終わるまでだけ「ローカル コンピューター」に信頼させ、同じ処理の中で消した（残り 0 を確かめた）。
+
+| 結果 | 件数 |
+| --- | --- |
+| 総合（`OVERALL_RESULT`） | **WARNING** |
+| PASS | 22 |
+| WARNING | 1 |
+| FAIL（任意の検査） | 1 |
+
+### 29.1 WARNING: 高 DPI サポート（必須の検査）
+
+```text
+バイナリ …\NeNe Clock.exe を処理できませんでした。
+アプリ NeNeClock.LocalTest_1.0.0.0_x64__d5f82krk61nwp は DPI 対応ではありません。
+```
+
+NeNe Loupe も同じ警告 1 件で認定されている（Loupe の gate-proofs 第 16 節）。Clock の exe は jpackage のランチャーで、
+DPI の扱いは Java の実行環境が起動後に行う。**警告の原因は切り分けていない。** 複数モニタ・倍率の違う画面での実際の表示は ADR 0019 と第 24〜25 節で測ってある。
+
+### 29.2 FAIL: ブロック済みの実行可能ファイル（任意の検査・`OPTIONAL="TRUE"`）
+
+Windows 10 S 向けの検査で、プロセスを起動する API への参照と、決まった実行ファイルの名前に見える文字列を探す。指摘は 2 種類だった。
+
+| 指摘 | 中身 |
+| --- | --- |
+| `CreateProcessA/W` への参照 | `runtime\bin\server\jvm.dll`・`runtime\bin\java.dll`・`NeNe Clock.exe`。Java の実行環境と jpackage のランチャーが持つ参照 |
+| 名前に見える文字列（`cmd`・`REg`・`csI`・`DNx`・`CdB`・`cmd.exe`） | `font-catalog-1.0.0.jar`・`fontmanager.dll`・`ucrtbase.dll`・`jvm.dll`。jar の中は圧縮された書体のデータで、3 文字の一致は偶然である |
+
+Microsoft の文書（[Windows Desktop Bridge app tests](https://learn.microsoft.com/en-us/windows/uwp/debug-test-perf/windows-desktop-bridge-app-tests)・2026-10-04 に確認）:
+
+- 任意の検査は「informational only and will not be used to evaluate your app during Microsoft Store onboarding」
+- この検査の対処は「If the flagged file(s) is part of your application, you may ignore the warning」
+
+指摘されたファイルはすべてパッケージの中のものである。**製品のコードはプロセスを起動しない**（production に `ProcessBuilder`・`Runtime.exec` の使用が無い。grep で確認）。
+ただし同梱の Java の実行環境には、その機能そのものは含まれている。
+
+### 29.3 🔴 まだ証明していないこと
+
+- **審査に通るか。** 文書は「任意の検査は評価に使わない」と言うが、Clock では申請していない
+- 提出用の MSIX そのもの（Store の身元）を検査したのではない。身元と `resources.pri` 以外が同じものを検査した
+- Windows 10 S での動作。試していない
+- 高 DPI の警告の原因
+
+報告書（`wack-report.xml`）はリポジトリに入れていない。施主の PC の `%LOCALAPPDATA%\NeNeClockProbe\` にある。
+
