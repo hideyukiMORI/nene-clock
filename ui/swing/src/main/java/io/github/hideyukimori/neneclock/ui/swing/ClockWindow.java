@@ -41,8 +41,6 @@ public final class ClockWindow {
 
     private static final int INITIAL_WIDTH = 480;
     private static final int INITIAL_HEIGHT = 240;
-    private static final int MINIMUM_WIDTH = 320;
-    private static final int MINIMUM_HEIGHT = 160;
     private static final int CORNER = ClockPanel.CORNER;
     private static final int CHROME_MARGIN = 10;
 
@@ -62,7 +60,7 @@ public final class ClockWindow {
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         frame.setContentPane(clockPanel.component());
         frame.setSize(new Dimension(INITIAL_WIDTH, INITIAL_HEIGHT));
-        frame.setMinimumSize(new Dimension(MINIMUM_WIDTH, MINIMUM_HEIGHT));
+        frame.setMinimumSize(smallestSize());
         frame.setLocationRelativeTo(null);
         frame.getLayeredPane().add(chrome.component(), JLayeredPane.PALETTE_LAYER);
         listenToThePointer();
@@ -92,8 +90,8 @@ public final class ClockWindow {
      *
      * <p>枠が無いので、利用者が窓の端を掴んで広げることができない。文字を大きくしたときに
      * 「05:14:..」と切れて出るのは、窓が時計そのものであるという前提と噛み合わない（FR-047）。
-     * だから大きさは設定に従う。下限は FR-030 の最小サイズである。**下限は広げる向きにしか
-     * 効かない**ので、文字が切れることはない。余白と文字を最小にしたときだけ、窓はこの下限で止まる。
+     * だから大きさは設定に従う。下限は「クロームが収まる大きさ」だけである（FR-030 / ADR 0021）。
+     * **下限は広げる向きにしか効かない**ので、文字が切れることはない。
      */
     private void fitToClock() {
         restoreTheSize();
@@ -121,7 +119,20 @@ public final class ClockWindow {
     /** 設定から決まる窓の大きさ。下限は広げる向きにだけ効く。 */
     private Dimension wantedSize() {
         Dimension wanted = frame.getContentPane().getPreferredSize();
-        return new Dimension(Math.max(MINIMUM_WIDTH, wanted.width), Math.max(MINIMUM_HEIGHT, wanted.height));
+        Dimension smallest = smallestSize();
+        return new Dimension(Math.max(smallest.width, wanted.width), Math.max(smallest.height, wanted.height));
+    }
+
+    /**
+     * 窓の下限。操作用のクロームが、四方の余白ごと収まる大きさ（ADR 0021）。
+     *
+     * <p>これより小さいと、設定と終了のボタンが窓からはみ出して押せなくなる。それ以外の理由で
+     * 窓を広げない。固定の数字（以前は 320×160）を置くと、小さい設定で余白の設定が効かなくなる（Issue #97）。
+     * クロームの寸法から求めるので、ボタンが増えても下限は付いてくる。
+     */
+    private Dimension smallestSize() {
+        Dimension chromeSize = chrome.component().getSize();
+        return new Dimension(chromeSize.width + CHROME_MARGIN * 2, chromeSize.height + CHROME_MARGIN * 2);
     }
 
     /** 窓を表示する。EDT から呼ぶこと（SWG-001）。 */
