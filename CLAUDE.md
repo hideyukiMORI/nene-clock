@@ -129,6 +129,6 @@ Waivers: none | WVR-NNNN
 
 ## 6. いまのマイルストーン
 
-**M0**（時計と設定永続化、ゲート一式）。ストップウォッチ（FR-010）とタイマー（FR-020）、
-残り 3 タブ（FR-050）は **M1** であり、まだ実装しない。
-現在のタスクは [docs/todo/current.md](docs/todo/current.md)。
+**M0.2**（見た目の作り直し）。現在のタスクは [docs/todo/current.md](docs/todo/current.md)。
+ストップウォッチ（FR-010）とタイマー（FR-020）は施主の要件ではないので、実装しない（#105）。
+M1 という節目は無い。
