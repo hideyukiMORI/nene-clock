@@ -1,6 +1,7 @@
 import de.thetaphi.forbiddenapis.gradle.CheckForbiddenApis
 import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
+import java.util.Properties
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import javax.inject.Inject
@@ -245,4 +246,156 @@ tasks.register<PackageInstaller>("packageInstaller") {
     mainJarName.set(tasks.named<Jar>("jar").flatMap { it.archiveFileName })
     appVersion.set(project.version.toString())
     destination.set(layout.buildDirectory.dir("installer"))
+}
+
+// 🔑 Microsoft Store へ出すパッケージ（MSIX）は、packageInstaller が作った app-image を**そのまま**包む（ADR 0020）。
+//    MSIX のために jar も実行環境も作り直さない。zip・MSI・MSIX は同じ中身から出る。
+//    署名はしない（Store が署名する）。鍵も証明書も持たない。
+//    makeappx は Windows SDK の道具なので、Windows でだけ作る（MSI と同じ扱い）。
+abstract class PackageMsix : DefaultTask() {
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    @get:InputDirectory
+    abstract val imageDirectory: DirectoryProperty
+
+    @get:InputDirectory
+    abstract val logoDirectory: DirectoryProperty
+
+    @get:InputFile
+    abstract val identityFile: RegularFileProperty
+
+    @get:Input
+    abstract val appVersion: Property<String>
+
+    @get:Input
+    abstract val sdkBinDirectory: Property<String>
+
+    @get:OutputDirectory
+    abstract val destination: DirectoryProperty
+
+    private fun escape(text: String): String =
+        text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
+
+    private fun sha256(file: File): String =
+        MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { byte -> "%02x".format(byte) }
+
+    /** makeappx は 1 ファイルごとに 1 行を出す。成功したら黙らせ、失敗したら全部見せる。 */
+    private fun makeappx(tool: File, vararg arguments: String) {
+        val captured = ByteArrayOutputStream()
+        val result =
+            execOperations.exec {
+                executable = tool.path
+                args(arguments.toList())
+                standardOutput = captured
+                errorOutput = captured
+                isIgnoreExitValue = true
+            }
+        if (result.exitValue != 0) {
+            throw GradleException("makeappx ${arguments.first()} failed (${result.exitValue}):\n$captured")
+        }
+    }
+
+    @TaskAction
+    fun run() {
+        val out = destination.get().asFile
+        out.deleteRecursively()
+        out.mkdirs()
+        if (!System.getProperty("os.name").startsWith("Windows")) {
+            logger.lifecycle("msix: skipped (makeappx is a Windows SDK tool; the MSIX is built on Windows only)")
+            return
+        }
+        // 🔴 道具は SDK の版のフォルダを名指しする。ランナーでは PATH に無い（2026-10-04 実測）。
+        //    SDK が変わったら黙って別の版を使わず、ここで落ちる。
+        val tool = File(sdkBinDirectory.get(), "makeappx.exe")
+        if (!tool.isFile) {
+            throw GradleException("makeappx.exe is not where it is pinned: ${tool.path}")
+        }
+        val version = appVersion.get()
+        if (!Regex("""\d+\.\d+\.\d+""").matches(version)) {
+            throw GradleException("the version must be three numbers to become an MSIX version: $version")
+        }
+        val identity = Properties().also { loaded -> identityFile.get().asFile.inputStream().use { loaded.load(it) } }
+        val image = imageDirectory.get().asFile
+        val layout = File(temporaryDir, "layout").also { it.deleteRecursively() }
+        if (!image.copyRecursively(layout)) {
+            throw GradleException("could not copy the app-image to ${layout.path}")
+        }
+        val assets = File(layout, "Assets").also { it.mkdirs() }
+        val logos = listOf("StoreLogo", "Square44x44Logo", "Square150x150Logo")
+        logos.forEach { name -> File(logoDirectory.get().asFile, "$name.png").copyTo(File(assets, "$name.png")) }
+        // Store は 4 番目を自分で使うので 0 にする。先頭は 0 にできない（Store が拒否する）。
+        File(layout, "AppxManifest.xml").writeText(
+            """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+                     xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+                     xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+                     IgnorableNamespaces="uap rescap">
+              <Identity Name="${escape(identity.getProperty("identityName"))}"
+                        Publisher="${escape(identity.getProperty("publisher"))}"
+                        Version="$version.0"
+                        ProcessorArchitecture="x64" />
+              <Properties>
+                <DisplayName>NeNe Clock</DisplayName>
+                <PublisherDisplayName>${escape(identity.getProperty("publisherDisplayName"))}</PublisherDisplayName>
+                <Logo>Assets\StoreLogo.png</Logo>
+              </Properties>
+              <Dependencies>
+                <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+              </Dependencies>
+              <Resources>
+                <Resource Language="en-us" />
+                <Resource Language="ja-jp" />
+              </Resources>
+              <Applications>
+                <Application Id="NeNeClock" Executable="NeNe Clock.exe" EntryPoint="Windows.FullTrustApplication">
+                  <uap:VisualElements DisplayName="NeNe Clock"
+                                      Description="A quiet desktop clock"
+                                      BackgroundColor="transparent"
+                                      Square150x150Logo="Assets\Square150x150Logo.png"
+                                      Square44x44Logo="Assets\Square44x44Logo.png" />
+                </Application>
+              </Applications>
+              <Capabilities>
+                <rescap:Capability Name="runFullTrust" />
+              </Capabilities>
+            </Package>
+            """.trimIndent() + "\n",
+            Charsets.UTF_8,
+        )
+        // 🔴 先頭が 0 の版は Store に出せない。作れはするので（手元で入れて確かめられる）、名前で分かるようにする。
+        val submittable = !version.startsWith("0.")
+        val msix = File(out, if (submittable) "NeNe-Clock-store.msix" else "NeNe-Clock-store-NOT-SUBMITTABLE.msix")
+        makeappx(tool, "pack", "/o", "/d", layout.path, "/p", msix.path)
+        // 🔑 包んだものを開き直して、app-image の全ファイルが同じ中身で入っていることを確かめる。
+        //    「同じ app-image から出る」を人の記憶に頼らせない。
+        val opened = File(temporaryDir, "verify").also { it.deleteRecursively() }
+        makeappx(tool, "unpack", "/o", "/p", msix.path, "/d", opened.path)
+        val shipped = image.walkTopDown().filter { it.isFile }.toList()
+        shipped.forEach { file ->
+            val packaged = File(opened, file.relativeTo(image).path)
+            if (!packaged.isFile || sha256(packaged) != sha256(file)) {
+                throw GradleException("the MSIX does not carry the app-image file unchanged: ${file.relativeTo(image).path}")
+            }
+        }
+        opened.deleteRecursively()
+        File(out, msix.name + ".sha256").writeText("${sha256(msix)}  ${msix.name}\n")
+        if (!submittable) {
+            logger.warn("msix: version $version starts with 0. It installs locally, but Microsoft Store rejects it.")
+        }
+        logger.lifecycle("msix: {} ({} app-image files verified, version {}.0)", msix.name, shipped.size, version)
+    }
+}
+
+tasks.register<PackageMsix>("packageMsix") {
+    group = "distribution"
+    description = "Microsoft Store 用の MSIX を作る（packageInstaller の app-image をそのまま包む。Windows だけ）"
+    dependsOn(tasks.named("packageInstaller"))
+    imageDirectory.set(layout.buildDirectory.dir("installer/image/NeNe Clock"))
+    logoDirectory.set(layout.buildDirectory.dir("icons/msix"))
+    identityFile.set(layout.projectDirectory.file("src/msix/store-identity.properties"))
+    appVersion.set(project.version.toString())
+    sdkBinDirectory.set("""C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64""")
+    destination.set(layout.buildDirectory.dir("msix"))
 }
