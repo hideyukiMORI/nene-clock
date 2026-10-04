@@ -75,10 +75,10 @@ time
 
 | 画像 | Caption |
 | --- | --- |
-| （未作成） | `The window is the clock. No frame, no buttons until you hover.` |
-| （未作成） | `Thirty bundled typefaces.` |
-| （未作成） | `Pick the text and background colours.` |
-| （未作成） | `Settings apply as you change them.` |
+| `docs/images/store/store-1-clocks.png` | `The window is the clock. No frame, no buttons until you hover.` |
+| `docs/images/store/store-2-typefaces-en.png` | `Thirty bundled typefaces.` |
+| `docs/images/store/store-3-colours-en.png` | `Pick the text and background colours.` |
+| `docs/images/store/store-4-settings-en.png` | `Settings apply as you change them.` |
 
 ## 日本語（ja-JP）
 
@@ -147,24 +147,37 @@ NeNe Clock は、Windows 用の静かなデスクトップ時計です。窓そ�
 
 | 画像 | 説明 |
 | --- | --- |
-| （未作成） | `窓そのものが時計です。ポインタを載せるまで、枠もボタンもありません。` |
-| （未作成） | `30 種類の同梱書体。` |
-| （未作成） | `文字色と背景色を選べます。` |
-| （未作成） | `設定は変えたその場で反映されます。` |
+| `docs/images/store/store-1-clocks.png` | `窓そのものが時計です。ポインタを載せるまで、枠もボタンもありません。` |
+| `docs/images/store/store-2-typefaces-ja.png` | `30 種類の同梱書体。` |
+| `docs/images/store/store-3-colours-ja.png` | `文字色と背景色を選べます。` |
+| `docs/images/store/store-4-settings-ja.png` | `設定は変えたその場で反映されます。` |
 
-## スクリーンショット（未作成・決めること）
+## スクリーンショット（2026-10-04 に作成）
 
-Store は 1 枚以上を求め、4 枚以上・1366×768 以上の PNG を推奨する。Clock の窓は小さい（施主の常用の設定で 212×133）ので、
-窓だけを撮っても寸法に届かない。README の画像（`docs/images/`）は幅 478〜600 で、そのままでは使えない。
+Store は 1 枚以上を求め、4 枚以上・1366×768 以上の PNG を推奨する。Clock の窓は小さいので、
+1920×1080 の単色の地（`#3A4A52`）に、**実機で撮った窓を実寸のまま**置いた（施主の了承・2026-10-04）。7 枚ある。
 
-決めること:
+| ファイル | 中身 | 言語 |
+| --- | --- | --- |
+| `store-1-clocks.png` | 時計 3 つ（JetBrains Mono 160pt／Bebas Neue 160pt・暗い配色・秒なし／Playfair Display 120pt・12 時間表記） | 共通（時計に言語は無い） |
+| `store-2-typefaces-{en,ja}.png` | 書体の画面 | 英／日 |
+| `store-3-colours-{en,ja}.png` | 文字色の画面 | 英／日 |
+| `store-4-settings-{en,ja}.png` | 時計（JetBrains Mono 96pt）と設定モーダル | 英／日 |
 
-| 点 | 案 |
-| --- | --- |
-| どう寸法に届かせるか | 1920×1080 の単色の地に、時計の窓と設定モーダルを実寸で置いた 1 枚にする。地の色は時計の背景と対になる色にする |
-| 何で描くか | 製品の描画をそのまま使う。README の画像を撮った経路（ADR と gate-proofs を確認してから）に、地を足す。**絵を手で描き直さない** |
-| 言語 | 英語の掲載には英語の UI、日本語の掲載には日本語の UI で撮る。Loupe は UI が英語だけだったので 1 組だったが、Clock は 2 組になる |
-| 枚数 | 4 枚 × 2 言語。時計だけ／書体の画面／色の画面／設定モーダル |
+撮り方（README の画像と同じ経路・PR #71）: WSLg（`DISPLAY=:0`）で main `e745b77`（版 1.0.0）の `installDist` を起動し、
+Linux 側の保存を書き換えて設定を与え、`import -window` で窓を撮った。モーダルは XTest でポインタを載せ、歯車と行を押して開いた。
+撮ったあと、保存は元へ戻した。
+
+手を入れた所（絵は描き直していない）:
+
+- 窓を単色の地の上に並べた。拡大・縮小はしていない
+- `import -window` は角丸の外側を黒で返すので、角を丸く切り抜いて地の色が見えるようにした（時計は半径 13、モーダルは半径 10 で切った。
+  製品の角丸の値と厳密には合わせていない）
+- 4 枚目は、時計とモーダルを別々に撮って並べた。**モーダルの中のプレビューと時計の時刻が 1 分ほどずれている**（19:35:59 と 19:36:50）。
+  実際の画面では同じ時刻を示す
+
+確かめていないこと: Windows での見た目との差（WSLg で撮った。書体は同梱なので同じはずだが、比べていない）。
+UI を変えたら撮り直す必要がある（画像はコードから生成できない）。
 
 ## そのほかの入力
 
@@ -219,4 +232,3 @@ NeNe Clock is an existing desktop app (Java 21 / Swing, bundled with its own run
 - プライバシーポリシーの設問（「個人情報へのアクセス、収集、または送信を行いますか」）にどう答えるか。
   Loupe は画面の画素を読むので「はい」にした。Clock は画面を読まない。規約 10.5.1 は Win32 を包んだ製品にポリシーを常に求めるので、
   URL は入れる。設問の答えは、施主の画面で文言を見てから決める
-- スクリーンショットは 1 枚も作っていない
