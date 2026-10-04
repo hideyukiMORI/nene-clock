@@ -260,7 +260,7 @@ waiver ファイルの命名・必須項目（Rule / Scope / Issue / Expires）�
 | SWG-002 | active | ArchUnit の import 限定 |
 | SWG-003 | active | CNF-004 |
 | SWG-004 | planned | 検出規則は未実装 |
-| SWG-005 | active（一部） | ARC-007 の forbidden-apis。減算カウンタの検出は planned |
+| SWG-005 | active（一部） | ARC-007 の forbidden-apis。刻みを数えるカウンタの検出は不採用（数える値が製品に無い） |
 | SWG-006 | active | CNF-012（テキスト部品の生成経路を 1 つに固定） |
 | CNF-001 | active | `JavaSourceRules` |
 | CNF-002 | active | `JavaSourceRules` |
