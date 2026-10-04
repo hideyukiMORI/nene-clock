@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import javax.imageio.ImageIO;
 
 /**
@@ -21,11 +22,17 @@ import javax.imageio.ImageIO;
  * <p>PNG は {@code .desktop} が指す。ICO は Windows のインストーラー（{@code jpackage}）と
  * デスクトップのショートカットが指す。どちらも同じ {@link AppIcon} から出る。
  *
+ * <p>{@code msix/} の下には、Microsoft Store のパッケージ（MSIX）のマニフェストが指すロゴを書く（ADR 0020）。
+ *
  * <p>アプリの入口ではない。{@code ./gradlew writeAppIcons} からだけ呼ばれる。
  */
 public final class AppIconFiles {
 
     private static final int EXIT_FAILED = 1;
+
+    /** MSIX のマニフェストが必ず求める 3 枚。名前はマニフェストの属性名と同じ。 */
+    private static final Map<String, Integer> MSIX_LOGOS =
+            Map.of("StoreLogo", 50, "Square44x44Logo", 44, "Square150x150Logo", 150);
 
     private AppIconFiles() {}
 
@@ -65,5 +72,14 @@ public final class AppIconFiles {
             IcoFile.write(drawn, out);
         }
         System.out.println(ico.getPath());
+        File msix = new File(directory, "msix");
+        if (!msix.isDirectory() && !msix.mkdirs()) {
+            throw new IOException("出力先を作れない: " + msix);
+        }
+        for (Map.Entry<String, Integer> logo : MSIX_LOGOS.entrySet()) {
+            File file = new File(msix, logo.getKey() + ".png");
+            ImageIO.write(AppIcon.at(logo.getValue()), "png", file);
+            System.out.println(file.getPath());
+        }
     }
 }

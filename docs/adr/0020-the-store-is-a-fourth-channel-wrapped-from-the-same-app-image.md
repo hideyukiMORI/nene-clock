@@ -23,7 +23,7 @@ Clock に固有の未確認は 3 点あり、2026-10-04 に実測した（報告
 
 | 点 | 結果 |
 | --- | --- |
-| jpackage の app-image を MSIX に包めるか | **包めた。** 配布済みの v0.2.6 の app-image（148 ファイル）をそのまま `makeappx` に渡して 32 MB の MSIX になった。読み取り専用の `C:\Program Files\WindowsApps\` に入れた状態で、パッケージの身元を持って起動し、同梱書体で描かれた。製品コードは変えていない |
+| jpackage の app-image を MSIX に包めるか | **包めた。** 配布済みの v0.2.6 の app-image（144 ファイル）をそのまま `makeappx` に渡して 32 MB の MSIX になった。読み取り専用の `C:\Program Files\WindowsApps\` に入れた状態で、パッケージの身元を持って起動し、同梱書体で描かれた。製品コードは変えていない |
 | `java.util.prefs`（HKCU）の行き先 | **読むときは本物のレジストリが見える。書くときはパッケージ専用の場所へ行き、本物は変わらない。** MSI 版の設定は引き継がれるが、書き戻されない |
 | CI の Windows ランナーで作れるか | **作れた。** `windows-2025` のランナーに Windows SDK 10.0.26100.0 の `makeappx` / `makepri` があり、`packageInstaller` が作った app-image をそのまま包めた。PATH には無いので、場所は task が決める |
 
@@ -44,9 +44,16 @@ Clock に固有の未確認は 3 点あり、2026-10-04 に実測した（報告
 
 ## 強制
 
-- **planned**: MSIX を作る Gradle task（決定 2〜4）。実装する Issue で入れる。入るまでは何も強制されていない
-- **planned**: 「MSIX の中の app-image が、zip の中身と同じである」ことの検査。Loupe は exe の SHA-256 を突き合わせている。
-  Clock はファイルが 148 あるので、突き合わせ方（全ファイルか、jar と launcher か）を実装のときに決める
+- **active（2026-10-04・#116）**: `packageMsix` が `packageInstaller` の app-image をそのまま包む（決定 2〜5）。
+  CI の Windows ランナーで MSIX ができ、マニフェストの身元が Partner Center の値と一致することを、できた MSIX を開いて確かめた
+  （gate-proofs 第 26 節）
+- **active（同）**: `makeappx` は SDK 10.0.26100.0 のフォルダを名指しする。名指しを存在しない版に変えると
+  `makeappx.exe is not where it is pinned` で落ちることを CI で実測した
+- **active（一部）**: 包んだ MSIX を開き直し、app-image の**全ファイル**（144）の SHA-256 が元と同じであることを task が確かめる。
+  一致する側は実測した。**食い違わせて落ちるところは実測していない**
+- **planned**: 先頭が 0 の版では `NeNe-Clock-store-NOT-SUBMITTABLE.msix` という名前になり、警告が出る。
+  1.0.0 以上で `NeNe-Clock-store.msix` になる側は、版を上げたとき（#119）に初めて実測される
+- **planned**: 倍率別のロゴと `resources.pri`（#117）。いまは必須の 3 枚だけを `AppIcon` から書き出している
 - **不能**: Store の認定に通ること。申請しないと分からない。Windows App Certification Kit は申請の前に通すが、ゲートには入れない
   （管理者権限でアプリを何度も起動する検査で、CI では回せない）
 

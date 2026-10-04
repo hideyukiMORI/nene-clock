@@ -39,8 +39,9 @@ jobs:
         with:
           cache-read-only: true
           validate-wrappers: true
-      - name: Build the distributables with the canonical task
-        run: ./gradlew packageInstaller --stacktrace
+      # packageMsix は packageInstaller の app-image をそのまま包む（ADR 0020）。作り直さない。
+      - name: Build the distributables with the canonical tasks
+        run: ./gradlew packageInstaller packageMsix --stacktrace
       - name: Keep them as a run artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -49,6 +50,15 @@ jobs:
             app/build/installer/*.msi
             app/build/installer/*.zip
             app/build/installer/*.sha256
+          if-no-files-found: error
+      # MSIX は Partner Center へ出すもので、GitHub Release には添付しない（Store が署名し直したものが配られる）。
+      - name: Keep the Store package as a run artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nene-clock-store-msix
+          path: |
+            app/build/msix/*.msix
+            app/build/msix/*.sha256
           if-no-files-found: error
 
   linux:

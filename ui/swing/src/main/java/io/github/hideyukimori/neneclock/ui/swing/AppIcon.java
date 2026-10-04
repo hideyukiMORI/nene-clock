@@ -54,8 +54,8 @@ public final class AppIcon {
         return List.copyOf(images);
     }
 
-    /** 指定の大きさで描く。 */
-    static BufferedImage at(int size) {
+    /** 指定の大きさで描く。配布物のロゴ（MSIX）もここから出す。絵の正本を 2 つにしないため。 */
+    public static BufferedImage at(int size) {
         BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D canvas = image.createGraphics();
         canvas.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);

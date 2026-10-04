@@ -24,7 +24,7 @@ NeNe Loupe が一次資料で裏を取っており（同リポの `docs/reports/
 - Windows 11 Pro 10.0.26200。Windows SDK 10.0.26100.0 の `makeappx.exe`。モニタ 4 枚。開発者モードは有効だった。
 - app-image は **GitHub Release v0.2.6 の `NeNe-Clock-windows-portable.zip`** の中身そのまま
   （SHA-256 `49077aee…119b2`、添付の `.sha256` と一致）。CI が `packageInstaller` で作ったもので、手元では作り直していない。
-  148 ファイル・83.1 MB。同梱の実行環境は `21.0.12.1`、モジュールは `java.base java.datatransfer java.xml java.prefs java.desktop`。
+  144 ファイル（マニフェストとロゴ 3 枚を足した配置で 148）・83.1 MB。同梱の実行環境は `21.0.12.1`、モジュールは `java.base java.datatransfer java.xml java.prefs java.desktop`。
 - 作業の置き場はリポジトリの外（`%LOCALAPPDATA%\NeNeClockProbe\`）。リポジトリには何も足していない。
 - 施主は MSI 版 0.2.6 を常用しており、実測のあいだも動いていた。それには触れていない。
 - **実測の前に施主の設定を控えた**（`reg export HKCU\Software\JavaSoft\Prefs\io\github\hideyukimori\neneclock`。
