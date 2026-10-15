@@ -1488,3 +1488,50 @@ Microsoft の文書（[Windows Desktop Bridge app tests](https://learn.microsoft
 
 報告書（`wack-report.xml`）はリポジトリに入れていない。施主の PC の `%LOCALAPPDATA%\NeNeClockProbe\` にある。
 
+
+---
+
+## 30. 閉じる経路を 1 本にした（Issue #137 / SWG-007 / CNF-014・2026-10-15）
+
+### 30.1 修正前の再現（main `de6c5da`・版 1.0.0）
+
+WSLg（`DISPLAY=:0`）で `installDist` した時計を、同じ JVM の中から `NeNeClockApplication.main` で起動し、
+1.5 秒後に時計の窓へ `WindowEvent.WINDOW_CLOSING`（Alt+F4 と同じ要求）を送った。設定の保存先は
+`-Djava.util.prefs.userRoot` で使い捨ての場所へ向けた（利用者の設定には触れていない）。
+
+| 条件 | 表示中の窓 | 10 秒後のプロセス |
+| --- | --- | --- |
+| 修正前の時計 | 0 枚 | **生きている**（`timeout` が 124 で打ち切り） |
+| 対照: 枠なし・`DISPOSE_ON_CLOSE` の素の `JFrame`、タイマー無し | 0 枚 | 終わる（0） |
+| 対照: 同上に 200ms の Swing `Timer` を 1 つ足す | 0 枚 | **生きている**（124） |
+
+⇒ 原因は「`DISPOSE_ON_CLOSE` が `quit`（タイマーを止める）を通らないこと」。窓は畳まれても、
+`ClockTicker` の 200ms の刻みが EDT を生かし続ける。画面上の CLOSE は `quit` を通るので正しく終わる。
+
+### 30.2 規則が正しい理由で落ちること
+
+CNF-014 を足し、修正前の `ui/` に `validateConformance` を当てた。
+
+```text
+CNF-014 ui/swing/.../ClockWindow.java:60 — 閉じる要求を既定動作に任せない。…
+CNF-014 ui/swing/.../ClockWindow.java:47 — 窓を組み立てたら setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE) にする。…
+CNF-014 ui/swing/.../SettingsDialog.java:63 — 窓を組み立てたら setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE) にする。…
+```
+
+時計の窓は「既定動作への委任」（60 行）で、設定ダイアログは「設定し忘れ」（`JDialog` の既定は隠す）で落ちた。
+2 つの形はそれぞれ単体テストでも落とす（`JavaSourceRulesTest.CloseRequests`）。
+
+### 30.3 修正後（同じ測り方）
+
+| 操作 | 結果 |
+| --- | --- |
+| 時計の窓へ `WINDOW_CLOSING` | プロセスが終わる（`timeout` の 10 秒より前に 0 で終了） |
+| 設定ダイアログを開いて、ダイアログへ `WINDOW_CLOSING` | ダイアログが隠れるだけ（閉じるボタンと同じ `hide()`）。時計は残る |
+| 続けて時計の窓へ `WINDOW_CLOSING` | プロセスが終わる（0） |
+| 設定ダイアログを開いたまま、時計の窓へ `WINDOW_CLOSING` | プロセスが終わる（0） |
+
+### 30.4 🔴 まだ証明していないこと
+
+- **Windows の実機で Alt+F4 を押していない。** WSLg で同じ要求（`WINDOW_CLOSING`）を送っただけ
+- OS の終了（WM_QUERYENDSESSION / WM_ENDSESSION）とタスクマネージャからの強制終了。設定は変更のたびに保存済みなので、
+  この 2 つで失うものは無いはずだが、試していない

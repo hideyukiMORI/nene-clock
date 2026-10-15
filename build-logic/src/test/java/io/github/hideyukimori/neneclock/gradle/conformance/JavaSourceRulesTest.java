@@ -163,6 +163,76 @@ class JavaSourceRulesTest {
     }
 
     @Nested
+    @DisplayName("CNF-014 OS からの閉じる要求を既定動作に任せない")
+    class CloseRequests {
+
+        @Test
+        void rejectsAWindowThatDisposesItselfOnClose() {
+            String source =
+                    """
+                    package io.github.hideyukimori.neneclock.ui.swing;
+
+                    final class Sample {
+                        private final JFrame frame = new JFrame("x");
+
+                        Sample() {
+                            frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+                        }
+                    }
+                    """;
+
+            assertTrue(ruleIds("ui/swing/src/main/java/Sample.java", source).contains("CNF-014"));
+        }
+
+        @Test
+        void rejectsAWindowThatLeavesTheDefaultInPlace() {
+            // JDialog の既定は HIDE_ON_CLOSE、JFrame も同じ。書かなければ OS の要求が別経路になる。
+            String source =
+                    """
+                    package io.github.hideyukimori.neneclock.ui.swing;
+
+                    final class Sample {
+                        private final JDialog dialog = new JDialog(owner);
+                    }
+                    """;
+
+            assertTrue(ruleIds("ui/swing/src/main/java/Sample.java", source).contains("CNF-014"));
+        }
+
+        @Test
+        void allowsAWindowThatRoutesTheRequestItself() {
+            String source =
+                    """
+                    package io.github.hideyukimori.neneclock.ui.swing;
+
+                    final class Sample {
+                        private final JFrame frame = new JFrame("x");
+
+                        Sample() {
+                            frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+                        }
+                    }
+                    """;
+
+            assertFalse(ruleIds("ui/swing/src/main/java/Sample.java", source).contains("CNF-014"));
+        }
+
+        @Test
+        void ignoresWindowsOutsideTheUi() {
+            String source =
+                    """
+                    package io.github.hideyukimori.neneclock.app;
+
+                    final class Sample {
+                        private final JFrame frame = new JFrame("x");
+                    }
+                    """;
+
+            assertFalse(ruleIds("app/src/main/java/Sample.java", source).contains("CNF-014"));
+        }
+    }
+
+    @Nested
     @DisplayName("CNF-013 画面に出す文言は UiText に集める")
     class DisplayText {
 

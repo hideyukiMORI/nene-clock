@@ -9,7 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * production Java ソースに対する規約検査（CNF-001 / 002 / 003 / 004 / 006 / 007）。
+ * production Java ソースに対する規約検査（CNF-001 / 002 / 003 / 004 / 006 / 007 / 012 / 013 / 014）。
  *
  * <p>ファイルシステムを知らない。呼び出し側が {@link SourceFile} を与える。
  */
@@ -58,6 +58,14 @@ public final class JavaSourceRules {
     /** 画面に出す文言を書いてよい唯一のファイル。 */
     private static final String UI_TEXT_FILE = "UiText.java";
 
+    /** 組み立てた時点で「OS から閉じられる」窓（CNF-014 / SWG-007）。 */
+    private static final List<String> TOP_LEVEL_WINDOWS = List.of("new JFrame(", "new JDialog(");
+
+    private static final String CLOSE_OPERATION = "setDefaultCloseOperation(";
+
+    /** 閉じる要求を自分で受け取る、ただ 1 つの許された設定。 */
+    private static final String ROUTED_CLOSE = "setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE)";
+
     /** 開発者へ向けた文（例外の説明）だけは、文言の検査から外す。 */
     private static final String THROW_STATEMENT = "throw ";
 
@@ -74,6 +82,8 @@ public final class JavaSourceRules {
         String primaryType = null;
         String previousLine = "";
         Deque<Method> methods = new ArrayDeque<>();
+        int windowBuiltAt = 0;
+        boolean closeRouted = false;
 
         for (int index = 0; index < file.lines().size(); index++) {
             int lineNumber = index + 1;
@@ -120,6 +130,10 @@ public final class JavaSourceRules {
                 checkRenderOnlyCall(file, violations, lineNumber, code, methods.peek());
                 checkTextComponent(file, violations, lineNumber, code);
                 checkDisplayText(file, violations, new Literal(lineNumber, code, text.literals()));
+                if (windowBuiltAt == 0 && TOP_LEVEL_WINDOWS.stream().anyMatch(code::contains)) {
+                    windowBuiltAt = lineNumber;
+                }
+                closeRouted |= checkCloseOperation(file, violations, lineNumber, code);
             }
             // 🔴 直前「行」であってコード行ではない。waiver は `// Waiver: WVR-NNNN` という
             //    コメント行なので、コード行だけを覚えると永久に見つからない（Issue #26）。
@@ -128,6 +142,13 @@ public final class JavaSourceRules {
             }
         }
 
+        if (windowBuiltAt > 0 && !closeRouted) {
+            violations.add(new Violation(
+                    "CNF-014",
+                    file.path(),
+                    windowBuiltAt,
+                    "窓を組み立てたら " + ROUTED_CLOSE + " にする。既定のままだと OS からの閉じる要求が別経路になる（SWG-007）"));
+        }
         if (topLevelTypes > 1) {
             violations.add(Violation.atFile(
                     "CNF-007", file.path(), "トップレベル型が " + topLevelTypes + " 個ある。1 ファイル 1 主要宣言"));
@@ -198,6 +219,27 @@ public final class JavaSourceRules {
 
     /** 抑制 1 か所を見るために要る文脈。 */
     private record Suppression(int lineNumber, String code, String raw, String previousLine) {}
+
+    /**
+     * OS からの閉じる要求を既定動作に任せていないか（CNF-014）。閉じる要求を自分で受け取る設定なら true。
+     *
+     * <p>既定動作（隠す・破棄する・終わる）に任せると、画面上の閉じるボタンとは別の後始末になる。
+     * Alt+F4 で窓だけ消え、タイマーが EDT を生かしたままプロセスが残った（Issue #137）。
+     */
+    private static boolean checkCloseOperation(SourceFile file, List<Violation> violations, int lineNumber, String code) {
+        if (!code.contains(CLOSE_OPERATION)) {
+            return false;
+        }
+        if (code.replace(" ", "").contains(ROUTED_CLOSE)) {
+            return true;
+        }
+        violations.add(new Violation(
+                "CNF-014",
+                file.path(),
+                lineNumber,
+                "閉じる要求を既定動作に任せない。" + ROUTED_CLOSE + " にして意図として渡す（SWG-007）"));
+        return false;
+    }
 
     /**
      * テキスト部品を直接組み立てていないか（CNF-012）。

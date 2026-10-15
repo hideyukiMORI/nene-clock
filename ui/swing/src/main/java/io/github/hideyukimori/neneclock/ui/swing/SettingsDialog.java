@@ -7,6 +7,8 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Dimension;
 import java.awt.Frame;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.util.Locale;
 import java.util.Objects;
@@ -16,6 +18,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.WindowConstants;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -66,6 +69,14 @@ public final class SettingsDialog {
         this.typefaces = panels.typefaces();
         this.colours = panels.colours();
         dialog.setUndecorated(true);
+        // OS から閉じられても、閉じるボタンと同じ hide() を通す（SWG-007 / Issue #137）。
+        dialog.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        dialog.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent event) {
+                hide();
+            }
+        });
         dialog.setSize(new Dimension(WIDTH, HEIGHT));
         dialog.setLocationRelativeTo(owner);
         layOut();

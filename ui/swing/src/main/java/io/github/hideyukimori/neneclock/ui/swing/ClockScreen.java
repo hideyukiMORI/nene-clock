@@ -134,6 +134,8 @@ public final class ClockScreen {
 
     private void connect() {
         chrome.onChromeTriggered(this::actOn);
+        // 閉じる経路は 1 本。クロームの CLOSE も OS からの要求も同じ意図になる（SWG-007）。
+        window.onCloseRequested(() -> quit.run());
         form.onSettingsRequested(requested -> sink.submit(requested));
         form.onNavigationRequested(dialog::show);
         typefacePicker.onTypefaceChosen(this::chooseTypeface);
