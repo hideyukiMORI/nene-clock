@@ -12,6 +12,8 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.RoundRectangle2D;
 import java.util.Objects;
@@ -48,6 +50,9 @@ public final class ClockWindow {
     private final ClockPanel clockPanel;
     private final WindowChrome chrome;
 
+    /** OS から閉じられたことの宛先。閉じるボタンと同じ意図へ渡す（SWG-007）。 */
+    private Runnable closeRequested = () -> {};
+
     /** 掴んでいる間だけ在る。掴んでいなければ動かさない。 */
     private @Nullable WindowDrag drag;
 
@@ -57,7 +62,15 @@ public final class ClockWindow {
         this.chrome = Objects.requireNonNull(chrome, "chrome");
         frame.setUndecorated(true);
         frame.setIconImages(AppIcon.images());
-        frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        // 🔴 Alt+F4 で窓だけ消え、タイマーが EDT を生かしたままプロセスが残った（Issue #137）。
+        //    閉じる要求は自分で受け取り、閉じるボタンと同じ 1 本の経路へ渡す。
+        frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent event) {
+                closeRequested.run();
+            }
+        });
         frame.setContentPane(clockPanel.component());
         frame.setSize(new Dimension(INITIAL_WIDTH, INITIAL_HEIGHT));
         frame.setMinimumSize(smallestSize());
@@ -138,6 +151,11 @@ public final class ClockWindow {
     /** 窓を表示する。EDT から呼ぶこと（SWG-001）。 */
     public void display() {
         frame.setVisible(true);
+    }
+
+    /** OS から閉じられたこと（Alt+F4・タスクバー）の宛先を 1 度だけ結ぶ。 */
+    public void onCloseRequested(Runnable requested) {
+        this.closeRequested = Objects.requireNonNull(requested, "requested");
     }
 
     /** 窓を閉じる。常駐スレッドを残さないのは合成ルートの仕事（FR-030）。 */

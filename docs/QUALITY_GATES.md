@@ -221,6 +221,16 @@ waiver ファイルの命名・必須項目（Rule / Scope / Issue / Expires）�
 `UiText` を見る検査は緑のまま、英語 UI では豆腐（□□□）で描かれていた。
 実測は [quality/gate-proofs.md](quality/gate-proofs.md) 第 13 節。
 
+### CNF-014 — OS からの閉じる要求を既定動作に任せない
+
+`ui/` の中で `setDefaultCloseOperation(...)` に `WindowConstants.DO_NOTHING_ON_CLOSE` 以外を渡すことと、
+`new JFrame(...)` / `new JDialog(...)` を書いたファイルがそれを設定し忘れることを拒否する（SWG-007）。
+**`JFrame` も `JDialog` も既定は「隠す」なので、書かないことも違反である。**
+
+🔴 この規則も事故から生まれた。**Alt+F4 で時計の窓だけ消え、プロセスが残った**（Issue #137）。
+画面上の CLOSE はタイマーを止めて終わるのに、OS からの要求は `DISPOSE_ON_CLOSE` で窓を畳むだけだった。
+実測は [quality/gate-proofs.md](quality/gate-proofs.md) 第 30 節。
+
 ---
 
 ## 3. 強制マトリクス
@@ -262,6 +272,7 @@ waiver ファイルの命名・必須項目（Rule / Scope / Issue / Expires）�
 | SWG-004 | planned | 検出規則は未実装 |
 | SWG-005 | active（一部） | ARC-007 の forbidden-apis。刻みを数えるカウンタの検出は不採用（数える値が製品に無い） |
 | SWG-006 | active | CNF-012（テキスト部品の生成経路を 1 つに固定） |
+| SWG-007 | active | CNF-014（閉じる要求を既定動作に任せない） |
 | CNF-001 | active | `JavaSourceRules` |
 | CNF-002 | active | `JavaSourceRules` |
 | CNF-003 | active | `JavaSourceRules` |
@@ -275,6 +286,7 @@ waiver ファイルの命名・必須項目（Rule / Scope / Issue / Expires）�
 | CNF-011 | active | `ConfigurationWiringRules` |
 | CNF-012 | active | `JavaSourceRules` |
 | CNF-013 | active | `JavaSourceRules` |
+| CNF-014 | active | `JavaSourceRules` |
 
 ---
 
