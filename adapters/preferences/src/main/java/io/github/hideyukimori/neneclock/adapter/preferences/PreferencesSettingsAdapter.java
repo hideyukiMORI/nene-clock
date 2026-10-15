@@ -92,7 +92,6 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
     @Override
     public SettingsSaveOutcome save(UserSettings settings) {
         Objects.requireNonNull(settings, "settings");
-        node.putInt(KEY_SCHEMA, SettingsSchemaVersion.CURRENT.value());
         node.put(KEY_CLOCK_FORMAT, settings.clockFormat().name());
         node.put(KEY_SECONDS, settings.secondsVisibility().name());
         node.put(KEY_DATE, settings.dateVisibility().name());
@@ -107,6 +106,10 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
         node.putInt(KEY_BACKGROUND_BLUE, settings.backgroundColor().blue());
         node.put(KEY_LANGUAGE, settings.language().name());
         node.putInt(KEY_PADDING, settings.windowPadding().pixels());
+        // 🔴 版番号は最後に書く。Windows の Preferences は put のたびにレジストリへ書くので、
+        //    先に書くと、版上げ直後の保存の途中で落ちたとき「新しい版なのにキーが欠ける」が残り、
+        //    次の起動で設定が全部既定値に戻る（Issue #139）。最後なら、落ちても古い版として読める。
+        node.putInt(KEY_SCHEMA, SettingsSchemaVersion.CURRENT.value());
         try {
             node.flush();
         } catch (BackingStoreException failure) {
