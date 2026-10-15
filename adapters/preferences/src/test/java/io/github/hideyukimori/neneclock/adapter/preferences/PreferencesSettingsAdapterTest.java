@@ -1,6 +1,7 @@
 package io.github.hideyukimori.neneclock.adapter.preferences;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.hideyukimori.neneclock.application.SettingsLoadFailure;
 import io.github.hideyukimori.neneclock.application.SettingsLoadOutcome;
@@ -310,6 +311,39 @@ class PreferencesSettingsAdapterTest {
         SettingsLoadOutcome outcome = PreferencesSettingsAdapter.at(node).load();
 
         assertThat(outcome).isEqualTo(new SettingsLoadOutcome.Defaulted(SettingsLoadFailure.INVALID_VALUE));
+    }
+
+    @Test
+    void keepsTheSettingsWhenTheFirstSaveAfterAnUpgradeStopsHalfway() {
+        // 🔴 版番号を先に書くと、v7 → v8 の最初の保存の途中で落ちたとき
+        //    「版は 8 なのに余白が無い」が残り、次の起動で全部が既定値へ戻った（Issue #139）。
+        //    put 1 回ごとに落ちる地点を全部試す。どこで落ちても、既定値へ落ちてはいけない。
+        UserSettings changed = UserSettings.defaults().withWindowPadding(padding(WindowPadding.MINIMUM_PIXELS));
+        int putsInOneSave = countPutsInOneSave(changed);
+
+        Preferences realNode = node;
+        for (int stopAt = 0; stopAt < putsInOneSave; stopAt++) {
+            InterruptedPreferences store = new InterruptedPreferences();
+            node = store;
+            writeVersionSeven();
+            node = realNode;
+            store.stopAfter(stopAt);
+
+            assertThatThrownBy(() -> PreferencesSettingsAdapter.at(store).save(changed))
+                    .isInstanceOf(InterruptedPreferences.ProcessStopped.class);
+            store.restart();
+
+            assertThat(PreferencesSettingsAdapter.at(store).load())
+                    .as("put %d 回目で落ちた", stopAt + 1)
+                    .isInstanceOf(SettingsLoadOutcome.Restored.class);
+        }
+    }
+
+    /** 1 回の保存で put が何回走るか。落ちる地点を数え漏らさないために、実物から数える。 */
+    private static int countPutsInOneSave(UserSettings settings) {
+        InterruptedPreferences counter = new InterruptedPreferences();
+        PreferencesSettingsAdapter.at(counter).save(settings);
+        return counter.puts();
     }
 
     /**
