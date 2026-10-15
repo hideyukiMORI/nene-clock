@@ -1,8 +1,10 @@
 package io.github.hideyukimori.neneclock.application;
 
 import io.github.hideyukimori.neneclock.domain.UserSettings;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -59,6 +61,17 @@ public final class ClockFaceQuery {
                     case HIDDEN -> new DateLine.Hidden();
                 };
         return new ClockFace(time, date);
+    }
+
+    /**
+     * 次の秒の境界までの残り（FR-001）。
+     *
+     * <p>刻みを秒の境界に合わせるために UI が使う。UI は時刻を読めないので、残りもここで計算する（ARC-007）。
+     * 境界ちょうどなら 1 秒を返す（いまの秒は表示されたばかりで、次の切り替わりは 1 秒後）。
+     */
+    public Duration untilNextSecond() {
+        LocalDateTime moment = clock.currentDateTime();
+        return Duration.between(moment, moment.truncatedTo(ChronoUnit.SECONDS).plusSeconds(1));
     }
 
     /**

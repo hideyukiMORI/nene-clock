@@ -12,6 +12,7 @@ import io.github.hideyukimori.neneclock.domain.Typeface;
 import io.github.hideyukimori.neneclock.domain.UserSettings;
 import io.github.hideyukimori.neneclock.domain.WindowPadding;
 import io.github.hideyukimori.neneclock.domain.WindowTopmost;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,18 @@ class ClockFaceQueryTest {
     private static final LocalDateTime AFTERNOON = LocalDateTime.of(2026, 9, 3, 13, 45, 9);
 
     private final ClockFaceQuery query = new ClockFaceQuery(() -> AFTERNOON);
+
+    @Test
+    void measuresWhatIsLeftOfTheCurrentSecond() {
+        ClockFaceQuery partWay = new ClockFaceQuery(() -> AFTERNOON.plusNanos(300_000_000));
+
+        assertThat(partWay.untilNextSecond()).isEqualTo(Duration.ofMillis(700));
+    }
+
+    @Test
+    void waitsAWholeSecondRightOnTheBoundary() {
+        assertThat(query.untilNextSecond()).isEqualTo(Duration.ofSeconds(1));
+    }
 
     @Test
     void formatsTwentyFourHourTimeWithSeconds() {
