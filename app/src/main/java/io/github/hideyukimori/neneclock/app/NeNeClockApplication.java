@@ -60,7 +60,8 @@ public final class NeNeClockApplication {
         ClockFaceQuery clockFace = new ClockFaceQuery(SystemWallClockAdapter.system());
 
         ClockScreen screen = new ClockScreen(new TypefaceFontLoader(typefaceBinaries), ProductIdentityFile.read());
-        ClockTicker ticker = new ClockTicker(() -> screen.renderFace(clockFace.currentFace(settings.current())));
+        ClockTicker ticker = new ClockTicker(
+                () -> screen.renderFace(clockFace.currentFace(settings.current())), clockFace::untilNextSecond);
         // 窓の大きさは「いまの設定で起こりうる最も大きい面」から決まる（ADR 0017）。
         // 設定が変わるたびに測り直すので、その 2 つを同じところで取り出す。
         Runnable renderWholeScreen = () -> screen.renderSettings(
