@@ -29,6 +29,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>保存形式を知るのはこのクラスだけである。版の移行もここに閉じる（ADR 0003 / ADR 0006）。
  * {@link #load()} は保存領域を書き換えない。現在の版として書き戻されるのは次の保存のときである。
+ *
+ * <p>読めなかった設定は上書きしない（ADR 0023）。{@link #save(UserSettings)} は書く前に保存領域を読み直し、
+ * 未来の版なら書かずに守り（読み取り専用）、壊れた値なら元のキーを子ノードへ退避してから書く。
  */
 public final class PreferencesSettingsAdapter implements SettingsStorePort {
 
@@ -56,6 +59,8 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
     private static final int SCHEMA_WITH_PADDING = 8;
     private static final int SCHEMA_ABSENT = 0;
     private static final int INTEGER_ABSENT = -1;
+    /** 壊れた値を保存の前に写しておく子ノード（ADR 0023）。アプリは読まない。 */
+    private static final String BACKUP_NODE = "unreadable-backup";
 
     private final Preferences node;
 
@@ -75,12 +80,13 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
 
     @Override
     public SettingsLoadOutcome load() {
-        int storedSchema = node.getInt(KEY_SCHEMA, SCHEMA_ABSENT);
-        if (storedSchema == SCHEMA_ABSENT) {
+        if (node.get(KEY_SCHEMA, null) == null) {
             return new SettingsLoadOutcome.Defaulted(SettingsLoadFailure.ABSENT);
         }
+        int storedSchema = node.getInt(KEY_SCHEMA, SCHEMA_ABSENT);
+        // 数でない版と 1 未満の版は、未来の版ではない。壊れた値として扱う（ADR 0023）。
         if (storedSchema < SettingsSchemaVersion.EARLIEST_MIGRATABLE.value()) {
-            return new SettingsLoadOutcome.Defaulted(SettingsLoadFailure.UNSUPPORTED_SCHEMA);
+            return invalidValue();
         }
         SettingsSchemaVersion stored = new SettingsSchemaVersion(storedSchema);
         if (!stored.isMigratable()) {
@@ -92,6 +98,41 @@ public final class PreferencesSettingsAdapter implements SettingsStorePort {
     @Override
     public SettingsSaveOutcome save(UserSettings settings) {
         Objects.requireNonNull(settings, "settings");
+        return switch (load()) {
+            case SettingsLoadOutcome.Restored readable -> write(settings);
+            case SettingsLoadOutcome.Defaulted unreadable -> saveOver(unreadable.failure(), settings);
+        };
+    }
+
+    /** 読めなかった保存領域の上に保存する。理由で分ける（ADR 0023）。 */
+    private SettingsSaveOutcome saveOver(SettingsLoadFailure failure, UserSettings settings) {
+        return switch (failure) {
+            case ABSENT -> write(settings);
+            case UNSUPPORTED_SCHEMA -> new SettingsSaveOutcome.Failed(SettingsSaveFailure.NEWER_VERSION_KEPT);
+            case INVALID_VALUE, UNREADABLE -> backUpThenWrite(settings);
+        };
+    }
+
+    /** いまのキーを退避先へ写してから書く。退避先は 1 つで、前の退避は置き換える。 */
+    private SettingsSaveOutcome backUpThenWrite(UserSettings settings) {
+        try {
+            Preferences backup = node.node(BACKUP_NODE);
+            backup.clear();
+            for (String key : node.keys()) {
+                String value = node.get(key, null);
+                if (value != null) {
+                    backup.put(key, value);
+                }
+            }
+            backup.flush();
+        } catch (BackingStoreException failure) {
+            return new SettingsSaveOutcome.Failed(SettingsSaveFailure.UNWRITABLE);
+        }
+        return write(settings);
+    }
+
+    /** 現在の版で書く。 */
+    private SettingsSaveOutcome write(UserSettings settings) {
         node.put(KEY_CLOCK_FORMAT, settings.clockFormat().name());
         node.put(KEY_SECONDS, settings.secondsVisibility().name());
         node.put(KEY_DATE, settings.dateVisibility().name());

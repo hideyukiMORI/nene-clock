@@ -14,17 +14,28 @@ public final class SettingsHandler {
 
     private final SettingsStorePort store;
 
+    private final SettingsLoadOutcome restoration;
+
     private UserSettings current;
 
-    private SettingsHandler(SettingsStorePort store, UserSettings current) {
+    private SettingsHandler(SettingsStorePort store, SettingsLoadOutcome restoration) {
         this.store = store;
-        this.current = current;
+        this.restoration = restoration;
+        this.current = restoration.settingsOrDefaults();
     }
 
-    /** 保存済みの設定から組み立てる。読めなければ既定値から始まる。 */
+    /** 保存済みの設定から組み立てる。読めなければ既定値から始まり、その理由は {@link #restoration()} に残る。 */
     public static SettingsHandler restoredFrom(SettingsStorePort store) {
         Objects.requireNonNull(store, "store");
-        return new SettingsHandler(store, store.load().settingsOrDefaults());
+        return new SettingsHandler(store, store.load());
+    }
+
+    /**
+     * 起動時に設定を読んだ結果。読めなかったことを利用者へ伝えるために合成ルートが読む（ARC-009・ADR 0023）。
+     * 黙って既定値で動かない。
+     */
+    public SettingsLoadOutcome restoration() {
+        return restoration;
     }
 
     /** いま使っている設定。 */

@@ -47,6 +47,16 @@ class SettingsHandlerTest {
     }
 
     @Test
+    void keepsWhyTheSettingsCouldNotBeRestored() {
+        SettingsLoadOutcome unreadable = new SettingsLoadOutcome.Defaulted(SettingsLoadFailure.INVALID_VALUE);
+        SettingsHandler handler =
+                SettingsHandler.restoredFrom(new RecordingStore(unreadable, new SettingsSaveOutcome.Saved()));
+
+        assertThat(handler.restoration()).isEqualTo(unreadable);
+        assertThat(handler.current()).isEqualTo(UserSettings.defaults());
+    }
+
+    @Test
     void applyingSwapsTheCurrentValueAndSavesIt() {
         RecordingStore store = new RecordingStore(
                 new SettingsLoadOutcome.Defaulted(SettingsLoadFailure.ABSENT), new SettingsSaveOutcome.Saved());
