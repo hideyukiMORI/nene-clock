@@ -1596,3 +1596,16 @@ WSLg で `installDist` した時計を起動し、時刻のラベルの文字が
 - Windows の実機。タイマーの粒度（約 15.6ms）で境界の手前に着いた場合は、その刻みでは古い秒のまま描き、
   残りから計算し直した次の刻みで戻る（設計上）。実機で何 ms 遅れるかは測っていない
 - スリープからの復帰。待ちは最大 1 秒強なので、復帰後の最初の刻みで戻るはずだが、試していない
+
+## 33. 読めなかった設定を上書きしない（Issue #150・ADR 0023・2026-10-18）
+
+施主の WSL の上の Xvfb。`installDist` のアプリを `-Djava.util.prefs.userRoot=<使い捨て>` で起動し、保存領域（`.java/.userPrefs/…/adapter/preferences/prefs.xml`）を先に置いてから、設定画面を開いて 1 項目（秒の表示）を変えた。
+
+| 置いた設定 | 起動直後のフッター | 1 項目変えた後の保存領域 |
+| --- | --- | --- |
+| 未来の版（`schemaVersion=99`・`clockFormat=SOMETHING_NEW`） | 「新しい版の設定を守るため、変更は保存しません」（警告の色） | **変わらない**（2 つのキーのまま）。フッターも同じ文言。英語では `Saved by a newer version. Changes are not saved to keep it` がフッターに収まった |
+| 壊れた値（`schemaVersion=8`・`clockFormat=NOT_A_FORMAT`） | 「設定を読めず既定値で始めました。元の値は残しています」（警告の色） | 本体は現在の版の 15 キーで保存され、`unreadable-backup` の子ノードに元の 2 キー（`NOT_A_FORMAT` を含む）が残った |
+
+- 最初の 2 回は置き場所を誤った（`.java` を抜かした）ので、アプリには初回起動に見えていた。フッターが普段の文言だったことで気づき、置き直して撮り直した
+- 英語の壊れた値の文言は 73 文字でフッターからはみ出すおそれがあったので、いちばん長い既存の文言（66 文字）と同じくらいの 67 文字に縮めた（英語での画面は見ていない。既定の言語が日本語なので、既定値で始まると日本語で出る）
+- 単体テスト: `PreferencesSettingsAdapterUnreadableTest`（6 件。修正前に 5 件落ちることを確かめた）・`SettingsHandlerTest.keepsWhyTheSettingsCouldNotBeRestored`

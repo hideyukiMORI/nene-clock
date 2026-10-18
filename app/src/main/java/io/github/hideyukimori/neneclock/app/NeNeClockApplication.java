@@ -81,6 +81,8 @@ public final class NeNeClockApplication {
         });
 
         renderWholeScreen.run();
+        // 読めなかった設定を黙って既定値にしない。設定画面のフッターで伝える（ARC-009・ADR 0023）。
+        screen.renderLoadOutcome(settings.restoration());
         ticker.start();
         screen.display();
     }

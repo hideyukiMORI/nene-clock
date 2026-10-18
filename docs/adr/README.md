@@ -37,3 +37,4 @@ ADR は「なぜそう決めたか」「何を却下したか」を書く。
 | [0020](0020-the-store-is-a-fourth-channel-wrapped-from-the-same-app-image.md) | Microsoft Store を 4 つ目の配布経路にする。同じ app-image を MSIX に包む | 受理 |
 | [0021](0021-the-window-is-never-wider-than-its-chrome-requires.md) | 窓の下限は「クロームが収まる大きさ」だけにする。固定の 320×160 をやめる | 受理 |
 | [0022](0022-distributables-are-built-once-and-published-unchanged.md) | 配布物は 1 回だけ作る。GitHub Release は作り直さず、Store に出した実行の成果物をそのまま出す | 受理 |
+| [0023](0023-unreadable-settings-are-kept-not-overwritten.md) | 読めなかった設定は上書きしない。未来の版は読み取り専用、壊れた値は退避してから保存する | 受理 |

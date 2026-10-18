@@ -65,6 +65,11 @@ public enum UiText {
     NOT_SAVED(
             "保存できませんでした。いまは反映されていますが、再起動すると元に戻ります",
             "Could not save. The change applies now but will be lost on restart"),
+    /** 新しい版の設定があり、上書きしないとき（読み取り専用・ADR 0023）。 */
+    NEWER_VERSION_KEPT("新しい版の設定を守るため、変更は保存しません", "Saved by a newer version. Changes are not saved to keep it"),
+    /** 設定を読めず既定値で始めたとき。元の値は最初の保存で退避する（ADR 0023）。 */
+    STARTED_FROM_DEFAULTS(
+            "設定を読めず既定値で始めました。元の値は残しています", "Could not read the settings. Started from defaults; old values kept"),
     /** フッター右端の名乗り。書式引数は版と作者の 2 つ。 */
     SIGNATURE("NeNe Clock %s · %s", "NeNe Clock %s · %s");
 

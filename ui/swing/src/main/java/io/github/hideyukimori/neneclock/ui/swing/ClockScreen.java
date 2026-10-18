@@ -4,6 +4,7 @@ import io.github.hideyukimori.neneclock.application.ClockFace;
 import io.github.hideyukimori.neneclock.application.ClockFaceExtent;
 import io.github.hideyukimori.neneclock.application.DateLine;
 import io.github.hideyukimori.neneclock.application.SettingsIntentSink;
+import io.github.hideyukimori.neneclock.application.SettingsLoadOutcome;
 import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
 import io.github.hideyukimori.neneclock.domain.Language;
 import io.github.hideyukimori.neneclock.domain.ProductIdentity;
@@ -104,6 +105,11 @@ public final class ClockScreen {
     /** 保存の結果を伝える。 */
     public void renderSaveOutcome(SettingsSaveOutcome outcome) {
         dialog.renderSaveOutcome(outcome);
+    }
+
+    /** 起動時に設定を読んだ結果を伝える（ADR 0023）。 */
+    public void renderLoadOutcome(SettingsLoadOutcome outcome) {
+        dialog.renderLoadOutcome(outcome);
     }
 
     /** 窓を表示する。EDT から呼ぶこと（SWG-001）。 */

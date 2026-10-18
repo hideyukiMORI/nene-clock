@@ -1,5 +1,7 @@
 package io.github.hideyukimori.neneclock.ui.swing;
 
+import io.github.hideyukimori.neneclock.application.SettingsLoadFailure;
+import io.github.hideyukimori.neneclock.application.SettingsLoadOutcome;
 import io.github.hideyukimori.neneclock.application.SettingsSaveFailure;
 import io.github.hideyukimori.neneclock.application.SettingsSaveOutcome;
 import io.github.hideyukimori.neneclock.domain.ProductIdentity;
@@ -58,7 +60,7 @@ public final class SettingsDialog {
     private final ColourPickerPanel colours;
 
     private SettingsDestination showing = SettingsDestination.FORM;
-    private boolean saved = true;
+    private UiText statusLine = UiText.SAVED;
     private @Nullable UiTheme theme;
 
     /** 3 つの画面を束ねて 1 つのモーダルにする。 */
@@ -156,16 +158,31 @@ public final class SettingsDialog {
 
     /** 状態行を、いまの言語で書き直す。 */
     private void renderStatusText(UiTheme shownTheme) {
-        status.setText(shownTheme.text(saved ? UiText.SAVED : UiText.NOT_SAVED));
+        status.setText(shownTheme.text(statusLine));
         status.setForeground(
-                saved ? shownTheme.palette().textMuted() : shownTheme.palette().warning());
+                statusLine == UiText.SAVED
+                        ? shownTheme.palette().textMuted()
+                        : shownTheme.palette().warning());
+    }
+
+    /** 起動時に設定を読んだ結果を伝える。読めなかったことを黙らない（ARC-009・ADR 0023）。 */
+    public void renderLoadOutcome(SettingsLoadOutcome outcome) {
+        Objects.requireNonNull(outcome, "outcome");
+        statusLine = switch (outcome) {
+            case SettingsLoadOutcome.Restored restored -> UiText.SAVED;
+            case SettingsLoadOutcome.Defaulted defaulted -> describe(defaulted.failure());
+        };
+        UiTheme shownTheme = theme;
+        if (shownTheme != null) {
+            renderStatusText(shownTheme);
+        }
     }
 
     /** 保存の結果を伝える。失敗を握り潰さない（FR-045）。 */
     public void renderSaveOutcome(SettingsSaveOutcome outcome) {
         Objects.requireNonNull(outcome, "outcome");
-        saved = switch (outcome) {
-            case SettingsSaveOutcome.Saved success -> true;
+        statusLine = switch (outcome) {
+            case SettingsSaveOutcome.Saved success -> UiText.SAVED;
             case SettingsSaveOutcome.Failed failed -> describe(failed.reason());
         };
         UiTheme shownTheme = theme;
@@ -174,10 +191,20 @@ public final class SettingsDialog {
         }
     }
 
-    /** 失敗の種類を、伝えるべきかどうかへ落とす。種類が増えたらここが落ちる（JAV-002）。 */
-    private static boolean describe(SettingsSaveFailure reason) {
+    /** 保存の失敗の種類を、状態行の文言へ落とす。種類が増えたらここが落ちる（JAV-002）。 */
+    private static UiText describe(SettingsSaveFailure reason) {
         return switch (reason) {
-            case UNWRITABLE -> false;
+            case UNWRITABLE -> UiText.NOT_SAVED;
+            case NEWER_VERSION_KEPT -> UiText.NEWER_VERSION_KEPT;
+        };
+    }
+
+    /** 読み込みの失敗の種類を、状態行の文言へ落とす。初回起動は普段どおり（ADR 0023）。 */
+    private static UiText describe(SettingsLoadFailure reason) {
+        return switch (reason) {
+            case ABSENT -> UiText.SAVED;
+            case UNSUPPORTED_SCHEMA -> UiText.NEWER_VERSION_KEPT;
+            case INVALID_VALUE, UNREADABLE -> UiText.STARTED_FROM_DEFAULTS;
         };
     }
 
