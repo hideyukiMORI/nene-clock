@@ -217,16 +217,18 @@ UI を変えたら撮り直す必要がある（画像はコードから生成�
 
 | 項目 | 値 |
 | --- | --- |
-| 実行 | [37199220858](https://github.com/hideyukiMORI/nene-clock/actions/runs/37199220858)（2026-10-04・main `3b2d13e`・版 1.0.0） |
-| 成果物 | `nene-clock-store-msix` の中の `NeNe-Clock-store.msix`（32 MB） |
-| MSIX の SHA-256 | `3f14bf8e0f8e1b5c17cd5283a32e428a71616abff29fd6150ccbe8731bfe4a2a` |
+| 実行 | [39116380259](https://github.com/hideyukiMORI/nene-clock/actions/runs/39116380259)（2026-10-18・main `53a75e1`・版 1.0.0。10-15 の 6 本の修正と #150 を含む） |
+| 成果物 | `nene-clock-store-msix` の中の `NeNe-Clock-store.msix`（31 MB） |
+| MSIX の SHA-256 | `2980da5d0a06e4e3a28422081cc660e9672f3e019d1bfc9b3bc9d544232b03ec` |
 | マニフェスト | `HideyukiMori.NeNeClock` / `CN=C37230AA-B52D-403B-9BFD-E7980F088422` / `Hideyuki Mori` / 版 `1.0.0.0` |
-| 同じ実行の MSI の SHA-256 | `0d5375c031638af125746f87abc0e73b9185a553df84e9fb130b432ef45a7b84` |
-| 同じ実行の zip の SHA-256 | `22dc9c9f47eebb0f6de805ee6739e9f2ba97bf54175a2ca7f0bf65b96f249ce5` |
-| WACK | 2026-10-04 に通した: PASS 22・WARNING 1（高 DPI）・任意の検査の FAIL 1（ブロック済みの実行可能ファイル）。`docs/quality/gate-proofs.md` 第 29 節 |
+| 同じ実行の MSI の SHA-256 | `fb900736f0a32033ac87acb23337122965e52206931da7ac9acb7024c7f48ec8` |
+| 同じ実行の zip の SHA-256 | `07aaee1edc8105b62e99eaa79c059e5ba4b63c9138aff944676e4efb0102cf48` |
+| WACK | 2026-10-04 に、前の控え（実行 37199220858）に対して通した: PASS 22・WARNING 1（高 DPI）・任意の検査の FAIL 1（ブロック済みの実行可能ファイル）。`docs/quality/gate-proofs.md` 第 29 節。今回の実行には回していない |
 | 状態 | **まだ提出していない** |
 
-成果物の保存期間は 90 日（2027-01-02 ごろまで）。
+前の控え（実行 37199220858・2026-10-04・main `3b2d13e`）は、10-15 の修正の前の木から作られていたので使わない（引き継ぎ書 2026-10-15 第 3 節）。
+
+成果物の保存期間は 90 日（2027-01-16 ごろまで）。
 
 ## そのほかの入力
 
