@@ -6,7 +6,7 @@
 
 <p align="center">
   A quiet desktop clock. No frame, no buttons, no tray icon — just the time, in the typeface and colours you choose.<br>
-  Windows (installer or portable zip) · Ubuntu (.deb) · no Java needed · <a href="README.ja.md">日本語</a>
+  Windows (Microsoft Store, installer or portable zip) · Ubuntu (.deb) · no Java needed · <a href="README.ja.md">日本語</a>
 </p>
 
 <p align="center">
@@ -26,6 +26,15 @@
 **Java もアカウントもコマンドも要りません。** 落としたものだけで動きます。
 
 ### Windows
+
+### ⬇ [**Get it from the Microsoft Store**](https://apps.microsoft.com/detail/9N5G1ZXK0MV7)
+
+Click **Get** (or **Install**) on the Store page, then start **NeNe Clock** from the Start Menu. The Store
+keeps it up to date, and there is no blue warning screen. — Store のページで「**入手**」（または「インストール」）を押し、
+スタートメニューの「NeNe Clock」から起動する。更新は Store がしてくれ、青い警告画面も出ない。
+
+**Rather not use the Store?** The installer and the portable zip below are the same app.
+— **Store を使わない人は**、下のインストーラか zip で。中身は同じアプリ。
 
 ### ⬇ [**Get the installer — NeNe-Clock-Setup.msi**](https://github.com/hideyukiMORI/nene-clock/releases/latest/download/NeNe-Clock-Setup.msi)
 
@@ -77,7 +86,21 @@ shortcut. — amd64 のみ。WSL にもそのまま入り、WSLg がメニュー
 | Works on / 動く環境 | Windows 10 / 11 (64-bit), Ubuntu and other Debian-based distributions (amd64) |
 | Size / 大きさ | about 27–32 MB to download, about 90 MB installed |
 | Needs / 必要なもの | nothing. No Java, no .NET, no internet — なし |
-| Leaves behind / 残すもの | only its settings — Windows: `HKEY_CURRENT_USER\Software\JavaSoft\Prefs\io\github\hideyukimori\neneclock`, Linux: the same tree under `~/.java/.userPrefs` |
+| Leaves behind / 残すもの | only its settings — Windows: `HKEY_CURRENT_USER\Software\JavaSoft\Prefs\io\github\hideyukimori\neneclock`, Linux: the same tree under `~/.java/.userPrefs`. The Store version leaves nothing (see below) |
+
+**Settings and the Store version.** The Store version keeps its settings in a place of its own, inside the
+app's package, so where your settings live depends on how you installed it:
+
+- **Moving from the installer or the zip to the Store version:** it starts with the settings you already had.
+- **After you change a setting in the Store version,** the two go their separate ways. The change is not
+  written back, so the installer or zip version keeps showing your old settings.
+- **Uninstalling the Store version** removes its settings with it. The installer or zip version's settings stay.
+
+**設定と Store 版。** Store 版は設定をアプリのパッケージ専用の場所に置く。そのため、設定の在りかは入れ方で変わる。
+
+- **インストーラ版・zip 版から Store 版に乗り換えると**、最初はそれまでの設定のまま始まる。
+- **Store 版で設定を変えると**、そこから先は別々になる。変更は書き戻されないので、インストーラ版・zip 版は前の設定のまま。
+- **Store 版を消すと**、Store 版の設定も一緒に消える。インストーラ版・zip 版の設定は残る。
 
 **Verify a download (optional).** Every Release also carries a `.sha256` file next to each download.
 **検証（任意）。** Release には各ファイルの `.sha256` も置いてある。

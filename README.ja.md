@@ -6,7 +6,7 @@
 
 <p align="center">
   静かなデスクトップ時計。枠もボタンもトレイアイコンも無く、選んだ書体と色で時刻だけがそこにある。<br>
-  Windows（インストーラ / zip）· Ubuntu（.deb）· Java 不要 · <a href="README.md">English</a>
+  Windows（Microsoft Store / インストーラ / zip）· Ubuntu（.deb）· Java 不要 · <a href="README.md">English</a>
 </p>
 
 <p align="center">
@@ -25,6 +25,13 @@
 **Java もアカウントもコマンドも要りません。** 落としたものだけで動きます。
 
 ### Windows
+
+### ⬇ [**Microsoft Store から入れる**](https://apps.microsoft.com/detail/9N5G1ZXK0MV7)
+
+Store のページで「**入手**」（または「インストール」）を押し、**スタートメニュー**の「NeNe Clock」から起動する。
+更新は Store がしてくれ、青い警告画面も出ない。
+
+**Store を使わない人は**、下のインストーラか zip で。中身は同じアプリ。
 
 ### ⬇ [**インストーラを落とす — NeNe-Clock-Setup.msi**](https://github.com/hideyukiMORI/nene-clock/releases/latest/download/NeNe-Clock-Setup.msi)
 
@@ -62,7 +69,13 @@ Ubuntu のデスクトップには最初から入っている。
 | 動く環境 | Windows 10 / 11（64 ビット）、Ubuntu ほか Debian 系（amd64） |
 | 大きさ | ダウンロードは 27〜32 MB、入れて約 90 MB |
 | 必要なもの | なし。Java も .NET もインターネットも要らない |
-| 残すもの | 設定だけ。Windows は `HKEY_CURRENT_USER\Software\JavaSoft\Prefs\io\github\hideyukimori\neneclock`、Linux は `~/.java/.userPrefs` の同じ木 |
+| 残すもの | 設定だけ。Windows は `HKEY_CURRENT_USER\Software\JavaSoft\Prefs\io\github\hideyukimori\neneclock`、Linux は `~/.java/.userPrefs` の同じ木。Store 版は何も残さない（下記） |
+
+**設定と Store 版。** Store 版は設定をアプリのパッケージ専用の場所に置く。そのため、設定の在りかは入れ方で変わる。
+
+- **インストーラ版・zip 版から Store 版に乗り換えると**、最初はそれまでの設定のまま始まる。
+- **Store 版で設定を変えると**、そこから先は別々になる。変更は書き戻されないので、インストーラ版・zip 版は前の設定のまま。
+- **Store 版を消すと**、Store 版の設定も一緒に消える。インストーラ版・zip 版の設定は残る。
 
 **検証（任意）。** Release には各ファイルの `.sha256` も置いてある。
 
