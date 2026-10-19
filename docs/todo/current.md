@@ -57,7 +57,7 @@ M1 という節目は無くなった。中身だったストップウォッチ�
 - [x] WACK（総合 WARNING。gate-proofs 第 29 節）— #121
 - [x] #150（読めなかった設定を上書きしない・ADR 0023）を入れ、申請用の MSIX を main `53a75e1` の実行 39116380259 から作り直した — #152 / #154
 - [x] **2026-10-18 に申請した**（Submission 1・認定中・WACK は回していない）— #155
-- [ ] 認定の後、**同じ実行 39116380259** の MSI・zip・`.deb` を `publish_from_run` で GitHub の `v1.0.0` に出す（ADR 0022）
+- [x] 認定の後、**同じ実行 39116380259** の MSI・zip・`.deb` を `publish_from_run` で GitHub の `v1.0.0` に出す（ADR 0022）— 2026-10-19 に Store の認定・公開（https://apps.microsoft.com/detail/9N5G1ZXK0MV7）を受けて、dry run（実行 39245987080）→ 本番（実行 39247461075）。https://github.com/hideyukiMORI/nene-clock/releases/tag/v1.0.0
 - [ ] README に Store 版の入れ方と設定の場所 — #122
 
 ## 外部講評への対応（2026-10-15・事実確認は `docs/daily/2026-10-15.md`）
